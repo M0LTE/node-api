@@ -1,3 +1,6 @@
+using MQTTnet;
+using MQTTnet.Client;
+using MQTTnet.Extensions.ManagedClient;
 using node_api.Models;
 using System.Net;
 using System.Net.Sockets;
@@ -14,7 +17,7 @@ public sealed class XrouterUdpService : BackgroundService, IAsyncDisposable
     private readonly Channel<(XrouterUdpJsonFrame Frame, IPEndPoint RemoteEndPoint)> _processingChannel;
     private readonly ChannelWriter<(XrouterUdpJsonFrame Frame, IPEndPoint RemoteEndPoint)> _channelWriter;
     private readonly SemaphoreSlim _processingSemaphore;
-    
+    private IManagedMqttClient? mqttClient;
     private UdpClient? _udpClient;
     private Task? _processingTask;
 
@@ -40,6 +43,18 @@ public sealed class XrouterUdpService : BackgroundService, IAsyncDisposable
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        var factory = new MqttFactory();
+        mqttClient = factory.CreateManagedMqttClient();
+        var options = new ManagedMqttClientOptionsBuilder()
+            .WithAutoReconnectDelay(TimeSpan.FromSeconds(5))
+            .WithClientOptions(new MqttClientOptionsBuilder()
+                .WithTcpServer("node-api.m0ouk.compute.oarc.uk", 1883)
+                .WithCredentials("writer", Environment.GetEnvironmentVariable("MQTT_WRITER_PASSWORD") ?? throw new InvalidOperationException("MQTT_WRITER_PASSWORD environment variable is not set"))
+                .WithCleanSession(true)
+                .Build())
+            .Build();
+        await mqttClient.StartAsync(options);
+
         // Start the frame processing task
         _processingTask = ProcessFramesAsync(stoppingToken);
 
@@ -89,9 +104,10 @@ public sealed class XrouterUdpService : BackgroundService, IAsyncDisposable
 
     private async Task ProcessDatagramAsync(UdpReceiveResult result, CancellationToken stoppingToken)
     {
+        string? json = null;
         try
         {
-            var json = Encoding.UTF8.GetString(result.Buffer);
+            json = Encoding.UTF8.GetString(result.Buffer);
             _logger.LogDebug("Received UDP datagram from {Endpoint}: {Json}", result.RemoteEndPoint, json);
 
             var frame = JsonSerializer.Deserialize<XrouterUdpJsonFrame>(json);
@@ -106,6 +122,14 @@ public sealed class XrouterUdpService : BackgroundService, IAsyncDisposable
         {
             _logger.LogWarning(ex, "Failed to deserialize JSON from {Endpoint}: {Json}",
                 result.RemoteEndPoint, Encoding.UTF8.GetString(result.Buffer));
+
+            var message = new MqttApplicationMessageBuilder()
+                .WithTopic("udp/in/errored/badjson")
+                .WithPayload(JsonSerializer.SerializeToUtf8Bytes( new { error = ex.Message, json }))
+                .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
+                .Build();
+
+            await mqttClient!.EnqueueAsync(message);
         }
         catch (InvalidOperationException) when (stoppingToken.IsCancellationRequested)
         {
@@ -123,13 +147,19 @@ public sealed class XrouterUdpService : BackgroundService, IAsyncDisposable
         {
             await foreach (var (frame, remoteEndPoint) in _processingChannel.Reader.ReadAllAsync(stoppingToken).ConfigureAwait(false))
             {
+                var wrappedFrame = new XrouterUdpJsonFrameWrapper
+                {
+                    Frame = frame,
+                    FromIp = remoteEndPoint.Address.ToString()
+                };
+
                 // Process frames with controlled concurrency
                 _ = Task.Run(async () =>
                 {
                     await _processingSemaphore.WaitAsync(stoppingToken).ConfigureAwait(false);
                     try
                     {
-                        await HandleXrouterFrameAsync(frame, remoteEndPoint, stoppingToken).ConfigureAwait(false);
+                        await HandleXrouterFrameAsync(wrappedFrame, remoteEndPoint, stoppingToken).ConfigureAwait(false);
                     }
                     finally
                     {
@@ -148,29 +178,36 @@ public sealed class XrouterUdpService : BackgroundService, IAsyncDisposable
         }
     }
 
-    private async Task HandleXrouterFrameAsync(XrouterUdpJsonFrame frame, IPEndPoint remoteEndPoint, CancellationToken cancellationToken)
+    private async Task HandleXrouterFrameAsync(XrouterUdpJsonFrameWrapper wrappedFrame, IPEndPoint remoteEndPoint, CancellationToken cancellationToken)
     {
         try
         {
-            // Implement your business logic here
-            // For example:
-            // - Route the frame based on destination
-            // - Store in database  
-            // - Forward to other services
-            // - Validate sequence numbers
-            
+            var frame = wrappedFrame.Frame;
+
             _logger.LogInformation("Processing frame from {RemoteEndPoint} - Control: {Control}, Sequences: R={RSeq}, T={TSeq}",
                 remoteEndPoint, frame.Control, frame.ReceiveSequence, frame.TransmitSequence);
 
             _framesRepo.Frames.Add(frame);
 
-            // Simulate async processing
-            //await Task.Delay(1, cancellationToken).ConfigureAwait(false);
+            var payload = JsonSerializer.SerializeToUtf8Bytes(frame);
+
+            var message = new MqttApplicationMessageBuilder()
+                .WithTopic(BuildTopic(wrappedFrame))
+                .WithPayload(payload)
+                .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
+                .Build();
+
+            await mqttClient!.EnqueueAsync(message);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error handling frame from {RemoteEndPoint}", remoteEndPoint);
         }
+    }
+
+    private string BuildTopic(XrouterUdpJsonFrameWrapper wrappedFrame)
+    {
+        return $"udp/in";
     }
 
     public override void Dispose()
@@ -197,4 +234,10 @@ public sealed class XrouterUdpService : BackgroundService, IAsyncDisposable
         Dispose();
         GC.SuppressFinalize(this);
     }
+}
+
+class XrouterUdpJsonFrameWrapper
+{
+    public XrouterUdpJsonFrame Frame { get; init; }
+    public string FromIp { get; init; }
 }

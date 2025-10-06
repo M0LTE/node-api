@@ -23,20 +23,20 @@ public readonly record struct XrouterUdpJsonFrame
     public required int Modulo { get; init; }
 
     [JsonPropertyName("rseq")]
-    public required int ReceiveSequence { get; init; }
+    public int? ReceiveSequence { get; init; }
 
     [JsonPropertyName("tseq")]
-    public required int TransmitSequence { get; init; }
+    public int? TransmitSequence { get; init; }
 
     [JsonPropertyName("cr")]
     public required string Cr { get; init; }
 
     [JsonPropertyName("ilen")]
-    public required int ILen { get; init; }
+    public int? ILen { get; init; }
 
     [JsonPropertyName("pid")]
-    public required int Pid { get; init; }
+    public int? Pid { get; init; }
 
     [JsonPropertyName("ptcl")]
-    public required string Ptcl { get; init; }
+    public string? Ptcl { get; init; }
 }
