@@ -12,24 +12,35 @@ public static class UdpNodeInfoJsonDatagramDeserialiser
         DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
     };
 
-    public static bool TryDeserialise(string json, out UdpNodeInfoJsonDatagram? frame)
+    public static bool TryDeserialise(string json, out UdpNodeInfoJsonDatagram? frame, out JsonException? jsonException)
     {
+        string? typeString;
         try
         {
-            var typeString = JsonNode.Parse(json)?["@type"]?.GetValue<string>();
-            
+            typeString = JsonNode.Parse(json)?["@type"]?.GetValue<string>();
+        }
+        catch (JsonException ex)
+        {
+            frame = null;
+            jsonException = ex;
+            return false;
+        }
+
+        try
+        {
             frame = typeString switch
             {
                 "l2trace" => JsonSerializer.Deserialize<L2Trace>(json, options),
                 "event" => JsonSerializer.Deserialize<Event>(json, options),
                 _ => null
             };
-
+            jsonException = null;
             return frame is not null;
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
             frame = null;
+            jsonException = ex;
             return false;
         }
     }

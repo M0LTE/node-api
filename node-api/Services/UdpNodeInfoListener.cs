@@ -110,7 +110,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
 
     private async Task ProcessDatagramAsync(UdpReceiveResult result, CancellationToken stoppingToken)
     {
-        string? json = null;
+        string? json;
         try
         {
             json = Encoding.UTF8.GetString(result.Buffer);
@@ -123,34 +123,35 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
                 .Build();
             await mqttClient!.EnqueueAsync(message);
 
-            if (UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var frame)) 
-            { 
-                await _channelWriter.WriteAsync((frame, result.RemoteEndPoint), stoppingToken).ConfigureAwait(false);
+            if (UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var frame, out var jsonException)) 
+            {
+                await _channelWriter.WriteAsync((frame ?? throw new InvalidOperationException("frame was null"), result.RemoteEndPoint), stoppingToken).ConfigureAwait(false);
             }
             else
             {
-                var message2 = new MqttApplicationMessageBuilder()
-                    .WithTopic(badTypeTopic)
-                    .WithPayload(json)
-                    .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
-                    .Build();
+                if (jsonException is not null)
+                {
+                    _logger.LogWarning(jsonException, "Failed to deserialize JSON from {Endpoint}: {Json}", result.RemoteEndPoint, Encoding.UTF8.GetString(result.Buffer));
 
-                await mqttClient!.EnqueueAsync(message2);
-                return;
+                    var badJsonMessage = new MqttApplicationMessageBuilder()
+                        .WithTopic(badJsonTopic)
+                        .WithPayload(JsonSerializer.SerializeToUtf8Bytes(new { error = jsonException.Message, json }))
+                        .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
+                        .Build();
+
+                    await mqttClient!.EnqueueAsync(badJsonMessage);
+                }
+                else
+                {
+                    var unknownTypeMessage = new MqttApplicationMessageBuilder()
+                        .WithTopic(badTypeTopic)
+                        .WithPayload(json)
+                        .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
+                        .Build();
+
+                    await mqttClient!.EnqueueAsync(unknownTypeMessage);
+                }
             }
-        }
-        catch (JsonException ex)
-        {
-            _logger.LogWarning(ex, "Failed to deserialize JSON from {Endpoint}: {Json}",
-                result.RemoteEndPoint, Encoding.UTF8.GetString(result.Buffer));
-
-            var message = new MqttApplicationMessageBuilder()
-                .WithTopic(badJsonTopic)
-                .WithPayload(JsonSerializer.SerializeToUtf8Bytes( new { error = ex.Message, json }))
-                .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
-                .Build();
-
-            await mqttClient!.EnqueueAsync(message);
         }
         catch (InvalidOperationException) when (stoppingToken.IsCancellationRequested)
         {
