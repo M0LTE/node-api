@@ -8,7 +8,7 @@ namespace node_api.Controllers;
 public class FramesController(FramesRepo repo) : ControllerBase
 {
     [HttpGet]
-    public IEnumerable<XrouterUdpJsonFrame> Get()
+    public IEnumerable<UdpNodeInfoJsonDatagram> Get()
     {
         return repo.Frames;
     }
