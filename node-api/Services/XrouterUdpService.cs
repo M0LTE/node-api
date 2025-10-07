@@ -110,10 +110,17 @@ public sealed class XrouterUdpService : BackgroundService, IAsyncDisposable
             json = Encoding.UTF8.GetString(result.Buffer);
             _logger.LogDebug("Received UDP datagram from {Endpoint}: {Json}", result.RemoteEndPoint, json);
 
+            var message = new MqttApplicationMessageBuilder()
+                .WithTopic("udp/in/raw")
+                .WithPayload(json)
+                .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
+                .Build();
+            await mqttClient!.EnqueueAsync(message);
+
             var frame = JsonSerializer.Deserialize<XrouterUdpJsonFrame>(json);
             
             _logger.LogInformation("Received Xrouter frame - Port: {Port}, Source: {Source}, Destination: {Destination}, Type: {Type}",
-                frame.Port, frame.Source, frame.Destination, frame.Type);
+                frame.Port, frame.Source, frame.Destination, frame.L2Type);
 
             // Queue the frame for processing
             await _channelWriter.WriteAsync((frame, result.RemoteEndPoint), stoppingToken).ConfigureAwait(false);
@@ -192,7 +199,7 @@ public sealed class XrouterUdpService : BackgroundService, IAsyncDisposable
             var payload = JsonSerializer.SerializeToUtf8Bytes(frame);
 
             var message = new MqttApplicationMessageBuilder()
-                .WithTopic(BuildTopic(wrappedFrame))
+                .WithTopic("udp/in/parsed")
                 .WithPayload(payload)
                 .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
                 .Build();
@@ -203,11 +210,6 @@ public sealed class XrouterUdpService : BackgroundService, IAsyncDisposable
         {
             _logger.LogError(ex, "Error handling frame from {RemoteEndPoint}", remoteEndPoint);
         }
-    }
-
-    private string BuildTopic(XrouterUdpJsonFrameWrapper wrappedFrame)
-    {
-        return $"udp/in";
     }
 
     public override void Dispose()
