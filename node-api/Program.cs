@@ -3,14 +3,10 @@ using node_api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-// Add the Xrouter UDP background service
-builder.Services.AddHostedService<XrouterUdpService>();
+builder.Services.AddHostedService<UdpNodeInfoListener>();
 builder.Services.AddSingleton<FramesRepo>();
 
 var app = builder.Build();

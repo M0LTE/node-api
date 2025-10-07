@@ -4,7 +4,7 @@ using node_api.Models;
 
 namespace Tests;
 
-public class XrouterUdpJsonFrameDeserializationTests
+public class UdpNodeInfoJsonFrameDeserialiserTests
 {
     [Fact]
     public void Should_Deserialize_UI_Frame_Example()
