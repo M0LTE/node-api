@@ -10,6 +10,9 @@ public record UdpNodeInfoJsonDatagram
 
 public record L2Trace : UdpNodeInfoJsonDatagram
 {
+    [JsonPropertyName("from")]
+    public required string FromCallsign { get; init; }
+
     [JsonPropertyName("port")]
     public required string Port { get; init; }
     
@@ -79,8 +82,8 @@ public record L2Trace : UdpNodeInfoJsonDatagram
     [JsonPropertyName("rxSeq")]
     public int? ReceiveSequenceNumber { get; init; } // MAYBE DUPLICATE OF RSEQ?
 
-    [JsonPropertyName("infoLen")]
-    public int? InfoFieldLength { get; init; } // MAYBE DUPLICATE OF ILEN?
+    [JsonPropertyName("payLen")]
+    public int? PayloadLength { get; init; }
 
     [JsonPropertyName("srcUser")]
     public string? OriginatingUserCallsign { get; init; }
@@ -120,6 +123,12 @@ public record L2Trace : UdpNodeInfoJsonDatagram
 
     [JsonPropertyName("nodes")]
     public Node[]? Nodes { get; init; }
+
+    [JsonPropertyName("data")]
+    public string? Data { get; init; }
+
+    [JsonPropertyName("payload")]
+    public string? Payload { get; init; }
 
     public record Node
     {
@@ -186,8 +195,8 @@ public record L2Trace : UdpNodeInfoJsonDatagram
         [JsonPropertyName("tzMins")]
         public int? TimeZoneMinutesOffsetFromGmt { get; init; }
 
-        [JsonPropertyName("localTime")]
-        public DateTimeOffset? LocalTime { get; init; }
+        [JsonPropertyName("timestamp")]
+        public DateTimeOffset? Timestamp { get; init; }
     }
 
     public record Digipeater
