@@ -14,7 +14,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var json = """
         {
             "@type": "L2Trace",
-            "from": "G9XXX",
+            "reportFrom": "G9XXX",
             "port": "2",
             "srce": "G8PZT-9",
             "dest": "KIDDER",
@@ -51,7 +51,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var json = """
         {
         "@type": "L2Trace",
-        "from": "G9XXX",
+        "reportFrom": "G9XXX",
         "port": "2",
         "srce": "G8PZT",
         "dest": "G8PZT-1",
@@ -152,7 +152,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var json = """
         {
         "@type": "L2Trace",
-        "from": "G9XXX",
+        "reportFrom": "G9XXX",
         "port": "1",
         "srce": "G8PZT-1",
         "dest": "ID",
@@ -193,7 +193,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var json = """
         {
         "@type": "L2Trace",
-        "from": "G9XXX",
+        "reportFrom": "G9XXX",
         "port": "8",
         "srce": "G8PZT-1",
         "dest": "G8PZT-14",
@@ -230,7 +230,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var json = """
         {
         "@type": "L2Trace",
-        "from": "G9XXX",
+        "reportFrom": "G9XXX",
         "port": "8",
         "srce": "G8PZT-14",
         "dest": "G8PZT-1",
@@ -267,7 +267,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var json = """
         {
         "@type": "L2Trace",
-        "from": "G9XXX",
+        "reportFrom": "G9XXX",
         "port": "2",
         "srce": "G8PZT-11",
         "dest": "KIDDER-1",
@@ -312,7 +312,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var json = """
         {
         "@type": "L2Trace",
-        "from": "G9XXX",
+        "reportFrom": "G9XXX",
         "port": "2",
         "srce": "G8PZT-1",
         "dest": "G8PZT",
@@ -349,7 +349,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var json = """
         {
         "@type": "L2Trace",
-        "from": "G9XXX",
+        "reportFrom": "G9XXX",
         "port": "2",
         "srce": "G8PZT-1",
         "dest": "QST",
@@ -394,7 +394,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var json = """
         {
         "@type": "L2Trace",
-        "from": "G9XXX",
+        "reportFrom": "G9XXX",
         "port": "2",
         "srce": "G8PZT-1",
         "dest": "G8PZT",
@@ -459,7 +459,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var json = """
         {
         "@type": "L2Trace",
-        "from": "G9XXX",
+        "reportFrom": "G9XXX",
         "l3type": "NetRom",
         "l3src": "G8PZT",
         "l3dst": "G8PZT-1",
@@ -512,7 +512,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var json = """
         {
         "@type": "L2Trace",
-        "from": "G9XXX",
+        "reportFrom": "G9XXX",
         "l3type": "NetRom",
         "l3src": "G8PZT",
         "l3dst": "G8PZT-1",
@@ -567,7 +567,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var json = """
         {
         "@type": "L2Trace",
-        "from": "G9XXX",
+        "reportFrom": "G9XXX",
         "l3type": "NetRom",
         "l3src": "G8PZT-1",
         "l3dst": "G8PZT",
@@ -618,7 +618,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var json = """
         {
         "@type": "L2Trace",
-        "from": "G9XXX",
+        "reportFrom": "G9XXX",
         "l3type": "NetRom",
         "l3src": "G8PZT",
         "l3dst": "G8PZT-1",
@@ -667,7 +667,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var json = """
         {
         "@type": "L2Trace",
-        "from": "G9XXX",
+        "reportFrom": "G9XXX",
         "l3type": "NetRom",
         "l3src": "G8PZT-1",
         "l3dst": "G8PZT",
@@ -720,7 +720,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var json = """
         {
         "@type": "L2Trace",
-        "from": "G9XXX",
+        "reportFrom": "G9XXX",
         "l3Type": "Routing info",
         "type": "INP3",
         "nodes": [
@@ -817,7 +817,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var json = """
         {
         "@type": "L2Trace",
-        "from": "G9XXX",
+        "reportFrom": "G9XXX",
         "port": "1",
         "srce": "G8PZT-1",
         "dest": "NODES",
@@ -941,7 +941,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var json = """
         {
         "@type": "L2Trace",
-        "from": "G9XXX",
+        "reportFrom": "G9XXX",
         "port": "2",
         "srce": "G8PZT-1",
         "dest": "KIDDER-1",

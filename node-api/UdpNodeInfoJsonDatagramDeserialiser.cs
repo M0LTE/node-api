@@ -21,6 +21,7 @@ public static class UdpNodeInfoJsonDatagramDeserialiser
         }
         catch (JsonException ex)
         {
+            //throw;
             frame = null;
             jsonException = ex;
             return false;

@@ -12,7 +12,7 @@ public record L2Trace : UdpNodeInfoJsonDatagram
     /// <summary>
     /// Reporter's callsign, e.g. nodecall (Required)
     /// </summary>
-    [JsonPropertyName("from")]
+    [JsonPropertyName("reportFrom")]
     public required string FromCallsign { get; init; }
 
     /// <summary>
