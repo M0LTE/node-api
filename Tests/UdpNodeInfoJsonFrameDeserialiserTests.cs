@@ -544,7 +544,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         frame.ToCircuit.Should().Be(4);
         frame.TransmitSequenceNumber.Should().Be(0);
         frame.ReceiveSequenceNumber.Should().Be(1);
-        frame.InfoFieldLength.Should().Be(236);
+        frame.PayloadLength.Should().Be(236);
         
         parsed.Should().BeTrue();
     }
@@ -786,84 +786,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         secondNode.IsNode.Should().Be(false);
         secondNode.IsXrchat.Should().Be(true);
         secondNode.IsRtchat.Should().Be(true);
-        secondNode.LocalTime.Should().Be(DateTimeOffset.Parse("2025-10-07T03:43:04Z"));
+        secondNode.Timestamp.Should().Be(DateTimeOffset.Parse("2025-10-07T03:43:04Z"));
 
-        parsed.Should().BeTrue();
-    }
-
-    #endregion
-
-    #region Event Examples from Spec
-
-    [Fact]
-    public void Should_Deserialize_Spec_Example_Connection_Event()
-    {
-        // Example from specification section 3.1
-        var json = """
-        {
-        "@type": "event",
-        "eventSource": "link",
-        "time": "2025-10-07T16:43:17Z",
-        "id": 3,
-        "direction": "outgoing",
-        "port": "2",
-        "remote": "KIDDER-1",
-        "local": "G8PZT-11",
-        "event": "connect"
-        }
-        """;
-
-        // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
-        var eventFrame = datagramUntyped.Should().BeOfType<Event>().Subject;
-
-        // Assert
-        eventFrame.DatagramType.Should().Be("event");
-        eventFrame.EventSource.Should().Be("link");
-        eventFrame.Time.Should().Be(DateTimeOffset.Parse("2025-10-07T16:43:17Z"));
-        eventFrame.Id.Should().Be(3);
-        eventFrame.Direction.Should().Be("outgoing");
-        eventFrame.Port.Should().Be("2");
-        eventFrame.RemoteCallsign.Should().Be("KIDDER-1");
-        eventFrame.LocalCallsign.Should().Be("G8PZT-11");
-        eventFrame.EventType.Should().Be("connect");
-        
-        parsed.Should().BeTrue();
-    }
-
-    [Fact]
-    public void Should_Deserialize_Spec_Example_Disconnection_Event()
-    {
-        // Example from specification section 3.1
-        var json = """
-        {
-        "@type": "event",
-        "eventSource": "link",
-        "time": "2025-10-07T16:43:23Z",
-        "id": 3,
-        "direction": "outgoing",
-        "port": "2",
-        "remote": "KIDDER-1",
-        "local": "G8PZT-11",
-        "event": "disconnect"
-        }
-        """;
-
-        // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
-        var eventFrame = datagramUntyped.Should().BeOfType<Event>().Subject;
-
-        // Assert
-        eventFrame.DatagramType.Should().Be("event");
-        eventFrame.EventSource.Should().Be("link");
-        eventFrame.Time.Should().Be(DateTimeOffset.Parse("2025-10-07T16:43:23Z"));
-        eventFrame.Id.Should().Be(3);
-        eventFrame.Direction.Should().Be("outgoing");
-        eventFrame.Port.Should().Be("2");
-        eventFrame.RemoteCallsign.Should().Be("KIDDER-1");
-        eventFrame.LocalCallsign.Should().Be("G8PZT-11");
-        eventFrame.EventType.Should().Be("disconnect");
-        
         parsed.Should().BeTrue();
     }
 

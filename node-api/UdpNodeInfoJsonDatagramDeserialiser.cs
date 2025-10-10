@@ -30,8 +30,7 @@ public static class UdpNodeInfoJsonDatagramDeserialiser
         {
             frame = typeString switch
             {
-                "l2trace" => JsonSerializer.Deserialize<L2Trace>(json, options),
-                "event" => JsonSerializer.Deserialize<Event>(json, options),
+                "L2Trace" => JsonSerializer.Deserialize<L2Trace>(json, options),
                 _ => null
             };
             jsonException = null;

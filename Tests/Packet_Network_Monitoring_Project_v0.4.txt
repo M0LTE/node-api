@@ -628,7 +628,7 @@ About This Document
 
       Name          Type     Description
       -------------------------------------------------------------
-      "@type"       String   Report type: "LinkUpEvent"
+      "@type"       String   Report type: "LinkDownEvent"
       "node"        String   Callsign of reporting node
       "id"          Integer  Link serial number
       "direction"   String   Initiator: "Incoming" or "outgoing"
