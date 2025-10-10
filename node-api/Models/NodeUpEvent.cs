@@ -8,37 +8,45 @@ namespace node_api.Models;
 /// </summary>
 public record NodeUpEvent : UdpNodeInfoJsonDatagram
 {
-    /*
-     *Name          Type     Description
-      -------------------------------------------------------------
-      "@type"       String   Report type: "NodeUpEvent"
-      "nodeCall"    String   Node Callsign
-      "nodeAlias"   String   Node Alias
-      "locator"     String   Maidenhead locator e.g. "IO82VJ"
-      "latitude"    Number   Decimal degrees (optional)
-      "longitude"   Number   Decimal degrees (optional)
-      "software"    String   Node software type, e.g. "xrlin"
-      "version"     String   Node software Version, e.g. "v504j"
-     */
-
+    /// <summary>
+    /// Node Callsign (Required)
+    /// </summary>
     [JsonPropertyName("nodeCall")]
     public required string NodeCall { get; init; }
 
+    /// <summary>
+    /// Node Alias (Required)
+    /// </summary>
     [JsonPropertyName("nodeAlias")]
     public required string NodeAlias { get; init; }
 
+    /// <summary>
+    /// Maidenhead locator e.g. "IO82VJ" (Required)
+    /// </summary>
     [JsonPropertyName("locator")]
     public required string Locator { get; init; }
 
+    /// <summary>
+    /// Latitude in decimal degrees (Optional)
+    /// </summary>
     [JsonPropertyName("latitude")]
     public decimal? Latitude { get; init; }
 
+    /// <summary>
+    /// Longitude in decimal degrees (Optional)
+    /// </summary>
     [JsonPropertyName("longitude")]
     public decimal? Longitude { get; init; }
 
+    /// <summary>
+    /// Node software type, e.g. "xrlin" (Required)
+    /// </summary>
     [JsonPropertyName("software")]
     public required string Software { get; init; }
 
+    /// <summary>
+    /// Node software Version, e.g. "v504j" (Required)
+    /// </summary>
     [JsonPropertyName("version")]
     public required string Version { get; init; }
 }
