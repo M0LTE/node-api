@@ -3,7 +3,6 @@ using MQTTnet;
 using MQTTnet.Client;
 using MQTTnet.Extensions.ManagedClient;
 using MQTTnet.Formatter;
-using MySql.Data.MySqlClient;
 
 namespace node_api.Services;
 
@@ -35,21 +34,7 @@ public class DbWriter(ILogger<DbWriter> logger) : IHostedService
         await mqttClient.UnsubscribeAsync("out/#");
     }
 
-    private static readonly Lazy<string> ConnectionStringBuilder = new(static () =>
-    {
-        return $"server={Environment.GetEnvironmentVariable("DB_HOST")};" +
-            $"port={Environment.GetEnvironmentVariable("DB_PORT")};" +
-            $"username={Environment.GetEnvironmentVariable("DB_USER")};" +
-            $"password={Environment.GetEnvironmentVariable("DB_PASSWORD")};" +
-            $"database={Environment.GetEnvironmentVariable("DB_NAME")}";
-    });
 
-    private MySqlConnection GetConnection()
-    {
-        var connection = new MySqlConnection(ConnectionStringBuilder.Value);
-        connection.Open();
-        return connection;
-    }
 
     private async Task MessageReceived(MqttApplicationMessageReceivedEventArgs args)
     {
@@ -59,7 +44,7 @@ public class DbWriter(ILogger<DbWriter> logger) : IHostedService
 
         if (type!.Value == "L2Trace")
         {
-            using var connection = GetConnection();
+            using var connection = Database.GetConnection();
             await connection.ExecuteAsync(
                 "INSERT INTO traces (json) VALUES (@json)",
                 new
@@ -71,7 +56,7 @@ public class DbWriter(ILogger<DbWriter> logger) : IHostedService
         }
         else if (type!.Value != "")
         {
-            using var connection = GetConnection();
+            using var connection = Database.GetConnection();
             await connection.ExecuteAsync(
                 "INSERT INTO events (json) VALUES (@json)",
                 new
