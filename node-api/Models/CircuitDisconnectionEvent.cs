@@ -45,6 +45,30 @@ public record CircuitDisconnectionEvent : UdpNodeInfoJsonDatagram
     public required string Local { get; init; }
 
     /// <summary>
+    /// Segments sent since circuit creation
+    /// </summary>
+    [JsonPropertyName("segsSent")]
+    public required int SegsSent { get; init; }
+
+    /// <summary>
+    /// Segments rcvd since circuit creation
+    /// </summary>
+    [JsonPropertyName("segsRcvd")]
+    public required int SegsRcvd { get; init; }
+
+    /// <summary>
+    /// Segments re-sent since cct creation
+    /// </summary>
+    [JsonPropertyName("segsResent")]
+    public required int SegsResent { get; init; }
+
+    /// <summary>
+    /// Current TX queue length
+    /// </summary>
+    [JsonPropertyName("segsQueued")]
+    public required int SegsQueued { get; init; }
+
+    /// <summary>
     /// Reason for disconnect (Optional)
     /// </summary>
     [JsonPropertyName("reason")]

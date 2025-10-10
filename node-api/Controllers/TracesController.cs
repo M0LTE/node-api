@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using node_api.Services;
 using System.Text;
+using System.Text.Json;
 
 namespace node_api.Controllers;
 
@@ -61,8 +62,7 @@ public class TracesController : ControllerBase
             SELECT
               `id`,
               `timestamp`,
-              JSON_VALUE(`json`, '$.srce') AS source,
-              JSON_VALUE(`json`, '$.dest') AS dest
+              `json` as report
             FROM `traces`
             WHERE {string.Join(" AND ", where)}
             ORDER BY `timestamp` DESC, `id` DESC
@@ -78,12 +78,17 @@ public class TracesController : ControllerBase
         {
             var rows = (await _conn.QueryAsync<TraceRow>(new CommandDefinition(sql, p, cancellationToken: ct))).ToList();
 
-            var data = rows.Select(r => new TraceDto(
-                r.id,
-                DateTime.SpecifyKind(r.timestamp, DateTimeKind.Utc),
-                r.source,
-                r.dest
-            )).ToList();
+            // Materialize JSON column to JsonElement (so it returns as real JSON, not a string)
+            var data = new List<TraceDto>(rows.Count);
+            foreach (var r in rows)
+            {
+                using var doc = JsonDocument.Parse(r.report ?? "null");
+                data.Add(new TraceDto(
+                    r.id,
+                    DateTime.SpecifyKind(r.timestamp, DateTimeKind.Utc),
+                    doc.RootElement.Clone()  // clone because JsonDocument is disposed
+                ));
+            }
 
             string? next = null;
             if (data.Count == limit)
@@ -100,18 +105,15 @@ public class TracesController : ControllerBase
         }
     }
 
-    // Simple DTOs
-    public record TraceDto(long Id, DateTime Timestamp, string? Source, string? Dest);
+    public record TraceDto(long Id, DateTime Timestamp, JsonElement Report);
     public record PagedResult<T>(IReadOnlyList<T> Data, PageInfo Page);
     public record PageInfo(int Limit, string? Next);
 
-    // Private row shape for Dapper mapping
     private sealed class TraceRow
     {
         public long id { get; set; }
-        public DateTime timestamp { get; set; } // assumes UTC or naive; we treat as UTC
-        public string? source { get; set; }
-        public string? dest { get; set; }
+        public DateTime timestamp { get; set; }
+        public string? report { get; set; } // MariaDB JSON maps to text; we'll parse it
     }
 
     // Cursor helpers: base64("timestamp|id") where timestamp is ISO8601 (round-trip)
