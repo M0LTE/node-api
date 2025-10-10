@@ -684,7 +684,7 @@ About This Document
 
       Name          Type     Description
       -------------------------------------------------------------
-      "@type"       String   "CircuitUpEvent",
+      "@type"       String   "CircuitDownEvent",
       "node"        String   Callsign of reporting node
       "id"          Integer  Circuit serial number
       "direction"   String   "Incoming" or "outgoing"

@@ -975,4 +975,464 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
     }
 
     #endregion
+
+    #region Event and Status Report Examples from Spec
+
+    [Fact]
+    public void Should_Deserialize_Spec_Example_Node_Startup_Event()
+    {
+        // Example from specification section 3.9
+        var json = """
+        {
+        "@type": "NodeUpEvent",
+        "nodeCall": "G8PZT-1",
+        "nodeAlias": "XRLN64",
+        "locator": "IO70KD",
+        "latitude": 50.145832,
+        "longitude": -5.125000,
+        "software": "XrLin",
+        "version": "504j"
+        }
+        """;
+
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var evt = datagramUntyped.Should().BeOfType<NodeUpEvent>().Subject;
+
+        // Assert
+        evt.DatagramType.Should().Be("NodeUpEvent");
+        evt.NodeCall.Should().Be("G8PZT-1");
+        evt.NodeAlias.Should().Be("XRLN64");
+        evt.Locator.Should().Be("IO70KD");
+        evt.Latitude.Should().Be(50.145832m);
+        evt.Longitude.Should().Be(-5.125000m);
+        evt.Software.Should().Be("XrLin");
+        evt.Version.Should().Be("504j");
+
+        parsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Should_Deserialize_Spec_Example_Node_Shutdown_Event()
+    {
+        // Example from specification section 3.9
+        var json = """
+        {
+        "@type": "NodeDownEvent",
+        "nodeCall": "G8PZT-1",
+        "nodeAlias": "XRLN64",
+        "reason": "Reboot"
+        }
+        """;
+
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var evt = datagramUntyped.Should().BeOfType<NodeDownEvent>().Subject;
+
+        // Assert
+        evt.DatagramType.Should().Be("NodeDownEvent");
+        evt.NodeCall.Should().Be("G8PZT-1");
+        evt.NodeAlias.Should().Be("XRLN64");
+        evt.Reason.Should().Be("Reboot");
+
+        parsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Should_Deserialize_Node_Down_Event_Without_Reason()
+    {
+        // Test NodeDownEvent without optional reason field
+        var json = """
+        {
+        "@type": "NodeDownEvent",
+        "nodeCall": "G8PZT-1",
+        "nodeAlias": "XRLN64"
+        }
+        """;
+        //
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var evt = datagramUntyped.Should().BeOfType<NodeDownEvent>().Subject;
+
+        // Assert
+        evt.DatagramType.Should().Be("NodeDownEvent");
+        evt.NodeCall.Should().Be("G8PZT-1");
+        evt.NodeAlias.Should().Be("XRLN64");
+        evt.Reason.Should().BeNull();
+
+        parsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Should_Deserialize_Node_Status_Report()
+    {
+        // Based on specification section 3.3
+        var json = """
+        {
+        "@type": "NodeStatus",
+        "nodeCall": "G8PZT-1",
+        "nodeAlias": "XRLN64",
+        "locator": "IO70KD",
+        "latitude": 50.145832,
+        "longitude": -5.125000,
+        "software": "XrLin",
+        "version": "504j",
+        "uptimeSecs": 86400
+        }
+        """;
+
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var evt = datagramUntyped.Should().BeOfType<NodeStatusReportEvent>().Subject;
+
+        // Assert
+        evt.DatagramType.Should().Be("NodeStatus");
+        evt.NodeCall.Should().Be("G8PZT-1");
+        evt.NodeAlias.Should().Be("XRLN64");
+        evt.Locator.Should().Be("IO70KD");
+        evt.Latitude.Should().Be(50.145832m);
+        evt.Longitude.Should().Be(-5.125000m);
+        evt.Software.Should().Be("XrLin");
+        evt.Version.Should().Be("504j");
+        evt.UptimeSecs.Should().Be(86400);
+
+        parsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Should_Deserialize_Node_Status_Report_Without_Optional_Fields()
+    {
+        // Test NodeStatusReportEvent without optional latitude/longitude
+        var json = """
+        {
+        "@type": "NodeStatus",
+        "nodeCall": "G8PZT-1",
+        "nodeAlias": "XRLN64",
+        "locator": "IO70KD",
+        "software": "XrLin",
+        "version": "504j",
+        "uptimeSecs": 3600
+        }
+        """;
+        //
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var evt = datagramUntyped.Should().BeOfType<NodeStatusReportEvent>().Subject;
+
+        // Assert
+        evt.DatagramType.Should().Be("NodeStatus");
+        evt.NodeCall.Should().Be("G8PZT-1");
+        evt.NodeAlias.Should().Be("XRLN64");
+        evt.Locator.Should().Be("IO70KD");
+        evt.Latitude.Should().BeNull();
+        evt.Longitude.Should().BeNull();
+        evt.Software.Should().Be("XrLin");
+        evt.Version.Should().Be("504j");
+        evt.UptimeSecs.Should().Be(3600);
+
+        parsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Should_Deserialize_Spec_Example_Outgoing_AX25_Connection_Event()
+    {
+        // Example from specification section 3.9
+        var json = """
+        {
+        "@type": "LinkUpEvent",
+        "node": "G8PZT-1",
+        "id": 3,
+        "direction": "outgoing",
+        "port": "2",
+        "remote": "KIDDER-1",
+        "local": "G8PZT-11"
+        }
+        """;
+        //
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var evt = datagramUntyped.Should().BeOfType<LinkUpEvent>().Subject;
+
+        // Assert
+        evt.DatagramType.Should().Be("LinkUpEvent");
+        evt.Node.Should().Be("G8PZT-1");
+        evt.Id.Should().Be(3);
+        evt.Direction.Should().Be("outgoing");
+        evt.Port.Should().Be("2");
+        evt.Remote.Should().Be("KIDDER-1");
+        evt.Local.Should().Be("G8PZT-11");
+
+        parsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Should_Deserialize_Incoming_AX25_Connection_Event()
+    {
+        // Test incoming link connection
+        var json = """
+        {
+        "@type": "LinkUpEvent",
+        "node": "G8PZT-1",
+        "id": 5,
+        "direction": "incoming",
+        "port": "3",
+        "remote": "M0LTE",
+        "local": "G8PZT-1"
+        }
+        """;
+        //
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var evt = datagramUntyped.Should().BeOfType<LinkUpEvent>().Subject;
+
+        // Assert
+        evt.DatagramType.Should().Be("LinkUpEvent");
+        evt.Node.Should().Be("G8PZT-1");
+        evt.Id.Should().Be(5);
+        evt.Direction.Should().Be("incoming");
+        evt.Port.Should().Be("3");
+        evt.Remote.Should().Be("M0LTE");
+        evt.Local.Should().Be("G8PZT-1");
+
+        parsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Should_Deserialize_Spec_Example_Outgoing_AX25_Disconnection_Event()
+    {
+        // Example from specification section 3.9
+        var json = """
+        {
+        "@type": "LinkDownEvent",
+        "node": "G8PZT-1",
+        "id": 3,
+        "direction": "outgoing",
+        "port": "2",
+        "remote": "KIDDER-1",
+        "local": "G8PZT-11"
+        }
+        """;
+        //
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var evt = datagramUntyped.Should().BeOfType<LinkDisconnectionEvent>().Subject;
+
+        // Assert
+        evt.DatagramType.Should().Be("LinkDownEvent");
+        evt.Node.Should().Be("G8PZT-1");
+        evt.Id.Should().Be(3);
+        evt.Direction.Should().Be("outgoing");
+        evt.Port.Should().Be("2");
+        evt.Remote.Should().Be("KIDDER-1");
+        evt.Local.Should().Be("G8PZT-11");
+        evt.Reason.Should().BeNull();
+
+        parsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Should_Deserialize_Link_Disconnection_Event_With_Reason()
+    {
+        // Test LinkDisconnectionEvent with optional reason field
+        var json = """
+        {
+        "@type": "LinkDownEvent",
+        "node": "G8PZT-1",
+        "id": 7,
+        "direction": "incoming",
+        "port": "4",
+        "remote": "M0ABC",
+        "local": "G8PZT-1",
+        "reason": "Retried out"
+        }
+        """;
+        //
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var evt = datagramUntyped.Should().BeOfType<LinkDisconnectionEvent>().Subject;
+
+        // Assert
+        evt.DatagramType.Should().Be("LinkDownEvent");
+        evt.Node.Should().Be("G8PZT-1");
+        evt.Id.Should().Be(7);
+        evt.Direction.Should().Be("incoming");
+        evt.Port.Should().Be("4");
+        evt.Remote.Should().Be("M0ABC");
+        evt.Local.Should().Be("G8PZT-1");
+        evt.Reason.Should().Be("Retried out");
+
+        parsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Should_Deserialize_Link_Status_Report()
+    {
+        // Based on specification section 3.6
+        var json = """
+        {
+        "@type": "LinkStatus",
+        "node": "G8PZT-1",
+        "id": 3,
+        "direction": "outgoing",
+        "port": "2",
+        "remote": "KIDDER-1",
+        "local": "G8PZT-11",
+        "frmsSent": 150,
+        "frmsRcvd": 142,
+        "frmsResent": 5,
+        "frmsQueued": 2
+        }
+        """;
+
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var evt = datagramUntyped.Should().BeOfType<LinkStatus>().Subject;
+
+        // Assert
+        evt.DatagramType.Should().Be("LinkStatus");
+        evt.Node.Should().Be("G8PZT-1");
+        evt.Id.Should().Be(3);
+        evt.Direction.Should().Be("outgoing");
+        evt.Port.Should().Be("2");
+        evt.Remote.Should().Be("KIDDER-1");
+        evt.Local.Should().Be("G8PZT-11");
+        evt.FramesSent.Should().Be(150);
+        evt.FramesReceived.Should().Be(142);
+        evt.FramesResent.Should().Be(5);
+        evt.FramesQueued.Should().Be(2);
+
+        parsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Should_Deserialize_Spec_Example_Incoming_L4_Circuit_Connection_Event()
+    {
+        // Example from specification section 3.9
+        var json = """
+        {
+        "@type": "CircuitUpEvent",
+        "node": "G8PZT",
+        "id": 1,
+        "direction": "incoming",
+        "service": 0,
+        "remote": "G8PZT@G8PZT:14c0",
+        "local": "G8PZT-4:0001"
+        }
+        """;
+        //
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var evt = datagramUntyped.Should().BeOfType<CircuitUpEvent>().Subject;
+
+        // Assert
+        evt.DatagramType.Should().Be("CircuitUpEvent");
+        evt.Node.Should().Be("G8PZT");
+        evt.Id.Should().Be(1);
+        evt.Direction.Should().Be("incoming");
+        evt.Service.Should().Be(0);
+        evt.Remote.Should().Be("G8PZT@G8PZT:14c0");
+        evt.Local.Should().Be("G8PZT-4:0001");
+
+        parsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Should_Deserialize_Outgoing_L4_Circuit_Connection_Event()
+    {
+        // Test outgoing circuit connection
+        var json = """
+        {
+        "@type": "CircuitUpEvent",
+        "node": "G8PZT-1",
+        "id": 10,
+        "direction": "outgoing",
+        "remote": "M0LTE@M0LTE-1:2a3f",
+        "local": "G8PZT-1:0005"
+        }
+        """;
+        //
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var evt = datagramUntyped.Should().BeOfType<CircuitUpEvent>().Subject;
+
+        // Assert
+        evt.DatagramType.Should().Be("CircuitUpEvent");
+        evt.Node.Should().Be("G8PZT-1");
+        evt.Id.Should().Be(10);
+        evt.Direction.Should().Be("outgoing");
+        evt.Service.Should().BeNull();
+        evt.Remote.Should().Be("M0LTE@M0LTE-1:2a3f");
+        evt.Local.Should().Be("G8PZT-1:0005");
+
+        parsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Should_Deserialize_Spec_Example_Incoming_L4_Circuit_Disconnection_Event()
+    {
+        // Example from specification section 3.9
+        var json = """
+        {
+        "@type": "CircuitDownEvent",
+        "node": "G8PZT",
+        "id": 1,
+        "direction": "incoming",
+        "service": 0,
+        "remote": "G8PZT@G8PZT:14c0",
+        "local": "G8PZT-4:0001"
+        }
+        """;
+        //
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var evt = datagramUntyped.Should().BeOfType<CircuitDisconnectionEvent>().Subject;
+
+        // Assert
+        evt.DatagramType.Should().Be("CircuitDownEvent");
+        evt.Node.Should().Be("G8PZT");
+        evt.Id.Should().Be(1);
+        evt.Direction.Should().Be("incoming");
+        evt.Service.Should().Be(0);
+        evt.Remote.Should().Be("G8PZT@G8PZT:14c0");
+        evt.Local.Should().Be("G8PZT-4:0001");
+        evt.Reason.Should().BeNull();
+
+        parsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Should_Deserialize_Circuit_Disconnection_Event_With_Reason()
+    {
+        // Test CircuitDisconnectionEvent with optional reason field
+        var json = """
+        {
+        "@type": "CircuitDownEvent",
+        "node": "G8PZT",
+        "id": 12,
+        "direction": "outgoing",
+        "service": 1,
+        "remote": "M0ABC@M0ABC:1234",
+        "local": "G8PZT:0007",
+        "reason": "Timeout"
+        }
+        """;
+        //
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var evt = datagramUntyped.Should().BeOfType<CircuitDisconnectionEvent>().Subject;
+
+        // Assert
+        evt.DatagramType.Should().Be("CircuitDownEvent");
+        evt.Node.Should().Be("G8PZT");
+        evt.Id.Should().Be(12);
+        evt.Direction.Should().Be("outgoing");
+        evt.Service.Should().Be(1);
+        evt.Remote.Should().Be("M0ABC@M0ABC:1234");
+        evt.Local.Should().Be("G8PZT:0007");
+        evt.Reason.Should().Be("Timeout");
+
+        parsed.Should().BeTrue();
+    }
+
+    #endregion
 }
