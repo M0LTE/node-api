@@ -1,6 +1,7 @@
 using MQTTnet;
 using MQTTnet.Client;
 using MQTTnet.Extensions.ManagedClient;
+using MQTTnet.Formatter;
 using node_api.Models;
 using System.Net;
 using System.Net.Sockets;
@@ -52,6 +53,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
                 .WithTcpServer("node-api.m0ouk.compute.oarc.uk", 1883)
                 .WithCredentials("writer", Environment.GetEnvironmentVariable("MQTT_WRITER_PASSWORD") ?? throw new InvalidOperationException("MQTT_WRITER_PASSWORD environment variable is not set"))
                 .WithCleanSession(true)
+                .WithProtocolVersion(MqttProtocolVersion.V500)
                 .Build())
             .Build();
         await mqttClient.StartAsync(options);
@@ -92,6 +94,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
             while (!stoppingToken.IsCancellationRequested)
             {
                 var result = await _udpClient.ReceiveAsync(stoppingToken).ConfigureAwait(false);
+                _logger.LogInformation("Received datagram from {ip}", result.RemoteEndPoint.Address.ToString());
                 await ProcessDatagramAsync(result, stoppingToken).ConfigureAwait(false);
             }
         }
@@ -125,6 +128,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
 
             if (UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var frame, out var jsonException)) 
             {
+                _logger.LogInformation("Deserialized datagram from {Endpoint} as type {Type}", result.RemoteEndPoint, frame?.DatagramType);
                 await _channelWriter.WriteAsync((frame ?? throw new InvalidOperationException("frame was null"), result.RemoteEndPoint), stoppingToken).ConfigureAwait(false);
             }
             else
@@ -143,6 +147,8 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
                 }
                 else
                 {
+                    _logger.LogWarning("Received unknown datagram type from {Endpoint}: {Json}", result.RemoteEndPoint, json);
+
                     var unknownTypeMessage = new MqttApplicationMessageBuilder()
                         .WithTopic(badTypeTopic)
                         .WithPayload(json)
@@ -207,6 +213,8 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
 
     private async Task HandleFrame(UdpNodeInfoJsonDatagramWrapper wrappedFrame, IPEndPoint remoteEndPoint, CancellationToken cancellationToken)
     {
+        _logger.LogInformation("Handling frame of type {Type} from {RemoteEndPoint}", wrappedFrame.Datagram.DatagramType, remoteEndPoint);
+
         try
         {
             var frame = wrappedFrame.Datagram;
@@ -215,13 +223,18 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
 
             var payload = JsonSerializer.SerializeToUtf8Bytes(frame, frame.GetType(), options);
 
+            var topic = outTopicPrefix + "/" + wrappedFrame.Datagram.DatagramType;
+
             var message = new MqttApplicationMessageBuilder()
-                .WithTopic(outTopicPrefix + "/" + wrappedFrame.Datagram.DatagramType)
+                .WithTopic(topic)
                 .WithPayload(payload)
                 .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
+                .WithUserProperty("type", wrappedFrame.Datagram.DatagramType)
                 .Build();
 
             await mqttClient!.EnqueueAsync(message);
+
+            _logger.LogInformation("EnqueueAsync frame of type {Type} from {RemoteEndPoint} to topic {topic}", wrappedFrame.Datagram.DatagramType, remoteEndPoint, topic);
         }
         catch (Exception ex)
         {

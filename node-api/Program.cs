@@ -6,6 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
+builder.Services.AddHostedService<DbWriter>();
 builder.Services.AddHostedService<UdpNodeInfoListener>();
 builder.Services.AddSingleton<FramesRepo>();
 
