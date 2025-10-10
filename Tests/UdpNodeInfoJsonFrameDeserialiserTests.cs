@@ -13,7 +13,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         // Arrange
         var json = """
         {
-            "@type": "l2trace",
+            "@type": "L2Trace",
+            "from": "G9XXX",
             "port": "2",
             "srce": "G8PZT-9",
             "dest": "KIDDER",
@@ -30,7 +31,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert
-        frame.DatagramType.Should().Be("l2trace");
+        frame.DatagramType.Should().Be("L2Trace");
         frame.Port.Should().Be("2");
         frame.Source.Should().Be("G8PZT-9");
         frame.Destination.Should().Be("KIDDER");
@@ -49,7 +50,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         // Arrange
         var json = """
         {
-        "@type": "l2trace",
+        "@type": "L2Trace",
+        "from": "G9XXX",
         "port": "2",
         "srce": "G8PZT",
         "dest": "G8PZT-1",
@@ -94,7 +96,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var frame = frameUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert
-        frame.DatagramType.Should().Be("l2trace");
+        frame.DatagramType.Should().Be("L2Trace");
         frame.Port.Should().Be("2");
         frame.Source.Should().Be("G8PZT");
         frame.Destination.Should().Be("G8PZT-1");
@@ -149,7 +151,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         // Example from specification section 1.1
         var json = """
         {
-        "@type": "l2trace",
+        "@type": "L2Trace",
+        "from": "G9XXX",
         "port": "1",
         "srce": "G8PZT-1",
         "dest": "ID",
@@ -168,7 +171,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert
-        frame.DatagramType.Should().Be("l2trace");
+        frame.DatagramType.Should().Be("L2Trace");
         frame.Port.Should().Be("1");
         frame.Source.Should().Be("G8PZT-1");
         frame.Destination.Should().Be("ID");
@@ -189,7 +192,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         // Example from specification section 1.1
         var json = """
         {
-        "@type": "l2trace",
+        "@type": "L2Trace",
+        "from": "G9XXX",
         "port": "8",
         "srce": "G8PZT-1",
         "dest": "G8PZT-14",
@@ -206,7 +210,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert
-        frame.DatagramType.Should().Be("l2trace");
+        frame.DatagramType.Should().Be("L2Trace");
         frame.Port.Should().Be("8");
         frame.Source.Should().Be("G8PZT-1");
         frame.Destination.Should().Be("G8PZT-14");
@@ -225,7 +229,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         // Example from specification section 1.1
         var json = """
         {
-        "@type": "l2trace",
+        "@type": "L2Trace",
+        "from": "G9XXX",
         "port": "8",
         "srce": "G8PZT-14",
         "dest": "G8PZT-1",
@@ -242,7 +247,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert
-        frame.DatagramType.Should().Be("l2trace");
+        frame.DatagramType.Should().Be("L2Trace");
         frame.Port.Should().Be("8");
         frame.Source.Should().Be("G8PZT-14");
         frame.Destination.Should().Be("G8PZT-1");
@@ -261,7 +266,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         // Example from specification section 1.1
         var json = """
         {
-        "@type": "l2trace",
+        "@type": "L2Trace",
+        "from": "G9XXX",
         "port": "2",
         "srce": "G8PZT-11",
         "dest": "KIDDER-1",
@@ -282,7 +288,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert
-        frame.DatagramType.Should().Be("l2trace");
+        frame.DatagramType.Should().Be("L2Trace");
         frame.Port.Should().Be("2");
         frame.Source.Should().Be("G8PZT-11");
         frame.Destination.Should().Be("KIDDER-1");
@@ -305,7 +311,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         // Example from specification section 1.1
         var json = """
         {
-        "@type": "l2trace",
+        "@type": "L2Trace",
+        "from": "G9XXX",
         "port": "2",
         "srce": "G8PZT-1",
         "dest": "G8PZT",
@@ -322,7 +329,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert
-        frame.DatagramType.Should().Be("l2trace");
+        frame.DatagramType.Should().Be("L2Trace");
         frame.Port.Should().Be("2");
         frame.Source.Should().Be("G8PZT-1");
         frame.Destination.Should().Be("G8PZT");
@@ -341,7 +348,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         // Example from specification section 1.1
         var json = """
         {
-        "@type": "l2trace",
+        "@type": "L2Trace",
+        "from": "G9XXX",
         "port": "2",
         "srce": "G8PZT-1",
         "dest": "QST",
@@ -360,7 +368,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert
-        frame.DatagramType.Should().Be("l2trace");
+        frame.DatagramType.Should().Be("L2Trace");
         frame.Port.Should().Be("2");
         frame.Source.Should().Be("G8PZT-1");
         frame.Destination.Should().Be("QST");
@@ -385,7 +393,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         // Example from specification section 2.1.1
         var json = """
         {
-        "@type": "l2trace",
+        "@type": "L2Trace",
+        "from": "G9XXX",
         "port": "2",
         "srce": "G8PZT-1",
         "dest": "G8PZT",
@@ -415,7 +424,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert L2 fields
-        frame.DatagramType.Should().Be("l2trace");
+        frame.DatagramType.Should().Be("L2Trace");
         frame.Port.Should().Be("2");
         frame.Source.Should().Be("G8PZT-1");
         frame.Destination.Should().Be("G8PZT");
@@ -449,7 +458,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         // Example from specification section 2.1.1
         var json = """
         {
-        "@type": "l2trace",
+        "@type": "L2Trace",
+        "from": "G9XXX",
         "l3type": "NetRom",
         "l3src": "G8PZT",
         "l3dst": "G8PZT-1",
@@ -473,7 +483,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert L2 fields
-        frame.DatagramType.Should().Be("l2trace");
+        frame.DatagramType.Should().Be("L2Trace");
         frame.Port.Should().Be("1");
         frame.Source.Should().Be("G8PZT");
         frame.Destination.Should().Be("G8PZT-1");
@@ -501,7 +511,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         // Example from specification section 2.1.1 (modified to include required L2 fields)
         var json = """
         {
-        "@type": "l2trace",
+        "@type": "L2Trace",
+        "from": "G9XXX",
         "l3type": "NetRom",
         "l3src": "G8PZT",
         "l3dst": "G8PZT-1",
@@ -510,7 +521,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         "toCct": 4,
         "txSeq": 0,
         "rxSeq": 1,
-        "infoLen": 236,
+        "paylen": 236,
         "port": "1",
         "srce": "G8PZT",
         "dest": "G8PZT-1",
@@ -526,7 +537,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert L2 fields
-        frame.DatagramType.Should().Be("l2trace");
+        frame.DatagramType.Should().Be("L2Trace");
         frame.Port.Should().Be("1");
         frame.Source.Should().Be("G8PZT");
         frame.Destination.Should().Be("G8PZT-1");
@@ -555,7 +566,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         // Example from specification section 2.1.1 (modified to include required L2 fields)
         var json = """
         {
-        "@type": "l2trace",
+        "@type": "L2Trace",
+        "from": "G9XXX",
         "l3type": "NetRom",
         "l3src": "G8PZT-1",
         "l3dst": "G8PZT",
@@ -578,7 +590,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert L2 fields
-        frame.DatagramType.Should().Be("l2trace");
+        frame.DatagramType.Should().Be("L2Trace");
         frame.Port.Should().Be("1");
         frame.Source.Should().Be("G8PZT-1");
         frame.Destination.Should().Be("G8PZT");
@@ -605,7 +617,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         // Example from specification section 2.1.1 (modified to include required L2 fields)
         var json = """
         {
-        "@type": "l2trace",
+        "@type": "L2Trace",
+        "from": "G9XXX",
         "l3type": "NetRom",
         "l3src": "G8PZT",
         "l3dst": "G8PZT-1",
@@ -627,7 +640,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert L2 fields
-        frame.DatagramType.Should().Be("l2trace");
+        frame.DatagramType.Should().Be("L2Trace");
         frame.Port.Should().Be("1");
         frame.Source.Should().Be("G8PZT");
         frame.Destination.Should().Be("G8PZT-1");
@@ -653,7 +666,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         // Example from specification section 2.1.1 (modified to include required L2 fields)
         var json = """
         {
-        "@type": "l2trace",
+        "@type": "L2Trace",
+        "from": "G9XXX",
         "l3type": "NetRom",
         "l3src": "G8PZT-1",
         "l3dst": "G8PZT",
@@ -675,7 +689,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert L2 fields
-        frame.DatagramType.Should().Be("l2trace");
+        frame.DatagramType.Should().Be("L2Trace");
         frame.Port.Should().Be("1");
         frame.Source.Should().Be("G8PZT-1");
         frame.Destination.Should().Be("G8PZT");
@@ -705,7 +719,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         // Example from specification section 2.2.2
         var json = """
         {
-        "@type": "l2trace",
+        "@type": "L2Trace",
+        "from": "G9XXX",
         "l3Type": "Routing info",
         "type": "INP3",
         "nodes": [
@@ -729,7 +744,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
            "isNode": false,
            "isXRCHAT": true,
            "isRTCHAT": true,
-           "localTime": "2025-10-07T03:43:04Z"
+           "timestamp": "2025-10-07T03:43:04Z"
            }
         ],
         "port": "1",
@@ -748,7 +763,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert L2 fields
-        frame.DatagramType.Should().Be("l2trace");
+        frame.DatagramType.Should().Be("L2Trace");
         frame.Port.Should().Be("1");
         frame.Source.Should().Be("G8PZT");
         frame.Destination.Should().Be("NODES");
@@ -801,7 +816,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         // Test NetRom routing info frame
         var json = """
         {
-        "@type": "l2trace",
+        "@type": "L2Trace",
+        "from": "G9XXX",
         "port": "1",
         "srce": "G8PZT-1",
         "dest": "NODES",
@@ -838,7 +854,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert L2 fields
-        frame.DatagramType.Should().Be("l2trace");
+        frame.DatagramType.Should().Be("L2Trace");
         frame.Port.Should().Be("1");
         frame.Source.Should().Be("G8PZT-1");
         frame.Destination.Should().Be("NODES");
@@ -924,7 +940,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         // Arrange
         var json = """
         {
-        "@type": "l2trace",
+        "@type": "L2Trace",
+        "from": "G9XXX",
         "port": "2",
         "srce": "G8PZT-1",
         "dest": "KIDDER-1",
