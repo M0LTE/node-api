@@ -11,7 +11,6 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddHostedService<DbWriter>();
 builder.Services.AddHostedService<UdpNodeInfoListener>();
-builder.Services.AddSingleton<FramesRepo>();
 
 var app = builder.Build();
 

@@ -15,7 +15,6 @@ namespace node_api.Services;
 public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
 {
     private readonly ILogger<UdpNodeInfoListener> _logger;
-    private readonly FramesRepo _framesRepo;
     private readonly Channel<(UdpNodeInfoJsonDatagram Frame, IPEndPoint RemoteEndPoint)> _processingChannel;
     private readonly ChannelWriter<(UdpNodeInfoJsonDatagram Frame, IPEndPoint RemoteEndPoint)> _channelWriter;
     private readonly SemaphoreSlim _processingSemaphore;
@@ -27,10 +26,9 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
     public int MaxConcurrentProcessing { get; set; } = 100;
     public TimeSpan ReconnectDelay { get; set; } = TimeSpan.FromSeconds(5);
 
-    public UdpNodeInfoListener(ILogger<UdpNodeInfoListener> logger, FramesRepo framesRepo)
+    public UdpNodeInfoListener(ILogger<UdpNodeInfoListener> logger)
     {
         _logger = logger;
-        _framesRepo = framesRepo;
         var channelOptions = new BoundedChannelOptions(MaxConcurrentProcessing * 2)
         {
             FullMode = BoundedChannelFullMode.Wait,
@@ -218,8 +216,6 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
         try
         {
             var frame = wrappedFrame.Datagram;
-
-            _framesRepo.Frames.Add(frame);
 
             var payload = JsonSerializer.SerializeToUtf8Bytes(frame, frame.GetType(), options);
 

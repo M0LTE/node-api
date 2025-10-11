@@ -17,7 +17,7 @@ public class TracesController : ControllerBase
         [FromQuery] string? dest,
         [FromQuery] DateTimeOffset? from,  // accepts ISO8601; stored column is DATETIME
         [FromQuery] DateTimeOffset? to,
-        [FromQuery] string? l3type,
+        [FromQuery] string? type,
         [FromQuery] int limit = 100,
         [FromQuery] string? cursor = null,
         CancellationToken ct = default)
@@ -38,10 +38,10 @@ public class TracesController : ControllerBase
             p.Add("dest", dest);
         }
 
-        if (!string.IsNullOrWhiteSpace(l3type))
+        if (!string.IsNullOrWhiteSpace(type))
         {
-            where.Add("`l3type_idx` = @l3type");
-            p.Add("l3type", l3type);
+            where.Add("`type_idx` = @type");
+            p.Add("type", type);
         }
 
         if (from.HasValue)
