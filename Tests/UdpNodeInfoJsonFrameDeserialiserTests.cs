@@ -1315,7 +1315,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         "id": 1,
         "direction": "incoming",
         "service": 0,
-        "remote": "G8PZT@G8PZT:14c0",
+        "remote": "G8PZT@G8PZT:1ba8",
         "local": "G8PZT-4:0001"
         }
         """;
@@ -1330,7 +1330,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         evt.Id.Should().Be(1);
         evt.Direction.Should().Be("incoming");
         evt.Service.Should().Be(0);
-        evt.Remote.Should().Be("G8PZT@G8PZT:14c0");
+        evt.Remote.Should().Be("G8PZT@G8PZT:1ba8");
         evt.Local.Should().Be("G8PZT-4:0001");
 
         parsed.Should().BeTrue();
@@ -1379,7 +1379,12 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         "direction": "incoming",
         "service": 0,
         "remote": "G8PZT@G8PZT:14c0",
-        "local": "G8PZT-4:0001"
+        "local": "G8PZT-4:0001",
+        "segsSent": 5,
+        "segsRcvd": 27,
+        "segsResent": 0,
+        "segsQueued": 0,
+        "reason": "rcvd DREQ"
         }
         """;
         //
@@ -1395,7 +1400,11 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         evt.Service.Should().Be(0);
         evt.Remote.Should().Be("G8PZT@G8PZT:14c0");
         evt.Local.Should().Be("G8PZT-4:0001");
-        evt.Reason.Should().BeNull();
+        evt.SegsSent.Should().Be(5);
+        evt.SegsRcvd.Should().Be(27);
+        evt.SegsResent.Should().Be(0);
+        evt.SegsQueued.Should().Be(0);
+        evt.Reason.Should().Be("rcvd DREQ");
 
         parsed.Should().BeTrue();
     }
@@ -1413,6 +1422,10 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         "service": 1,
         "remote": "M0ABC@M0ABC:1234",
         "local": "G8PZT:0007",
+        "segsSent": 42,
+        "segsRcvd": 38,
+        "segsResent": 2,
+        "segsQueued": 1,
         "reason": "Timeout"
         }
         """;
@@ -1429,7 +1442,90 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         evt.Service.Should().Be(1);
         evt.Remote.Should().Be("M0ABC@M0ABC:1234");
         evt.Local.Should().Be("G8PZT:0007");
+        evt.SegsSent.Should().Be(42);
+        evt.SegsRcvd.Should().Be(38);
+        evt.SegsResent.Should().Be(2);
+        evt.SegsQueued.Should().Be(1);
         evt.Reason.Should().Be("Timeout");
+
+        parsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Should_Deserialize_Spec_Example_L4_Circuit_Status_Report()
+    {
+        // Example from specification section 3.9
+        var json = """
+        {
+        "@type": "CircuitStatus",
+        "node": "G8PZT-1",
+        "direction": "incoming",
+        "id": 1,
+        "service": 0,
+        "remote": "G8PZT@G8PZT:1ba8",
+        "local": "G8PZT-4:0001",
+        "segsRcvd": 20,
+        "segsSent": 6,
+        "segsResent": 0,
+        "segsQueued": 0
+        }
+        """;
+        //
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var evt = datagramUntyped.Should().BeOfType<CircuitStatus>().Subject;
+
+        // Assert
+        evt.DatagramType.Should().Be("CircuitStatus");
+        evt.Node.Should().Be("G8PZT-1");
+        evt.Id.Should().Be(1);
+        evt.Direction.Should().Be("incoming");
+        evt.Service.Should().Be(0);
+        evt.Remote.Should().Be("G8PZT@G8PZT:1ba8");
+        evt.Local.Should().Be("G8PZT-4:0001");
+        evt.SegsRcvd.Should().Be(20);
+        evt.SegsSent.Should().Be(6);
+        evt.SegsResent.Should().Be(0);
+        evt.SegsQueued.Should().Be(0);
+
+        parsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Should_Deserialize_Circuit_Status_Report_Without_Optional_Service()
+    {
+        // Test CircuitStatus without optional service field
+        var json = """
+        {
+        "@type": "CircuitStatus",
+        "node": "M0LTE",
+        "id": 42,
+        "direction": "outgoing",
+        "remote": "G8PZT@G8PZT:2000",
+        "local": "M0LTE:0010",
+        "segsSent": 100,
+        "segsRcvd": 95,
+        "segsResent": 3,
+        "segsQueued": 1
+        }
+        """;
+        //
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var evt = datagramUntyped.Should().BeOfType<CircuitStatus>().Subject;
+
+        // Assert
+        evt.DatagramType.Should().Be("CircuitStatus");
+        evt.Node.Should().Be("M0LTE");
+        evt.Id.Should().Be(42);
+        evt.Direction.Should().Be("outgoing");
+        evt.Service.Should().BeNull();
+        evt.Remote.Should().Be("G8PZT@G8PZT:2000");
+        evt.Local.Should().Be("M0LTE:0010");
+        evt.SegsSent.Should().Be(100);
+        evt.SegsRcvd.Should().Be(95);
+        evt.SegsResent.Should().Be(3);
+        evt.SegsQueued.Should().Be(1);
 
         parsed.Should().BeTrue();
     }

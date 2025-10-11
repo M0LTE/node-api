@@ -40,6 +40,7 @@ public static class UdpNodeInfoJsonDatagramDeserialiser
                 "LinkStatus" => JsonSerializer.Deserialize<LinkStatus>(json, options),
                 "CircuitUpEvent" => JsonSerializer.Deserialize<CircuitUpEvent>(json, options),
                 "CircuitDownEvent" => JsonSerializer.Deserialize<CircuitDisconnectionEvent>(json, options),
+                "CircuitStatus" => JsonSerializer.Deserialize<CircuitStatus>(json, options),
                 _ => null
             };
             jsonException = null;
