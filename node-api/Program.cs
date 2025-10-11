@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.HttpOverrides;
-using node_api;
 using node_api.Services;
 using Scalar.AspNetCore;
 using System.Net;
@@ -25,7 +24,7 @@ options.KnownNetworks.Add(new IPNetwork(IPAddress.Parse("172.17.0.0"), 16));
 app.UseForwardedHeaders(options);
 app.MapOpenApi();
 app.MapScalarApiReference();
-app.MapGet("/", () => "OK");
+app.MapGet("/", () => Results.Redirect("/scalar"));
 app.UseAuthorization();
 app.MapControllers();
 
