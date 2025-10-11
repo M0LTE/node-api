@@ -49,6 +49,30 @@ public record LinkDisconnectionEvent : UdpNodeInfoJsonDatagram
     public required string Local { get; init; }
 
     /// <summary>
+    /// Total frames sent since link creation (Required)
+    /// </summary>
+    [JsonPropertyName("frmsSent")]
+    public required int FramesSent { get; init; }
+
+    /// <summary>
+    /// Total frames received since link creation (Required)
+    /// </summary>
+    [JsonPropertyName("frmsRcvd")]
+    public required int FramesReceived { get; init; }
+
+    /// <summary>
+    /// Total frames re-sent (Required)
+    /// </summary>
+    [JsonPropertyName("frmsResent")]
+    public required int FramesResent { get; init; }
+
+    /// <summary>
+    /// Current TX queue length (Required)
+    /// </summary>
+    [JsonPropertyName("frmsQueued")]
+    public required int FramesQueued { get; init; }
+
+    /// <summary>
     /// Reason for disconnect, e.g. "Retried out" (Optional)
     /// </summary>
     [JsonPropertyName("reason")]

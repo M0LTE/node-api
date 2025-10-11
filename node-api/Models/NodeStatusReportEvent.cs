@@ -58,5 +58,5 @@ public record NodeStatusReportEvent : UdpNodeInfoJsonDatagram
     /// Node's uptime in seconds (Required)
     /// </summary>
     [JsonPropertyName("uptimeSecs")]
-    public int UptimeSecs { get; init; }
+    public required int UptimeSecs { get; init; }
 }

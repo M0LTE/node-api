@@ -53,10 +53,10 @@ public record L2Trace : UdpNodeInfoJsonDatagram
     public required string CommandResponse { get; init; }
 
     /// <summary>
-    /// AX25 modulo (8 or 128)
+    /// AX.25 modulo (8 or 128)
     /// </summary>
     [JsonPropertyName("modulo")]
-    public required int? Modulo { get; init; }
+    public required int Modulo { get; init; }
 
     /// <summary>
     /// List of digipeater calls (Optional)
@@ -294,31 +294,31 @@ public record L2Trace : UdpNodeInfoJsonDatagram
         public required string Callsign { get; init; }
 
         /// <summary>
-        /// Destination node's alias (Optional)
+        /// Destination node's alias (Required for NETROM, Optional for INP3)
         /// </summary>
         [JsonPropertyName("alias")]
         public string? Alias { get; init; }
 
         /// <summary>
-        /// Callsign of next hop (Optional - NetRom routing only)
+        /// Callsign of next hop (Required for NetRom routing)
         /// </summary>
         [JsonPropertyName("via")]
         public string? Via { get; init; }
 
         /// <summary>
-        /// Route "quality" (0-255) (Optional - NetRom routing only)
+        /// Route "quality" (0-255) (Required for NetRom routing)
         /// </summary>
         [JsonPropertyName("qual")]
         public int? Quality { get; init; }
 
         /// <summary>
-        /// Number of hops to the destination (Optional - INP3 routing)
+        /// Number of hops to the destination (Required for INP3 routing)
         /// </summary>
         [JsonPropertyName("hops")]
         public int? Hops { get; init; }
 
         /// <summary>
-        /// One way trip time in 10ms increments (Optional - INP3 routing)
+        /// One way trip time in 10ms increments (Required for INP3 routing)
         /// </summary>
         [JsonPropertyName("tt")]
         public int? OneWayTripTimeIn10msIncrements { get; init; }

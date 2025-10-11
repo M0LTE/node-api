@@ -1200,7 +1200,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
     [Fact]
     public void Should_Deserialize_Spec_Example_Outgoing_AX25_Disconnection_Event()
     {
-        // Example from specification section 3.9
+        // Example from specification section 3.10 (note: spec example is incomplete, missing required fields)
         var json = """
         {
         "@type": "LinkDownEvent",
@@ -1209,7 +1209,11 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         "direction": "outgoing",
         "port": "2",
         "remote": "KIDDER-1",
-        "local": "G8PZT-11"
+        "local": "G8PZT-11",
+        "frmsSent": 0,
+        "frmsRcvd": 0,
+        "frmsResent": 0,
+        "frmsQueued": 0
         }
         """;
         //
@@ -1225,6 +1229,10 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         evt.Port.Should().Be("2");
         evt.Remote.Should().Be("KIDDER-1");
         evt.Local.Should().Be("G8PZT-11");
+        evt.FramesSent.Should().Be(0);
+        evt.FramesReceived.Should().Be(0);
+        evt.FramesResent.Should().Be(0);
+        evt.FramesQueued.Should().Be(0);
         evt.Reason.Should().BeNull();
 
         parsed.Should().BeTrue();
@@ -1243,6 +1251,10 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         "port": "4",
         "remote": "M0ABC",
         "local": "G8PZT-1",
+        "frmsSent": 100,
+        "frmsRcvd": 95,
+        "frmsResent": 3,
+        "frmsQueued": 1,
         "reason": "Retried out"
         }
         """;
@@ -1259,6 +1271,10 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         evt.Port.Should().Be("4");
         evt.Remote.Should().Be("M0ABC");
         evt.Local.Should().Be("G8PZT-1");
+        evt.FramesSent.Should().Be(100);
+        evt.FramesReceived.Should().Be(95);
+        evt.FramesResent.Should().Be(3);
+        evt.FramesQueued.Should().Be(1);
         evt.Reason.Should().Be("Retried out");
 
         parsed.Should().BeTrue();
