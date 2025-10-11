@@ -17,6 +17,7 @@ public class TracesController : ControllerBase
         [FromQuery] string? dest,
         [FromQuery] DateTimeOffset? from,  // accepts ISO8601; stored column is DATETIME
         [FromQuery] DateTimeOffset? to,
+        [FromQuery] string? l3type,
         [FromQuery] int limit = 100,
         [FromQuery] string? cursor = null,
         CancellationToken ct = default)
@@ -36,6 +37,13 @@ public class TracesController : ControllerBase
             where.Add("`dest_idx` = @dest");
             p.Add("dest", dest);
         }
+
+        if (!string.IsNullOrWhiteSpace(l3type))
+        {
+            where.Add("`l3type_idx` = @l3type");
+            p.Add("l3type", l3type);
+        }
+
         if (from.HasValue)
         {
             where.Add("`timestamp` >= @from");
@@ -57,6 +65,17 @@ public class TracesController : ControllerBase
             p.Add("cts", tsLast);
             p.Add("cid", idLast);
         }
+
+        /*
+ALTER TABLE `traces`
+  ADD COLUMN `srce_idx` VARCHAR(32)
+    GENERATED ALWAYS AS (JSON_VALUE(`json`, '$.srce')) PERSISTENT INVISIBLE,
+  ADD COLUMN `dest_idx` VARCHAR(32)
+    GENERATED ALWAYS AS (JSON_VALUE(`json`, '$.dest')) PERSISTENT INVISIBLE;
+
+CREATE INDEX ix_traces_srce_dest_ts ON `traces` (`srce_idx`, `dest_idx`, `timestamp`);
+CREATE INDEX ix_traces_ts_id       ON `traces` (`timestamp` DESC, `id` DESC);
+         */
 
         var sql = $@"
             SELECT
