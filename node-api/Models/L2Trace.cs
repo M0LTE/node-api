@@ -238,6 +238,18 @@ public record L2Trace : UdpNodeInfoJsonDatagram
     public bool? MoreFlag { get; init; }
 
     /// <summary>
+    /// ID for the NRR request
+    /// </summary>
+    [JsonPropertyName("nrrId")]
+    public int? NrrId { get; init; }
+
+    /// <summary>
+    /// List of calls traversed by NRR
+    /// </summary>
+    [JsonPropertyName("nrrRoute")]
+    public string? NrrRoute { get; init; }
+
+    /// <summary>
     /// Routing info type: "NETROM" or "INP3" (Optional - Routing)
     /// Only present if l3type is "Routing info".
     /// </summary>
