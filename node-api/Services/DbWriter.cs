@@ -73,8 +73,11 @@ public class DbWriter(ILogger<DbWriter> logger) : IHostedService
 
     private async Task SaveInputMessage(MqttApplicationMessageReceivedEventArgs args)
     {
+        logger.LogInformation("Received errored message: {topic} {payload}", args.ApplicationMessage.Topic, args.ApplicationMessage.ConvertPayloadToString());
+
         if (!args.ApplicationMessage.Topic.StartsWith("in/udp/errored/"))
         {
+            logger.LogWarning("Ignoring message on unexpected topic: {topic}", args.ApplicationMessage.Topic);
             return;
         }
 
@@ -84,24 +87,25 @@ public class DbWriter(ILogger<DbWriter> logger) : IHostedService
 
             if (reason == "validation")
             {
+                logger.LogInformation("Deserializing validation error");
                 var obj = JsonSerializer.Deserialize<ValidationError>(args.ApplicationMessage.ConvertPayloadToString())
                     ?? throw new Exception("Failed to deserialize validation error");
 
                 using var connection = Database.GetConnection();
                 await connection.ExecuteAsync(
-                    "INSERT INTO errored_messages (reason, datagram, type, errors, json) VALUES (@reason, @datagram, @type, @errors, @json)",
+                    "INSERT INTO errored_messages (reason, datagram, type, errors) VALUES (@reason, @datagram, @type, @errors)",
                     new
                     {
                         reason,
                         obj.Datagram,
                         obj.Type,
                         errors = string.Join("; ", obj.Errors.Select(e => $"{e.Property}: {e.Error}")),
-                        type = "validation",
-                        json = args.ApplicationMessage.ConvertPayloadToString()
                     });
             }
             else
             {
+                logger.LogInformation("Saving generic errored message");
+
                 using var connection = Database.GetConnection();
                 await connection.ExecuteAsync(
                     "INSERT INTO errored_messages (reason, json) VALUES (@reason, @json)",
