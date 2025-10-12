@@ -13,21 +13,24 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 // Register FluentValidation validators
-builder.Services.AddScoped<IValidator<L2Trace>, L2TraceValidator>();
-builder.Services.AddScoped<IValidator<NodeUpEvent>, NodeUpEventValidator>();
-builder.Services.AddScoped<IValidator<NodeDownEvent>, NodeDownEventValidator>();
-builder.Services.AddScoped<IValidator<NodeStatusReportEvent>, NodeStatusReportEventValidator>();
-builder.Services.AddScoped<IValidator<LinkUpEvent>, LinkUpEventValidator>();
-builder.Services.AddScoped<IValidator<LinkDisconnectionEvent>, LinkDisconnectionEventValidator>();
-builder.Services.AddScoped<IValidator<LinkStatus>, LinkStatusValidator>();
-builder.Services.AddScoped<IValidator<CircuitUpEvent>, CircuitUpEventValidator>();
-builder.Services.AddScoped<IValidator<CircuitDisconnectionEvent>, CircuitDisconnectionEventValidator>();
-builder.Services.AddScoped<IValidator<CircuitStatus>, CircuitStatusValidator>();
+builder.Services.AddSingleton<IValidator<L2Trace>, L2TraceValidator>();
+builder.Services.AddSingleton<IValidator<NodeUpEvent>, NodeUpEventValidator>();
+builder.Services.AddSingleton<IValidator<NodeDownEvent>, NodeDownEventValidator>();
+builder.Services.AddSingleton<IValidator<NodeStatusReportEvent>, NodeStatusReportEventValidator>();
+builder.Services.AddSingleton<IValidator<LinkUpEvent>, LinkUpEventValidator>();
+builder.Services.AddSingleton<IValidator<LinkDisconnectionEvent>, LinkDisconnectionEventValidator>();
+builder.Services.AddSingleton<IValidator<LinkStatus>, LinkStatusValidator>();
+builder.Services.AddSingleton<IValidator<CircuitUpEvent>, CircuitUpEventValidator>();
+builder.Services.AddSingleton<IValidator<CircuitDisconnectionEvent>, CircuitDisconnectionEventValidator>();
+builder.Services.AddSingleton<IValidator<CircuitStatus>, CircuitStatusValidator>();
 
 // Register validation service
-builder.Services.AddScoped<DatagramValidationService>();
+builder.Services.AddSingleton<DatagramValidationService>();
 
-builder.Services.AddHostedService<DbWriter>();
+if (Environment.MachineName == "node-api")
+{
+    builder.Services.AddHostedService<DbWriter>();
+}
 builder.Services.AddHostedService<UdpNodeInfoListener>();
 
 var app = builder.Build();
