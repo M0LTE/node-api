@@ -455,7 +455,7 @@ About This Document
 
       Name  Required  Type     Description
       --------------------------------------------------------------
-      "type"       Y  String   Routing info type: "NETROM" or "INP3"
+      "type"       Y  String   Routing info type: "NODES" or "INP3"
 
 2.2.1.  NetRom Routing Info
 
@@ -464,7 +464,7 @@ About This Document
 
       Name  Required  Type     Description
       ---------------------------------------------------
-      "type"       Y  String   Routing info type: "NETROM"
+      "type"       Y  String   Routing info type: "NODES"
       "fromAlias"  Y  String   Sender's alias
       "nodes"      Y  Array    One or more destination nodes
 

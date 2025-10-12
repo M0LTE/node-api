@@ -3,6 +3,7 @@ using MQTTnet.Client;
 using MQTTnet.Extensions.ManagedClient;
 using MQTTnet.Formatter;
 using node_api.Models;
+using node_api.Validators;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -15,6 +16,7 @@ namespace node_api.Services;
 public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
 {
     private readonly ILogger<UdpNodeInfoListener> _logger;
+    private readonly DatagramValidationService _validationService;
     private readonly Channel<(UdpNodeInfoJsonDatagram Frame, IPEndPoint RemoteEndPoint)> _processingChannel;
     private readonly ChannelWriter<(UdpNodeInfoJsonDatagram Frame, IPEndPoint RemoteEndPoint)> _channelWriter;
     private readonly SemaphoreSlim _processingSemaphore;
@@ -26,9 +28,12 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
     public int MaxConcurrentProcessing { get; set; } = 100;
     public TimeSpan ReconnectDelay { get; set; } = TimeSpan.FromSeconds(5);
 
-    public UdpNodeInfoListener(ILogger<UdpNodeInfoListener> logger)
+    public UdpNodeInfoListener(
+        ILogger<UdpNodeInfoListener> logger,
+        DatagramValidationService validationService)
     {
         _logger = logger;
+        _validationService = validationService;
         var channelOptions = new BoundedChannelOptions(MaxConcurrentProcessing * 2)
         {
             FullMode = BoundedChannelFullMode.Wait,
@@ -107,6 +112,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
     const string udpTopic = "in/udp";
     const string badJsonTopic = "in/udp/errored/badjson";
     const string badTypeTopic = "in/udp/errored/badtype";
+    const string validationErrorTopic = "in/udp/errored/validation";
     const string outTopicPrefix = "out";
 
     private async Task ProcessDatagramAsync(UdpReceiveResult result, CancellationToken stoppingToken)
@@ -126,8 +132,42 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
 
             if (UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var frame, out var jsonException)) 
             {
-                _logger.LogInformation("Deserialized datagram from {Endpoint} as type {Type}", result.RemoteEndPoint, frame?.DatagramType);
-                await _channelWriter.WriteAsync((frame ?? throw new InvalidOperationException("frame was null"), result.RemoteEndPoint), stoppingToken).ConfigureAwait(false);
+                // Validate the deserialized datagram
+                var validationResult = _validationService.Validate(frame!);
+                
+                if (!validationResult.IsValid)
+                {
+                    _logger.LogWarning(
+                        "Received invalid datagram from {Endpoint}. Type: {Type}. Errors: {Errors}",
+                        result.RemoteEndPoint,
+                        frame!.DatagramType,
+                        string.Join("; ", validationResult.Errors.Select(e => $"{e.PropertyName}: {e.ErrorMessage}"))
+                    );
+                    
+                    // Publish validation errors to MQTT for monitoring
+                    var validationErrorMessage = new MqttApplicationMessageBuilder()
+                        .WithTopic(validationErrorTopic)
+                        .WithPayload(JsonSerializer.SerializeToUtf8Bytes(new 
+                        { 
+                            datagram = json,
+                            type = frame.DatagramType,
+                            errors = validationResult.Errors.Select(e => new 
+                            { 
+                                property = e.PropertyName, 
+                                error = e.ErrorMessage 
+                            })
+                        }))
+                        .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
+                        .Build();
+                    await mqttClient!.EnqueueAsync(validationErrorMessage);
+                    
+                    return; // Don't process invalid datagrams
+                }
+                
+                // Only process valid datagrams
+                _logger.LogInformation("Deserialized valid datagram from {Endpoint} as type {Type}", 
+                    result.RemoteEndPoint, frame.DatagramType);
+                await _channelWriter.WriteAsync((frame, result.RemoteEndPoint), stoppingToken).ConfigureAwait(false);
             }
             else
             {
@@ -203,6 +243,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
             _logger.LogError(ex, "Error in frame processing loop");
         }
     }
+    
     private static readonly JsonSerializerOptions options = new()
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
