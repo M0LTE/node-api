@@ -1,3 +1,4 @@
+
 Version: 0.6
 Date: 11th October 2025
 Status: Provisional
@@ -454,7 +455,7 @@ About This Document
 
       Name  Required  Type     Description
       --------------------------------------------------------------
-      "type"       Y  String   Routing info type: "NODES" or "INP3"
+      "type"       Y  String   Routing info type: "NETROM" or "INP3"
 
 2.2.1.  NetRom Routing Info
 
@@ -463,7 +464,7 @@ About This Document
 
       Name  Required  Type     Description
       ---------------------------------------------------
-      "type"       Y  String   Routing info type: "NODES"
+      "type"       Y  String   Routing info type: "NETROM"
       "fromAlias"  Y  String   Sender's alias
       "nodes"      Y  Array    One or more destination nodes
 
@@ -502,7 +503,7 @@ About This Document
          ----------------------------------------------------------
          "alias"     N  String   Destination node's alias
          "ipAddr"    N  String   Amprnet IP address of the node
-         "bitMask"   N  Integer  Netmask expressed as number 0-32
+         "bitMask"   N  Integer  Netmask expressed as number 1-32
          "tcpPort"   N  Integer  TCP port for Apmprnet Telnet
          "latitude"  N  Number   In decimal degrees, e.g. 49.407
          "longitude" N  Number   In decimal degrees, e.g. -87.5730

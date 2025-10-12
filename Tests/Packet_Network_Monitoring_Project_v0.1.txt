@@ -1,0 +1,320 @@
+
+Version: 0.1
+Date: 7th October 2025
+Status: Provisional
+Author: Paula Dowie
+
+                Packet Network Monitoring Project
+
+                      JSON Report Format
+
+About This Document
+
+   This document describes the format of the JSON messages sent by
+   XRouter v504j to an experimental server currently hosted by OARC.
+
+   The purpose of the project is to collect such reports from all
+   participating nodes, and make them available for network research,
+   monitoring, and fault tracing.
+
+   Each message or "report" is sent by XRouter upon transmitting or
+   receiving an AX25 frame of any type.  Each report consists of
+   an unnamed JSON object, transported in a UDP datagram.
+
+   Reports have a variable format, depending on the AX25 frame
+   contents.
+
+   It is hoped that, once the format is finalised, all node software
+   will support the project.
+
+   There is no requirement to support all of the fields detailed in
+   this document.
+
+   This is a draft specification.  Comments and suggestions are
+   welcomed.
+
+
+1.  AX25 Layer 2 Trace Fields
+
+   These fields are always present (i.e. "required"):
+
+      Name        Type     Description
+      ----------------------------------------------------
+      "port"      String   Port ID, e.g. "3" or "4mlink"
+      "srce"      String   Source callsign, e.g. "G8PZT-1"
+      "dest"      String   Destination callsign, e.g "M0AHN"
+      "ctrl"      Integer  AX25 control field numeric value. (*1)
+      "l2type"    String   Frame type mnemonic, e.g. "I", "RR" (*2)
+      "cr"        String   Command/Response bit "C", "R", or "V1" (*3)
+
+      (*1) Applications may wish to decode the control field themselves
+           instead of using the decoded "l2type" field.
+
+      (*2) Possible values for the "l2type" string:
+
+         Mnemonic  Meaning
+         ---------------------------------------------------
+         "SABME"   Set Asynchronous Balanced Mode Extended
+         "C"       Non-extended connnect request (AKA SABM)
+         "D"       Disconnect Request
+         "DM"      Disconnected Mode / Busy
+         "UA"      Unnumbered Acknowledgement
+         "UI"      Unnumbered Information frame
+         "I"       Numbered information frame
+         "FRMR"    Frame Reject (serious error)
+         "RR"      Receiver Ready
+         "RNR"     Receiver Not Ready
+         "REJ"     Reject (Frame not the expected one)
+         "?"       Unknown type
+
+      (*3) Possible values for the "cr" (Command/Response) field are
+           as follows:
+
+           "C"    Command
+           "R"    Response
+           "V1"   AX25 version 1
+
+   The following fields are optional, as they only exist in some
+   frame types:
+
+      Name        Type     Description
+      ----------------------------------------------------
+      "digis"     Array    List of digipeater calls (*4)
+      "rseq"      Integer  Receive sequence number (i.e. expected)
+      "tseq"      Integer  Transmit (send) sequence number
+      "pf"        String   Poll/Final bit, either "P" or "F"
+      "pid"       Integer  Next layer protocol number in decimal (*5)
+      "ptcl"      String   Next layer protocol in words (*6)
+      "ilen"      Integer  Length of information field (*7)
+
+    (*4) The "digis" field is only present if there are digipeaters in
+         the destination path.  If present, the field value is a JSON
+         array of digipeater objects.  Each digipeater object contains
+         two fields as follows:
+
+         Name     Type      Comments
+         ---------------------------------------------------------
+         "call"   String    Digipeater's callsign+SSID
+         "rptd"   Boolean   True if digi repeated the packet
+
+    (*5) The "pid" value includes the two high order bits which are
+         usually set to one, but are sometimes used for layer 2
+         fragmentation.
+
+    (*6) Possible values for the "ptcl" (Layer 3 protocol) field:
+
+         Mnemonic    Meaning
+         --------------------------------------------------------
+         "SEG"       Intermediate segment of a fragmented packet
+         "DATA"      No layer 3, i.e. payload contains normal data
+         "NET/ROM"   Payload contains NetRom/INP3 information
+         "IP"        Payload contains IP datagram or part thereof
+         "ARP"       Payload contains ARP data
+         "?"         Unknown layer 3 protocol
+
+    (*7) The "ilen" field is only present in frame types "I" and "UI".
+
+
+2.  Layer 3/4 (NetRom) Trace Fields
+
+   These fields in this section are only present if the "ptcl" value
+   is "NET/ROM".  Some of these fields are only present in a few
+   frame types. 
+
+   This field is always present if "ptcl" is "NET/ROM":
+
+    Field       Type      Comments
+    -----------------------------------------------------------
+    "l3type"    string    Layer 3 frame type (see below)
+
+    Values for "l3type":
+
+         Value           Meaning
+         ------------------------------------------
+         "NetRom"        Netrom L4 control/data
+         "Routing info"  Layer 3 routing data
+         "Routing poll"  Request for nodes broadcast
+         "Unknown"       Future frame types as yet unknown
+
+2.1.  NetRom Tracing
+
+   If the "l3type" field has the value "NetRom", the following fields
+   will be present:
+
+      Name        Type     Description
+      ----------------------------------------------------
+      "l3src"     string    layer 3 source callsign
+      "l3dst"     string    Layer 3 destination callsign
+      "ttl"       integer   Layer 3 Time To Live
+      "l4type"    string    NetRom L4 Frame Type
+
+      Possible values for "l4type":
+
+         Value           Meaning
+         ------------------------------------------
+         "CONN REQ"      Connect Request
+         "CONN REQX"     Extended Connect Request
+         "CONN ACK"      Connection Acknowledgement
+         "CONN NAK"      Connection Negative Ack (refusal)
+         "DISC REQ"      Disconnect request
+         "DISC ACK"      Disconnect Acknowledgement
+         "INFO"          Information-bearing frame
+         "INFO ACK"      Acknowledgement for an INFO frame.
+         "RSET"          Circuit Reset (kill)
+         "PROT EXT"      Protocol Extension (e.g. IP, NCMP etc)
+         "unknown"       Unrecognised type (shouldn't happen)
+
+         PROT EXT indicates that the frame contains something other
+         than Netrom layer 4 control or data.  Tracing for these
+         frames may be added at a later date.
+
+   If "l4type" is NOT "PROT EXT", an assortment of the following fields
+   will be present, depending on the frame type:
+
+      Name        Type     Description
+      ----------------------------------------------------
+      "fromCct"   Integer   Source circuit number (*8)
+      "toCct"     Integer   Destination circuit number (*9)
+      "txSeq"     Integer   Transmit sequence number (*11)
+      "rxSeq"     Integer   Receive sequence number (*12)
+      "infoLen"   Integer   Information length (INFO frames only)
+      "srcUser"   String    Callsign of originating user (*8)
+      "srcNode"   String    Callsign of originating user's node (*8)
+      "service"   Integer   NetRomX service number (*10)
+      "window"    Integer   Proposed window (*8)
+      "accWin"    Integer   Acceptable window ("CONN ACK" only) 
+      "l4t1"      Integer   Layer 4 T1 timer in seconds (*8)
+      "bpqSpy"    Integer   BPQ extension (*8)
+      "chokeFlag" boolean   True if CHOKE flag is set
+      "nakFlag"   boolean   True if NAK flag is set
+      "moreFlag"  boolean   True if MORE flag is set
+
+      (*8) These fields are only present in L4 frame types "CONN REQ"
+           and "CONN REQX".
+
+      (*9) The "toCct" field is only present in L4 frame types
+           "CONN ACK", "INFO", "INFO ACK", "DISC REQ" and "DISC ACK".
+
+      (*10) The "service" field is only present in L4 frame type
+            "CONN REQX".
+
+      (*11) The "txSeq" field is only present in "INFO" frames.
+
+      (*12) The "rxSeq" field is only present in "INFO" and INFO ACK"
+            frames.
+ 
+2.2.  Routing Info Tracing
+
+   The following field is always present if "l3type" has the value
+   "Routing info":
+
+      Name        Type     Description
+      ----------------------------------------------------------
+      "type"      String   Routing info type: "NETROM" or "INP3"
+
+2.2.1.  NetRom Routing Info
+
+   A NetRom routing info frame (aka "nodes broadcast") produces the
+   following JSON fields:
+
+      Name        Type     Description
+      ---------------------------------------------------
+      "type"      String   Routing info type: "NETROM"
+      "fromAlias" String   Sender's alias
+      "nodes"     Array    One or more destination nodes
+
+      Each member of the "nodes" array is JSON object containing the
+      following fields:
+
+         Name        Type     Description
+         -----------------------------------------------
+         "call"      String   Destination node callsign
+         "alias"     String   Destination node alias
+         "via"       String   Callsign of next hop 
+         "qual"      Integer  Route "quality" (0-255)
+
+2.2.2.  INP3 Routing Info
+
+   The JSON trace for an INP3 routing information frame always contains
+   at least the following two fields:
+
+      Name        Type     Description
+      ----------------------------------------------------------
+      "type"      String   Routing info type: "INP3"
+      "nodes"     Array    One or more destination nodes
+
+      Each member of the "nodes" array is JSON object containing at
+      least the following fields:
+
+         Name        Type     Description
+         ----------------------------------------------------------
+         "call"      String   Destination node callsign
+         "hops"      Integer  Number of hops to the destination
+         "tt"        Integer  One way trip time in 10ms increments
+
+      Additional fields which MAY be present:
+
+         Name        Type     Description
+         ----------------------------------------------------------
+         "alias"     String   Destination node's alias
+         "ipAddr"    String   Amprnet IP address of the node
+         "bitMask"   Integer  Netmask expressed as number 1-32
+         "tcpPort"   Integer  TCP port for Apmprnet Telnet
+         "latitude"  Number   In decimal degrees, e.g. 49.407
+         "longitude" Number   In decimal degrees, e.g. -87.5730
+         "software"  String   Destination node software e.g. "XRLin"
+         "version"   String   Software version
+         "isNode"    Boolean  True if "call" has normal command line
+         "isBBS"     Boolean  True if "call" is that of a full BBS
+         "isPMS"     Boolean  True if "call" is that of a PMS
+         "isXRCHAT"  Boolean  True if "call" is an XRChat server
+         "isRTCHAT"  Boolean  True if "call" is a RoundTable chat
+         "isRMS"     Boolean  True if "call" is Radio Mail Server
+         "isDXCLUS"  Boolean  True is "call" is a DX Cluster
+         "tzMins"    Integer  Timezone offset from GMT in minutes
+         "localTime" String   e.g. "2025-10-07T03:41:24Z"
+
+         Boolean values are omitted if they are unknown, or do not
+         apply. "isNode" means that "call" applies to a conventional
+         node, not a direct connect to an application. "isBBS" means
+         that the callsign connects *directly* to a BBS, and so on.
+         
+   Example:
+
+    {
+    { L2 stuff snipped }
+    "l3Type": "Routing info",
+    "type": "INP3",
+    "nodes": [
+       {
+       "call": "OH5RM-10",
+       "hops": 31,
+       "tt": 60000
+       },
+       {
+       "call": "GB7JD-8",
+       "hops": 2,
+       "tt": 2,
+       "alias": "JEDCHT",
+       "ipAddr": "44.131.8.1",
+       "bitMask": 32,
+       "tcpPort": 3600,
+       "latitude": 55.3125,
+       "longitude": -2.3250,
+       "software": "XRLin",
+       "version": "504i",
+       "isNode": false,
+       "isXRCHAT": true,
+       "isRTCHAT": true,
+       "localTime": "2025-10-07T03:43:04Z"
+       }
+     ]
+     }
+
+3.  Author's Address
+
+   Paula Dowie
+   Email: g8pzt@blueyonder.co.uk
+   WhatsPac: G8PZT
+   Packet: G8PZT@GB7BBS.#24.GBR.EU
+
