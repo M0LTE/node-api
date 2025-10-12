@@ -882,7 +882,7 @@ public class L2TraceValidatorTests
                     Callsign = "GB7JD-8",
                     Hops = 2,
                     OneWayTripTimeIn10msIncrements = 2,
-                    BitMask = 33  // Out of range (must be 1-32)
+                    BitMask = 33  // Out of range (must be 0-32)
                 }
             ]
         };
@@ -891,5 +891,40 @@ public class L2TraceValidatorTests
         Assert.False(result.IsValid);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(16)]
+    [InlineData(32)]
+    public void Should_Accept_Valid_BitMask_Values_In_INP3(int bitMask)
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            FromCallsign = "G9XXX",
+            Port = "2",
+            Source = "G8PZT",
+            Destination = "G8PZT-1",
+            Control = 3,
+            L2Type = "UI",
+            Modulo = 8,
+            CommandResponse = "C",
+            ProtocolName = "NET/ROM",
+            L3Type = "Routing info",
+            Type = "INP3",
+            Nodes =
+            [
+                new L2Trace.Node
+                {
+                    Callsign = "GB7JD-8",
+                    Hops = 2,
+                    OneWayTripTimeIn10msIncrements = 2,
+                    BitMask = bitMask
+                }
+            ]
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
     #endregion
 }

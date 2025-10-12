@@ -279,9 +279,9 @@ public class Inp3NodeValidator : AbstractValidator<L2Trace.Node>
 
         // Optional fields validation
         RuleFor(x => x.BitMask)
-            .InclusiveBetween(1, 32)
+            .InclusiveBetween(0, 32)
             .When(x => x.BitMask.HasValue)
-            .WithMessage("BitMask must be between 1 and 32");
+            .WithMessage("BitMask must be between 0 and 32");
 
         RuleFor(x => x.Latitude)
             .InclusiveBetween(-90, 90)

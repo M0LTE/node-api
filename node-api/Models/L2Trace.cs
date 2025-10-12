@@ -330,7 +330,7 @@ public record L2Trace : UdpNodeInfoJsonDatagram
         public string? IpAddress { get; init; }
 
         /// <summary>
-        /// Netmask expressed as number 1-32 (Optional - INP3 routing)
+        /// Netmask expressed as number 0-32 (Optional - INP3 routing)
         /// </summary>
         [JsonPropertyName("bitMask")]
         public int? BitMask { get; init; }
