@@ -665,6 +665,8 @@ About This Document
       "frmsResent"  Y  Integer  Total frames re-sent
       "frmsQueued"  Y  Integer  Current TX queue length
       "reason"      N  String   e.g. "Retried out" (optional field)
+      "bytesRcvd"   N  Integer  Total bytes received since link creation (optional)
+      "bytesSent"   N  Integer  Total bytes sent since link creation (optional)
 
       For the "direction" field, "incoming" indicates that the
       disconection was initiated from the remote end, and "outgoing"
@@ -690,6 +692,8 @@ About This Document
       "frmsRcvd"    Y  Integer  Total frames rcvd since link creation
       "frmsResent"  Y  Integer  Total frames re-sent
       "frmsQueued"  Y  Integer  Current TX queue length
+      "bytesRcvd"   N  Integer  Total bytes received since link creation (optional)
+      "bytesSent"   N  Integer  Total bytes sent since link creation (optional)
 
 3.7.  Circuit Connection Event
 

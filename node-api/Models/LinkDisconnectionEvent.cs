@@ -77,4 +77,10 @@ public record LinkDisconnectionEvent : UdpNodeInfoJsonDatagram
     /// </summary>
     [JsonPropertyName("reason")]
     public string? Reason { get; init; }
+
+    [JsonPropertyName("bytesSent")]
+    public int? BytesSent { get; init; }
+
+    [JsonPropertyName("bytesRcvd")]
+    public int? BytesReceived { get; init; }
 }
