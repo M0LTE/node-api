@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Extensions.Logging.Console;
 using node_api.Models;
 using node_api.Services;
 using node_api.Validators;
@@ -8,6 +9,12 @@ using System.Net;
 using IPNetwork = Microsoft.AspNetCore.HttpOverrides.IPNetwork;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole(options =>
+{
+    options.FormatterName = ConsoleFormatterNames.Systemd;
+});
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
