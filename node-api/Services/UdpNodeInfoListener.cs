@@ -172,7 +172,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
             {
                 if (jsonException is not null)
                 {
-                    _logger.LogWarning(jsonException, "Failed to deserialize JSON from {Endpoint}: {Json}", result.RemoteEndPoint, Encoding.UTF8.GetString(result.Buffer));
+                    _logger.LogWarning(jsonException, "Failed to deserialize JSON from {Endpoint}: {Json}", result.RemoteEndPoint, Convert.ToBase64String(result.Buffer));
 
                     var badJsonMessage = new MqttApplicationMessageBuilder()
                         .WithTopic(badJsonTopic)
