@@ -97,7 +97,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
             while (!stoppingToken.IsCancellationRequested)
             {
                 var result = await _udpClient.ReceiveAsync(stoppingToken).ConfigureAwait(false);
-                _logger.LogInformation("Received datagram from {ip}", result.RemoteEndPoint.Address.ToString());
+                _logger.LogDebug("Received datagram from {ip}", result.RemoteEndPoint.Address.ToString());
                 await ProcessDatagramAsync(result, stoppingToken).ConfigureAwait(false);
             }
         }
@@ -130,7 +130,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
                 .Build();
             await mqttClient!.EnqueueAsync(message);
 
-            if (UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var frame, out var jsonException)) 
+            if (UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var frame, out var jsonException) && frame != null) 
             {
                 // Validate the deserialized datagram
                 var validationResult = _validationService.Validate(frame!);
@@ -165,8 +165,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
                 }
                 
                 // Only process valid datagrams
-                _logger.LogInformation("Deserialized valid datagram from {Endpoint} as type {Type}", 
-                    result.RemoteEndPoint, frame.DatagramType);
+                _logger.LogDebug("Deserialized valid datagram from {Endpoint} as type {Type}", result.RemoteEndPoint, frame.DatagramType);
                 await _channelWriter.WriteAsync((frame, result.RemoteEndPoint), stoppingToken).ConfigureAwait(false);
             }
             else
@@ -252,7 +251,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
 
     private async Task HandleFrame(UdpNodeInfoJsonDatagramWrapper wrappedFrame, IPEndPoint remoteEndPoint, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Handling frame of type {Type} from {RemoteEndPoint}", wrappedFrame.Datagram.DatagramType, remoteEndPoint);
+        _logger.LogDebug("Handling frame of type {Type} from {RemoteEndPoint}", wrappedFrame.Datagram.DatagramType, remoteEndPoint);
 
         try
         {
@@ -271,7 +270,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
 
             await mqttClient!.EnqueueAsync(message);
 
-            _logger.LogInformation("EnqueueAsync frame of type {Type} from {RemoteEndPoint} to topic {topic}", wrappedFrame.Datagram.DatagramType, remoteEndPoint, topic);
+            _logger.LogDebug("EnqueueAsync frame of type {Type} from {RemoteEndPoint} to topic {topic}", wrappedFrame.Datagram.DatagramType, remoteEndPoint, topic);
         }
         catch (Exception ex)
         {
