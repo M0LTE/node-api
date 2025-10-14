@@ -53,7 +53,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
         var options = new ManagedMqttClientOptionsBuilder()
             .WithAutoReconnectDelay(TimeSpan.FromSeconds(5))
             .WithClientOptions(new MqttClientOptionsBuilder()
-                .WithTcpServer("node-api.m0ouk.compute.oarc.uk", 1883)
+                .WithTcpServer("node-api.packet.oarc.uk", 1883)
                 .WithCredentials("writer", Environment.GetEnvironmentVariable("MQTT_WRITER_PASSWORD") ?? throw new InvalidOperationException("MQTT_WRITER_PASSWORD environment variable is not set"))
                 .WithCleanSession(true)
                 .WithProtocolVersion(MqttProtocolVersion.V500)
@@ -97,7 +97,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
             while (!stoppingToken.IsCancellationRequested)
             {
                 var result = await _udpClient.ReceiveAsync(stoppingToken).ConfigureAwait(false);
-                _logger.LogDebug("Received datagram from {ip}", result.RemoteEndPoint.Address.ToString());
+                _logger.LogDebug("Received datagram from {ip}", result.RemoteEndPoint);
                 await ProcessDatagramAsync(result, stoppingToken).ConfigureAwait(false);
             }
         }
@@ -121,7 +121,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
         try
         {
             json = Encoding.UTF8.GetString(result.Buffer);
-            _logger.LogDebug("Received UDP datagram from {Endpoint}: {Json}", result.RemoteEndPoint, json);
+            _logger.LogDebug("Received UDP datagram from {Endpoint}: {Json}", result.RemoteEndPoint, Convert.ToBase64String(result.Buffer));
 
             var message = new MqttApplicationMessageBuilder()
                 .WithTopic(udpTopic)
@@ -130,12 +130,23 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
                 .Build();
             await mqttClient!.EnqueueAsync(message);
 
-            if (UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var frame, out var jsonException) && frame != null) 
+            _logger.LogDebug("Sent UDP datagram from {Endpoint} to {Topic}", result.RemoteEndPoint, udpTopic);
+
+            if (UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var frame, out var jsonException) && frame != null)
             {
+                _logger.LogDebug("Validating from {Endpoint}...", result.RemoteEndPoint);
                 // Validate the deserialized datagram
                 var validationResult = _validationService.Validate(frame!);
-                
-                if (!validationResult.IsValid)
+
+                _logger.LogDebug("Validated from {Endpoint}, isvalid:{IsValid}", result.RemoteEndPoint, validationResult.IsValid);
+
+                if (validationResult.IsValid)
+                {
+                    // Only process valid datagrams
+                    _logger.LogDebug("Deserialized valid datagram from {Endpoint} as type {Type}", result.RemoteEndPoint, frame.DatagramType);
+                    await _channelWriter.WriteAsync((frame, result.RemoteEndPoint), stoppingToken).ConfigureAwait(false);
+                }
+                else
                 {
                     _logger.LogWarning(
                         "Received invalid datagram from {Endpoint}. Type: {Type}. Errors: {Errors}",
@@ -143,30 +154,26 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
                         frame!.DatagramType,
                         string.Join("; ", validationResult.Errors.Select(e => $"{e.PropertyName}: {e.ErrorMessage}"))
                     );
-                    
+
                     // Publish validation errors to MQTT for monitoring
                     var validationErrorMessage = new MqttApplicationMessageBuilder()
                         .WithTopic(validationErrorTopic)
-                        .WithPayload(JsonSerializer.SerializeToUtf8Bytes(new 
-                        { 
+                        .WithPayload(JsonSerializer.SerializeToUtf8Bytes(new
+                        {
                             datagram = json,
                             type = frame.DatagramType,
-                            errors = validationResult.Errors.Select(e => new 
-                            { 
-                                property = e.PropertyName, 
-                                error = e.ErrorMessage 
+                            errors = validationResult.Errors.Select(e => new
+                            {
+                                property = e.PropertyName,
+                                error = e.ErrorMessage
                             })
                         }))
                         .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
                         .Build();
                     await mqttClient!.EnqueueAsync(validationErrorMessage);
-                    
-                    return; // Don't process invalid datagrams
+
+                    _logger.LogDebug("Published invalid UDP datagram from {Endpoint} to {Topic}", result.RemoteEndPoint, validationErrorTopic);
                 }
-                
-                // Only process valid datagrams
-                _logger.LogDebug("Deserialized valid datagram from {Endpoint} as type {Type}", result.RemoteEndPoint, frame.DatagramType);
-                await _channelWriter.WriteAsync((frame, result.RemoteEndPoint), stoppingToken).ConfigureAwait(false);
             }
             else
             {

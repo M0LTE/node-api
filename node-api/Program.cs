@@ -34,10 +34,7 @@ builder.Services.AddSingleton<IValidator<CircuitStatus>, CircuitStatusValidator>
 // Register validation service
 builder.Services.AddSingleton<DatagramValidationService>();
 
-if (Environment.MachineName == "node-api")
-{
-    builder.Services.AddHostedService<DbWriter>();
-}
+builder.Services.AddHostedService<DbWriter>();
 builder.Services.AddHostedService<UdpNodeInfoListener>();
 
 var app = builder.Build();

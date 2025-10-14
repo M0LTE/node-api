@@ -145,15 +145,16 @@ public class DbWriter(ILogger<DbWriter> logger) : IHostedService
         }
         else if (type!.Value != "")
         {
+            var json = args.ApplicationMessage.ConvertPayloadToString();
             using var connection = Database.GetConnection();
             await connection.ExecuteAsync(
                 "INSERT INTO events (json) VALUES (@json)",
                 new
                 {
-                    json = args.ApplicationMessage.ConvertPayloadToString()
+                    json
                 });
 
-            logger.LogInformation("Inserted event into database");
+            logger.LogInformation("Inserted {type} event into database", type);
         }
     }
 }
