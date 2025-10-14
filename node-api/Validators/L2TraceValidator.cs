@@ -196,10 +196,6 @@ public class L2TraceValidator : AbstractValidator<L2Trace>
                 .Must(t => ValidRoutingTypes.Contains(t!))
                 .WithMessage($"Type must be one of: {string.Join(", ", ValidRoutingTypes)}");
 
-            RuleFor(x => x.Nodes)
-                .NotEmpty()
-                .WithMessage("Nodes is required when L3Type is 'Routing info'");
-
             // NETROM routing validation
             When(x => x.Type == "NETROM", () =>
             {

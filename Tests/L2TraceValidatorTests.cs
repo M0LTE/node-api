@@ -725,6 +725,32 @@ public class L2TraceValidatorTests
     }
 
     [Fact]
+    public void Should_Validate_Empty_NODES_Routing_Info()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            FromCallsign = "G9XXX",
+            Port = "2",
+            Source = "G8PZT",
+            Destination = "G8PZT-1",
+            Control = 3,
+            L2Type = "UI",
+            Modulo = 8,
+            CommandResponse = "C",
+            ProtocolName = "NET/ROM",
+            L3Type = "Routing info",
+            Type = "NODES",
+            FromAlias = "SENDER",
+            Nodes =
+            []
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
     public void Should_Require_FromAlias_For_NETROM_Routing()
     {
         var model = new L2Trace

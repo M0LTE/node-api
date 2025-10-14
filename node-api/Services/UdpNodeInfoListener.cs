@@ -149,10 +149,11 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
                 else
                 {
                     _logger.LogWarning(
-                        "Received invalid datagram from {Endpoint}. Type: {Type}. Errors: {Errors}",
+                        "Received invalid datagram from {Endpoint}. Type: {Type}. Errors: {Errors}, Datagram: {Datagram}",
                         result.RemoteEndPoint,
                         frame!.DatagramType,
-                        string.Join("; ", validationResult.Errors.Select(e => $"{e.PropertyName}: {e.ErrorMessage}"))
+                        string.Join("; ", validationResult.Errors.Select(e => $"{e.PropertyName}: {e.ErrorMessage}")),
+                        Convert.ToBase64String(result.Buffer)
                     );
 
                     // Publish validation errors to MQTT for monitoring
