@@ -73,7 +73,7 @@ public class DbWriter(ILogger<DbWriter> logger) : IHostedService
 
     private async Task SaveInputMessage(MqttApplicationMessageReceivedEventArgs args)
     {
-        logger.LogInformation("Received errored message: {topic} {payload}", args.ApplicationMessage.Topic, args.ApplicationMessage.ConvertPayloadToString());
+        logger.LogDebug("Received errored message: {topic} {payload}", args.ApplicationMessage.Topic, args.ApplicationMessage.ConvertPayloadToString());
 
         if (!args.ApplicationMessage.Topic.StartsWith("in/udp/errored/"))
         {
@@ -87,7 +87,7 @@ public class DbWriter(ILogger<DbWriter> logger) : IHostedService
 
             if (reason == "validation")
             {
-                logger.LogInformation("Deserializing validation error");
+                logger.LogDebug("Deserializing validation error");
                 var obj = JsonSerializer.Deserialize<ValidationError>(args.ApplicationMessage.ConvertPayloadToString())
                     ?? throw new Exception("Failed to deserialize validation error");
 
@@ -104,7 +104,7 @@ public class DbWriter(ILogger<DbWriter> logger) : IHostedService
             }
             else
             {
-                logger.LogInformation("Saving generic errored message");
+                logger.LogDebug("Saving generic errored message");
 
                 using var connection = Database.GetConnection();
                 await connection.ExecuteAsync(
@@ -116,7 +116,7 @@ public class DbWriter(ILogger<DbWriter> logger) : IHostedService
                     });
             }
 
-            logger.LogInformation("Saved errored message to database: {reason}", reason);
+            logger.LogDebug("Saved errored message to database: {reason}", reason);
         }
         catch (Exception ex)
         {
@@ -129,7 +129,7 @@ public class DbWriter(ILogger<DbWriter> logger) : IHostedService
     { 
         var type = args.ApplicationMessage.UserProperties.SingleOrDefault(p => p.Name == "type");
 
-        logger.LogInformation("{type}: {payload}", type?.Value ?? "unknown", args.ApplicationMessage.ConvertPayloadToString());
+        logger.LogDebug("{type}: {payload}", type?.Value ?? "unknown", args.ApplicationMessage.ConvertPayloadToString());
 
         if (type!.Value == "L2Trace")
         {
@@ -141,7 +141,7 @@ public class DbWriter(ILogger<DbWriter> logger) : IHostedService
                     json = args.ApplicationMessage.ConvertPayloadToString()
                 });
 
-            logger.LogInformation("Inserted trace into database");
+            logger.LogDebug("Inserted trace into database");
         }
         else if (type!.Value != "")
         {
@@ -154,7 +154,7 @@ public class DbWriter(ILogger<DbWriter> logger) : IHostedService
                     json
                 });
 
-            logger.LogInformation("Inserted {type} event into database", type);
+            logger.LogDebug("Inserted {type} event into database", type);
         }
     }
 }
