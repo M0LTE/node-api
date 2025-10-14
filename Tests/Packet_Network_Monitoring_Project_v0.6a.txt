@@ -96,7 +96,7 @@ About This Document
          Name  Required  Type     Description
          ---------------------------------------------------------
          "call"       Y  String    Digipeater's callsign+SSID
-         "rptd"       Y  Boolean   True if digi repeated the packet
+         "rptd"       N  Boolean   True if digi repeated the packet
 
     (*5) The "pid" value includes the two high order bits which are
          usually set to one, but are sometimes used for layer 2

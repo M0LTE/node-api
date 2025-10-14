@@ -438,6 +438,6 @@ public record L2Trace : UdpNodeInfoJsonDatagram
         /// True if digi repeated the packet (Required)
         /// </summary>
         [JsonPropertyName("rptd")]
-        public required bool Repeated { get; init; }
+        public bool? Repeated { get; init; }
     }
 }
