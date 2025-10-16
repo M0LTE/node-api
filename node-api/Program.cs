@@ -34,7 +34,10 @@ builder.Services.AddSingleton<IValidator<CircuitStatus>, CircuitStatusValidator>
 // Register validation service
 builder.Services.AddSingleton<DatagramValidationService>();
 
-builder.Services.AddHostedService<DbWriter>();
+if (Environment.MachineName != "PRECISION3660")
+{
+    builder.Services.AddHostedService<DbWriter>();
+}
 builder.Services.AddHostedService<UdpNodeInfoListener>();
 
 var app = builder.Build();

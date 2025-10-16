@@ -18,6 +18,7 @@ public class TracesController : ControllerBase
         [FromQuery] DateTimeOffset? from,  // accepts ISO8601; stored column is DATETIME
         [FromQuery] DateTimeOffset? to,
         [FromQuery] string? type,
+        [FromQuery] string? reportFrom,
         [FromQuery] int limit = 100,
         [FromQuery] string? cursor = null,
         CancellationToken ct = default)
@@ -42,6 +43,12 @@ public class TracesController : ControllerBase
         {
             where.Add("`type_idx` = @type");
             p.Add("type", type);
+        }
+
+        if (!string.IsNullOrWhiteSpace(reportFrom))
+        {
+            where.Add("`reportFrom_idx` = @reportFrom");
+            p.Add("reportFrom", reportFrom);
         }
 
         if (from.HasValue)
@@ -73,7 +80,7 @@ ALTER TABLE `traces`
   ADD COLUMN `dest_idx` VARCHAR(32)
     GENERATED ALWAYS AS (JSON_VALUE(`json`, '$.dest')) PERSISTENT INVISIBLE;
 
-CREATE INDEX ix_traces_srce_dest_ts ON `traces` (`srce_idx`, `dest_idx`, `timestamp`);
+CREATE INDEX ix_traces_reportFrom_srce_dest_ts ON `traces` (`reportFrom`, `srce_idx`, `dest_idx`, `timestamp`);
 CREATE INDEX ix_traces_ts_id       ON `traces` (`timestamp` DESC, `id` DESC);
          */
 
