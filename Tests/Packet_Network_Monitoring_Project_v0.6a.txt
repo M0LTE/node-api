@@ -67,6 +67,9 @@ About This Document
          "RNR"     Receiver Not Ready
          "REJ"     Reject (Frame not the expected one)
          "?"       Unknown type
+         "XID"     AX.25 V2.2
+         "TEXT"    AX.25 V2.2
+         "SREJ"    AX.25 V2.2
 
       (*3) Possible values for the "cr" (Command/Response) field are
            as follows:
