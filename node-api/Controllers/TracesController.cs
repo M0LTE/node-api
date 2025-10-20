@@ -27,16 +27,16 @@ public class TracesController(ITraceRepository repository) : ControllerBase
         var (data, next, countResult) = await repository.GetTracesAsync(
             source, dest, from, to, type, reportFrom, limit, cursor, includeCount, ct);
 
-        // If count was requested but failed (not timeout), return error
+        // If count was requested but failed, return error
         if (includeCount && countResult.Error != null)
         {
             return StatusCode(500, new { error = $"Failed to retrieve count: {countResult.Error}" });
         }
 
-        return Ok(new PagedResult<TraceDto>(data, new PageInfo(limit, next, countResult.Value, countResult.TimedOut)));
+        return Ok(new PagedResult<TraceDto>(data, new PageInfo(limit, next, countResult.Value)));
     }
 
     public record TraceDto(long Id, DateTime Timestamp, JsonElement Report);
     public record PagedResult<T>(IReadOnlyList<T> Data, PageInfo Page);
-    public record PageInfo(int Limit, string? Next, long? TotalCount, bool? CountTimedOut = null);
+    public record PageInfo(int Limit, string? Next, long? TotalCount);
 }

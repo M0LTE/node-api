@@ -29,16 +29,16 @@ public class EventsController(IEventRepository repository) : ControllerBase
         var (data, next, countResult) = await repository.GetEventsAsync(
             node, type, direction, remote, local, port, from, to, limit, cursor, includeCount, ct);
 
-        // If count was requested but failed (not timeout), return error
+        // If count was requested but failed, return error
         if (includeCount && countResult.Error != null)
         {
             return StatusCode(500, new { error = $"Failed to retrieve count: {countResult.Error}" });
         }
 
-        return Ok(new PagedResult<EventDto>(data, new PageInfo(limit, next, countResult.Value, countResult.TimedOut)));
+        return Ok(new PagedResult<EventDto>(data, new PageInfo(limit, next, countResult.Value)));
     }
 
     public record EventDto(long Id, DateTime Timestamp, JsonElement Event);
     public record PagedResult<T>(IReadOnlyList<T> Data, PageInfo Page);
-    public record PageInfo(int Limit, string? Next, long? TotalCount, bool? CountTimedOut = null);
+    public record PageInfo(int Limit, string? Next, long? TotalCount);
 }

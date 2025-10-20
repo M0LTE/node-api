@@ -5,10 +5,9 @@ namespace node_api.Services;
 /// </summary>
 public sealed class CountResult
 {
-    private CountResult(long? value, bool timedOut, string? error)
+    private CountResult(long? value, string? error)
     {
         Value = value;
-        TimedOut = timedOut;
         Error = error;
     }
 
@@ -18,11 +17,6 @@ public sealed class CountResult
     public long? Value { get; }
 
     /// <summary>
-    /// True if the count operation exceeded the timeout threshold.
-    /// </summary>
-    public bool TimedOut { get; }
-
-    /// <summary>
     /// Error message if the count operation failed.
     /// </summary>
     public string? Error { get; }
@@ -30,25 +24,20 @@ public sealed class CountResult
     /// <summary>
     /// True if the count was successful.
     /// </summary>
-    public bool IsSuccess => Value.HasValue && !TimedOut && Error == null;
+    public bool IsSuccess => Value.HasValue && Error == null;
 
     /// <summary>
     /// Count was not requested.
     /// </summary>
-    public static CountResult NotRequested => new(null, false, null);
+    public static CountResult NotRequested => new(null, null);
 
     /// <summary>
     /// Count completed successfully.
     /// </summary>
-    public static CountResult Success(long count) => new(count, false, null);
-
-    /// <summary>
-    /// Count operation exceeded the timeout.
-    /// </summary>
-    public static CountResult Timeout => new(null, true, null);
+    public static CountResult Success(long count) => new(count, null);
 
     /// <summary>
     /// Count operation failed with an error.
     /// </summary>
-    public static CountResult Failed(string error) => new(null, false, error);
+    public static CountResult Failed(string error) => new(null, error);
 }
