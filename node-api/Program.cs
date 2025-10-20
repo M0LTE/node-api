@@ -30,6 +30,10 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
+// Register repositories
+builder.Services.AddSingleton<ITraceRepository, MySqlTraceRepository>();
+builder.Services.AddSingleton<IEventRepository, MySqlEventRepository>();
+
 // Register FluentValidation validators
 builder.Services.AddSingleton<IValidator<L2Trace>, L2TraceValidator>();
 builder.Services.AddSingleton<IValidator<NodeUpEvent>, NodeUpEventValidator>();

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using node_api.Services;
 using System.Net;
 
 namespace Tests;
@@ -12,8 +13,6 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseEnvironment("Testing");
-        
         builder.ConfigureServices(services =>
         {
             // Remove hosted services that require external dependencies
@@ -25,6 +24,21 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
             {
                 services.Remove(service);
             }
+
+            // Replace real repositories with mocks
+            var traceRepoDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(ITraceRepository));
+            if (traceRepoDescriptor != null)
+            {
+                services.Remove(traceRepoDescriptor);
+            }
+            services.AddSingleton<ITraceRepository, MockTraceRepository>();
+
+            var eventRepoDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IEventRepository));
+            if (eventRepoDescriptor != null)
+            {
+                services.Remove(eventRepoDescriptor);
+            }
+            services.AddSingleton<IEventRepository, MockEventRepository>();
         });
     }
 }
