@@ -68,7 +68,7 @@ About This Document
          "REJ"     Reject (Frame not the expected one)
          "?"       Unknown type
          "XID"     AX.25 V2.2
-         "TEXT"    AX.25 V2.2
+         "TEST"    AX.25 V2.2
          "SREJ"    AX.25 V2.2
 
       (*3) Possible values for the "cr" (Command/Response) field are

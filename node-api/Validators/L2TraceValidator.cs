@@ -5,7 +5,7 @@ namespace node_api.Validators;
 
 public class L2TraceValidator : AbstractValidator<L2Trace>
 {
-    private static readonly string[] ValidL2Types = ["SABME", "C", "D", "DM", "UA", "UI", "I", "FRMR", "RR", "RNR", "REJ", "?", "XID", "TEXT", "SREJ"];
+    private static readonly string[] ValidL2Types = ["SABME", "C", "D", "DM", "UA", "UI", "I", "FRMR", "RR", "RNR", "REJ", "?", "XID", "TEST", "SREJ"];
     private static readonly string[] ValidCommandResponses = ["C", "R", "V1"];
     private static readonly string[] ValidPollFinal = ["P", "F"];
     private static readonly string[] ValidProtocolNames = ["SEG", "DATA", "NET/ROM", "IP", "ARP", "?"];
