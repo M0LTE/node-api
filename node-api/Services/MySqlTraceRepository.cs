@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace node_api.Services;
 
-public class MySqlTraceRepository : ITraceRepository
+public class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger) : ITraceRepository
 {
     public async Task<(IReadOnlyList<TracesController.TraceDto> Data, string? NextCursor, CountResult TotalCount)> GetTracesAsync(
         string? source,
@@ -107,7 +107,7 @@ public class MySqlTraceRepository : ITraceRepository
 
             // Optional total count (expensive operation, only when requested)
             var countResult = includeTotalCount 
-                ? await GetTotalCountAsync(where, p, ct)
+                ? await GetTotalCountAsync(where, p, logger, ct)
                 : CountResult.NotRequested;
 
             return (data, next, countResult);
@@ -118,7 +118,7 @@ public class MySqlTraceRepository : ITraceRepository
         }
     }
 
-    private static async Task<CountResult> GetTotalCountAsync(List<string> where, DynamicParameters p, CancellationToken ct)
+    private static async Task<CountResult> GetTotalCountAsync(List<string> where, DynamicParameters p, ILogger logger, CancellationToken ct)
     {
         // Build count query without cursor filter and without LIMIT
         var countWhere = where.Where(w => !w.Contains("timestamp") || !w.Contains("@cts")).ToList();
@@ -133,37 +133,22 @@ public class MySqlTraceRepository : ITraceRepository
             using var countConn = Database.GetConnection(open: false);
             await countConn.OpenAsync(ct);
             
-            try
-            {
-                // Set command timeout directly (5 seconds) - more reliable than CancellationToken for MySQL
-                var command = new CommandDefinition(
-                    countSql, 
-                    p, 
-                    commandTimeout: 5,
-                    cancellationToken: ct);
-                
-                var count = await countConn.ExecuteScalarAsync<long>(command);
-                
-                return CountResult.Success(count);
-            }
-            catch (Exception ex) when (ex.Message.Contains("Timeout") || ex.Message.Contains("timeout"))
-            {
-                // Query exceeded timeout
-                return CountResult.Timeout;
-            }
-            finally
-            {
-                await countConn.CloseAsync();
-            }
+            var count = await countConn.ExecuteScalarAsync<long>(
+                new CommandDefinition(countSql, p, cancellationToken: ct));
+            
+            return CountResult.Success(count);
+        }
+        catch (MySql.Data.MySqlClient.MySqlException ex) when (ex.Message.Contains("Timeout") || ex.Message.Contains("timeout"))
+        {
+            // Command timeout from connection string
+            return CountResult.Timeout;
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
-            // Count query timed out (not user cancellation)
             return CountResult.Timeout;
         }
         catch (Exception ex)
         {
-            // Database error or other failure
             return CountResult.Failed(ex.Message);
         }
     }

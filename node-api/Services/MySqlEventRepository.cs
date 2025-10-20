@@ -149,37 +149,22 @@ public class MySqlEventRepository : IEventRepository
             using var countConn = Database.GetConnection(open: false);
             await countConn.OpenAsync(ct);
             
-            try
-            {
-                // Set command timeout directly (5 seconds) - more reliable than CancellationToken for MySQL
-                var command = new CommandDefinition(
-                    countSql, 
-                    p, 
-                    commandTimeout: 5,
-                    cancellationToken: ct);
-                
-                var count = await countConn.ExecuteScalarAsync<long>(command);
-                
-                return CountResult.Success(count);
-            }
-            catch (Exception ex) when (ex.Message.Contains("Timeout") || ex.Message.Contains("timeout"))
-            {
-                // Query exceeded timeout
-                return CountResult.Timeout;
-            }
-            finally
-            {
-                await countConn.CloseAsync();
-            }
+            var count = await countConn.ExecuteScalarAsync<long>(
+                new CommandDefinition(countSql, p, cancellationToken: ct));
+            
+            return CountResult.Success(count);
+        }
+        catch (MySql.Data.MySqlClient.MySqlException ex) when (ex.Message.Contains("Timeout") || ex.Message.Contains("timeout"))
+        {
+            // Command timeout from connection string
+            return CountResult.Timeout;
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
-            // Count query timed out (not user cancellation)
             return CountResult.Timeout;
         }
         catch (Exception ex)
         {
-            // Database error or other failure
             return CountResult.Failed(ex.Message);
         }
     }

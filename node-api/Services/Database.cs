@@ -10,7 +10,8 @@ internal static class Database
             $"port={Environment.GetEnvironmentVariable("DB_PORT")};" +
             $"username={Environment.GetEnvironmentVariable("DB_USER")};" +
             $"password={Environment.GetEnvironmentVariable("DB_PASSWORD")};" +
-            $"database={Environment.GetEnvironmentVariable("DB_NAME")}";
+            $"database={Environment.GetEnvironmentVariable("DB_NAME")};" +
+            $"default command timeout=5";
     });
 
     public static MySqlConnection GetConnection(bool open = true)
