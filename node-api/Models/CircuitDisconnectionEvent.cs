@@ -73,4 +73,16 @@ public record CircuitDisconnectionEvent : UdpNodeInfoJsonDatagram
     /// </summary>
     [JsonPropertyName("reason")]
     public string? Reason { get; init; }
+
+    /// <summary>
+    /// Number of info bytes received and queued for the consumer (Optional)
+    /// </summary>
+    [JsonPropertyName("bytesRcvd")]
+    public int? BytesReceived { get; init; }
+
+    /// <summary>
+    /// Number of info bytes transferred and acknowledged by the other end (Optional)
+    /// </summary>
+    [JsonPropertyName("bytesSent")]
+    public int? BytesSent { get; init; }
 }

@@ -46,5 +46,15 @@ public class CircuitDisconnectionEventValidator : AbstractValidator<CircuitDisco
         RuleFor(x => x.SegsQueued)
             .GreaterThanOrEqualTo(0)
             .WithMessage("SegsQueued cannot be negative");
+
+        RuleFor(x => x.BytesReceived)
+            .GreaterThanOrEqualTo(0)
+            .When(x => x.BytesReceived.HasValue)
+            .WithMessage("BytesReceived cannot be negative");
+
+        RuleFor(x => x.BytesSent)
+            .GreaterThanOrEqualTo(0)
+            .When(x => x.BytesSent.HasValue)
+            .WithMessage("BytesSent cannot be negative");
     }
 }

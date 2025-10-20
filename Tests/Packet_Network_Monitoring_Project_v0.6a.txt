@@ -1,4 +1,4 @@
-Version: 0.6
+Version: 0.6a
 Date: 11th October 2025
 Status: Provisional
 Author: Paula Dowie
@@ -749,6 +749,8 @@ About This Document
       "segsResent" Y  Integer  Segments re-sent since cct creation
       "segsQueued" Y  Integer  Current TX queue length
       "reason"     N  String   Reason for disconnect (optional)
+      "bytesRcvd"  N  Integer  Info bytes received and queued for consumer (optional)
+      "bytesSent"  N  Integer  Info bytes transferred and acknowledged (optional)
 
 3.9.  Circuit Status Report
 
@@ -769,6 +771,8 @@ About This Document
       "segsRcvd"   Y  Integer  Segments rcvd since circuit creation
       "segsResent" Y  Integer  Segments re-sent since cct creation
       "segsQueued" Y  Integer  Current TX queue length
+      "bytesRcvd"  N  Integer  Info bytes received and queued for consumer (optional)
+      "bytesSent"  N  Integer  Info bytes transferred and acknowledged (optional)
 
 
 3.10.  Exmples of Event and Status Reports

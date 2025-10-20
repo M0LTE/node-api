@@ -370,4 +370,151 @@ public class CircuitStatusValidatorTests
         var result = _validator.TestValidate(model);
         result.ShouldNotHaveAnyValidationErrors();
     }
+
+    [Fact]
+    public void Should_Accept_Null_Byte_Counters()
+    {
+        var model = new CircuitStatus
+        {
+            DatagramType = "CircuitStatus",
+            Node = "G8PZT-1",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001",
+            SegsSent = 5,
+            SegsRcvd = 27,
+            SegsResent = 0,
+            SegsQueued = 0,
+            BytesReceived = null,
+            BytesSent = null
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.BytesReceived);
+        result.ShouldNotHaveValidationErrorFor(x => x.BytesSent);
+    }
+
+    [Fact]
+    public void Should_Accept_Valid_Byte_Counters()
+    {
+        var model = new CircuitStatus
+        {
+            DatagramType = "CircuitStatus",
+            Node = "G8PZT-1",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001",
+            SegsSent = 5,
+            SegsRcvd = 27,
+            SegsResent = 0,
+            SegsQueued = 0,
+            BytesReceived = 1024,
+            BytesSent = 2048
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_BytesReceived()
+    {
+        var model = new CircuitStatus
+        {
+            DatagramType = "CircuitStatus",
+            Node = "G8PZT-1",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001",
+            SegsSent = 5,
+            SegsRcvd = 27,
+            SegsResent = 0,
+            SegsQueued = 0,
+            BytesReceived = -1
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.BytesReceived)
+            .WithErrorMessage("BytesReceived cannot be negative");
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_BytesSent()
+    {
+        var model = new CircuitStatus
+        {
+            DatagramType = "CircuitStatus",
+            Node = "G8PZT-1",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001",
+            SegsSent = 5,
+            SegsRcvd = 27,
+            SegsResent = 0,
+            SegsQueued = 0,
+            BytesSent = -1
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.BytesSent)
+            .WithErrorMessage("BytesSent cannot be negative");
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(1024)]
+    [InlineData(65536)]
+    [InlineData(1048576)]
+    public void Should_Accept_Valid_BytesReceived_Values(int bytes)
+    {
+        var model = new CircuitStatus
+        {
+            DatagramType = "CircuitStatus",
+            Node = "G8PZT-1",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001",
+            SegsSent = 5,
+            SegsRcvd = 27,
+            SegsResent = 0,
+            SegsQueued = 0,
+            BytesReceived = bytes
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.BytesReceived);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(1024)]
+    [InlineData(65536)]
+    [InlineData(1048576)]
+    public void Should_Accept_Valid_BytesSent_Values(int bytes)
+    {
+        var model = new CircuitStatus
+        {
+            DatagramType = "CircuitStatus",
+            Node = "G8PZT-1",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001",
+            SegsSent = 5,
+            SegsRcvd = 27,
+            SegsResent = 0,
+            SegsQueued = 0,
+            BytesSent = bytes
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.BytesSent);
+    }
 }
