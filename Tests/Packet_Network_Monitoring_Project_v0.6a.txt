@@ -601,6 +601,11 @@ About This Document
       "nodeCall"   Y  String   Node Callsign
       "nodeAlias"  Y  String   Node Alias
       "reason"     N  String   Reason for the shutdown, e.g. "reboot"
+      "linksIn"	   N  Integer  total number of incoming ax25 connections since node startup (optional)
+      "linksOut"   N  Integer  total number of outgoing ax25 connections since node startup (optional)
+      "cctsIn"     N  Integer  total netrom layer 4 connections in since node startup (optional)
+      "cctsOut"    N  Integer  total netrom layer 4 connections out since node startup (optional)
+      "l3Relayed"  N  Integer  total number of netrom layer 3 frames that were relayed, ie not originating or destinating at the node since node startup (optional)
 
    The "reason" field is optional.  The other fields are required.
 
@@ -627,6 +632,11 @@ About This Document
       "uptimeSecs"  Y  Integer  Node's uptime in seconds
       "latitude"    N  Number   Decimal degrees (optional)
       "longitude"   N  Number   Decimal degrees (optional)
+      "linksIn"	    N  Integer  total number of incoming ax25 connections since node startup (optional)
+      "linksOut"    N  Integer  total number of outgoing ax25 connections since node startup (optional)
+      "cctsIn"      N  Integer  total netrom layer 4 connections in since node startup (optional)
+      "cctsOut"     N  Integer  total netrom layer 4 connections out since node startup (optional)
+      "l3Relayed"   N  Integer  total number of netrom layer 3 frames that were relayed, ie not originating or destinating at the node since node startup (optional)
 
 
 3.4.  Link Connection Event

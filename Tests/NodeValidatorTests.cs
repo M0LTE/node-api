@@ -242,6 +242,213 @@ public class NodeDownEventValidatorTests
         var result = _validator.TestValidate(model);
         result.ShouldHaveValidationErrorFor(x => x.NodeAlias);
     }
+
+    [Fact]
+    public void Should_Accept_Valid_Optional_Statistics()
+    {
+        var model = new NodeDownEvent
+        {
+            DatagramType = "NodeDownEvent",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            LinksIn = 100,
+            LinksOut = 50,
+            CircuitsIn = 25,
+            CircuitsOut = 30,
+            L3Relayed = 1000
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void Should_Accept_Null_Statistics()
+    {
+        var model = new NodeDownEvent
+        {
+            DatagramType = "NodeDownEvent",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.LinksIn);
+        result.ShouldNotHaveValidationErrorFor(x => x.LinksOut);
+        result.ShouldNotHaveValidationErrorFor(x => x.CircuitsIn);
+        result.ShouldNotHaveValidationErrorFor(x => x.CircuitsOut);
+        result.ShouldNotHaveValidationErrorFor(x => x.L3Relayed);
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_LinksIn()
+    {
+        var model = new NodeDownEvent
+        {
+            DatagramType = "NodeDownEvent",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            LinksIn = -1
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.LinksIn);
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_LinksOut()
+    {
+        var model = new NodeDownEvent
+        {
+            DatagramType = "NodeDownEvent",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            LinksOut = -1
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.LinksOut);
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_CircuitsIn()
+    {
+        var model = new NodeDownEvent
+        {
+            DatagramType = "NodeDownEvent",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            CircuitsIn = -1
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.CircuitsIn);
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_CircuitsOut()
+    {
+        var model = new NodeDownEvent
+        {
+            DatagramType = "NodeDownEvent",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            CircuitsOut = -1
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.CircuitsOut);
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_L3Relayed()
+    {
+        var model = new NodeDownEvent
+        {
+            DatagramType = "NodeDownEvent",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            L3Relayed = -1
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.L3Relayed);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(100)]
+    [InlineData(999999)]
+    public void Should_Accept_Valid_LinksIn(int value)
+    {
+        var model = new NodeDownEvent
+        {
+            DatagramType = "NodeDownEvent",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            LinksIn = value
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.LinksIn);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(100)]
+    [InlineData(999999)]
+    public void Should_Accept_Valid_LinksOut(int value)
+    {
+        var model = new NodeDownEvent
+        {
+            DatagramType = "NodeDownEvent",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            LinksOut = value
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.LinksOut);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(100)]
+    [InlineData(999999)]
+    public void Should_Accept_Valid_CircuitsIn(int value)
+    {
+        var model = new NodeDownEvent
+        {
+            DatagramType = "NodeDownEvent",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            CircuitsIn = value
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.CircuitsIn);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(100)]
+    [InlineData(999999)]
+    public void Should_Accept_Valid_CircuitsOut(int value)
+    {
+        var model = new NodeDownEvent
+        {
+            DatagramType = "NodeDownEvent",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            CircuitsOut = value
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.CircuitsOut);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(100)]
+    [InlineData(999999)]
+    public void Should_Accept_Valid_L3Relayed(int value)
+    {
+        var model = new NodeDownEvent
+        {
+            DatagramType = "NodeDownEvent",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            L3Relayed = value
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.L3Relayed);
+    }
 }
 
 public class NodeStatusReportEventValidatorTests
@@ -324,5 +531,176 @@ public class NodeStatusReportEventValidatorTests
 
         var result = _validator.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(x => x.Locator);
+    }
+
+    [Fact]
+    public void Should_Accept_Valid_Optional_Statistics()
+    {
+        var model = new NodeStatusReportEvent
+        {
+            DatagramType = "NodeStatus",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            UptimeSecs = 86400,
+            LinksIn = 150,
+            LinksOut = 75,
+            CircuitsIn = 40,
+            CircuitsOut = 35,
+            L3Relayed = 5000
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void Should_Accept_Null_Statistics()
+    {
+        var model = new NodeStatusReportEvent
+        {
+            DatagramType = "NodeStatus",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            UptimeSecs = 100
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.LinksIn);
+        result.ShouldNotHaveValidationErrorFor(x => x.LinksOut);
+        result.ShouldNotHaveValidationErrorFor(x => x.CircuitsIn);
+        result.ShouldNotHaveValidationErrorFor(x => x.CircuitsOut);
+        result.ShouldNotHaveValidationErrorFor(x => x.L3Relayed);
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_LinksIn()
+    {
+        var model = new NodeStatusReportEvent
+        {
+            DatagramType = "NodeStatus",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            UptimeSecs = 100,
+            LinksIn = -1
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.LinksIn);
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_LinksOut()
+    {
+        var model = new NodeStatusReportEvent
+        {
+            DatagramType = "NodeStatus",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            UptimeSecs = 100,
+            LinksOut = -1
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.LinksOut);
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_CircuitsIn()
+    {
+        var model = new NodeStatusReportEvent
+        {
+            DatagramType = "NodeStatus",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            UptimeSecs = 100,
+            CircuitsIn = -1
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.CircuitsIn);
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_CircuitsOut()
+    {
+        var model = new NodeStatusReportEvent
+        {
+            DatagramType = "NodeStatus",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            UptimeSecs = 100,
+            CircuitsOut = -1
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.CircuitsOut);
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_L3Relayed()
+    {
+        var model = new NodeStatusReportEvent
+        {
+            DatagramType = "NodeStatus",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            UptimeSecs = 100,
+            L3Relayed = -1
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.L3Relayed);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(500)]
+    [InlineData(999999)]
+    public void Should_Accept_Valid_Statistics_Values(int value)
+    {
+        var model = new NodeStatusReportEvent
+        {
+            DatagramType = "NodeStatus",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            UptimeSecs = 100,
+            LinksIn = value,
+            LinksOut = value,
+            CircuitsIn = value,
+            CircuitsOut = value,
+            L3Relayed = value
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.LinksIn);
+        result.ShouldNotHaveValidationErrorFor(x => x.LinksOut);
+        result.ShouldNotHaveValidationErrorFor(x => x.CircuitsIn);
+        result.ShouldNotHaveValidationErrorFor(x => x.CircuitsOut);
+        result.ShouldNotHaveValidationErrorFor(x => x.L3Relayed);
     }
 }

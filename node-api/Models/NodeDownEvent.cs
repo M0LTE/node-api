@@ -28,4 +28,34 @@ public record NodeDownEvent : UdpNodeInfoJsonDatagram
     /// </summary>
     [JsonPropertyName("reason")]
     public string? Reason { get; init; }
+
+    /// <summary>
+    /// Total number of incoming AX25 connections since node startup (Optional)
+    /// </summary>
+    [JsonPropertyName("linksIn")]
+    public int? LinksIn { get; init; }
+
+    /// <summary>
+    /// Total number of outgoing AX25 connections since node startup (Optional)
+    /// </summary>
+    [JsonPropertyName("linksOut")]
+    public int? LinksOut { get; init; }
+
+    /// <summary>
+    /// Total NetRom layer 4 connections in since node startup (Optional)
+    /// </summary>
+    [JsonPropertyName("cctsIn")]
+    public int? CircuitsIn { get; init; }
+
+    /// <summary>
+    /// Total NetRom layer 4 connections out since node startup (Optional)
+    /// </summary>
+    [JsonPropertyName("cctsOut")]
+    public int? CircuitsOut { get; init; }
+
+    /// <summary>
+    /// Total number of NetRom layer 3 frames that were relayed, i.e. not originating or destinating at the node since node startup (Optional)
+    /// </summary>
+    [JsonPropertyName("l3Relayed")]
+    public int? L3Relayed { get; init; }
 }
