@@ -33,10 +33,10 @@ public class TracesController(ITraceRepository repository) : ControllerBase
             return StatusCode(500, new { error = $"Failed to retrieve count: {countResult.Error}" });
         }
 
-        return Ok(new PagedResult<TraceDto>(data, new PageInfo(limit, next, countResult.Value)));
+        return Ok(new PagedResult<TraceDto>(new PageInfo(limit, next, countResult.Value), data));
     }
 
     public record TraceDto(long Id, DateTime Timestamp, JsonElement Report);
-    public record PagedResult<T>(IReadOnlyList<T> Data, PageInfo Page);
+    public record PagedResult<T>(PageInfo Page, IReadOnlyList<T> Data);
     public record PageInfo(int Limit, string? Next, long? TotalCount);
 }

@@ -35,10 +35,10 @@ public class EventsController(IEventRepository repository) : ControllerBase
             return StatusCode(500, new { error = $"Failed to retrieve count: {countResult.Error}" });
         }
 
-        return Ok(new PagedResult<EventDto>(data, new PageInfo(limit, next, countResult.Value)));
+        return Ok(new PagedResult<EventDto>(new PageInfo(limit, next, countResult.Value), data));
     }
 
     public record EventDto(long Id, DateTime Timestamp, JsonElement Event);
-    public record PagedResult<T>(IReadOnlyList<T> Data, PageInfo Page);
+    public record PagedResult<T>(PageInfo Page, IReadOnlyList<T> Data);
     public record PageInfo(int Limit, string? Next, long? TotalCount);
 }
