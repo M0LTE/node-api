@@ -4,7 +4,7 @@ namespace node_api.Services;
 
 public interface IEventRepository
 {
-    Task<(IReadOnlyList<EventsController.EventDto> Data, string? NextCursor)> GetEventsAsync(
+    Task<(IReadOnlyList<EventsController.EventDto> Data, string? NextCursor, CountResult TotalCount)> GetEventsAsync(
         string? node,
         string? type,
         string? direction,
@@ -15,5 +15,6 @@ public interface IEventRepository
         DateTimeOffset? to,
         int limit,
         string? cursor,
+        bool includeTotalCount,
         CancellationToken ct);
 }

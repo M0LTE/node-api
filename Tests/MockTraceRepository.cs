@@ -5,7 +5,7 @@ namespace Tests;
 
 public class MockTraceRepository : ITraceRepository
 {
-    public Task<(IReadOnlyList<TracesController.TraceDto> Data, string? NextCursor)> GetTracesAsync(
+    public Task<(IReadOnlyList<TracesController.TraceDto> Data, string? NextCursor, CountResult TotalCount)> GetTracesAsync(
         string? source,
         string? dest,
         DateTimeOffset? from,
@@ -14,10 +14,15 @@ public class MockTraceRepository : ITraceRepository
         string? reportFrom,
         int limit,
         string? cursor,
+        bool includeTotalCount,
         CancellationToken ct)
     {
         // Return empty results for testing
-        var emptyResult = (Array.Empty<TracesController.TraceDto>() as IReadOnlyList<TracesController.TraceDto>, (string?)null);
+        var emptyResult = (
+            Array.Empty<TracesController.TraceDto>() as IReadOnlyList<TracesController.TraceDto>, 
+            (string?)null,
+            CountResult.NotRequested
+        );
         return Task.FromResult(emptyResult);
     }
 }

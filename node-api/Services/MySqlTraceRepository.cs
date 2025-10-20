@@ -7,7 +7,7 @@ namespace node_api.Services;
 
 public class MySqlTraceRepository : ITraceRepository
 {
-    public async Task<(IReadOnlyList<TracesController.TraceDto> Data, string? NextCursor)> GetTracesAsync(
+    public async Task<(IReadOnlyList<TracesController.TraceDto> Data, string? NextCursor, CountResult TotalCount)> GetTracesAsync(
         string? source,
         string? dest,
         DateTimeOffset? from,
@@ -16,6 +16,7 @@ public class MySqlTraceRepository : ITraceRepository
         string? reportFrom,
         int limit,
         string? cursor,
+        bool includeTotalCount,
         CancellationToken ct)
     {
         var where = new List<string> { "1=1" };
@@ -104,11 +105,59 @@ public class MySqlTraceRepository : ITraceRepository
                 next = EncodeCursor(DateTime.SpecifyKind(last.timestamp, DateTimeKind.Utc), last.id);
             }
 
-            return (data, next);
+            // Optional total count (expensive operation, only when requested)
+            var countResult = includeTotalCount 
+                ? await GetTotalCountAsync(where, p, ct)
+                : CountResult.NotRequested;
+
+            return (data, next, countResult);
         }
         finally
         {
             await _conn.CloseAsync();
+        }
+    }
+
+    private static async Task<CountResult> GetTotalCountAsync(List<string> where, DynamicParameters p, CancellationToken ct)
+    {
+        // Build count query without cursor filter and without LIMIT
+        var countWhere = where.Where(w => !w.Contains("timestamp") || !w.Contains("@cts")).ToList();
+        
+        var countSql = $@"
+            SELECT COUNT(*) 
+            FROM `traces` 
+            WHERE {string.Join(" AND ", countWhere)}";
+
+        try
+        {
+            using var countConn = Database.GetConnection(open: false);
+            await countConn.OpenAsync(ct);
+            
+            try
+            {
+                // Set a reasonable timeout for count queries (e.g., 5 seconds)
+                using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
+                
+                var count = await countConn.ExecuteScalarAsync<long>(
+                    new CommandDefinition(countSql, p, cancellationToken: linkedCts.Token));
+                
+                return CountResult.Success(count);
+            }
+            finally
+            {
+                await countConn.CloseAsync();
+            }
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            // Count query timed out (not user cancellation)
+            return CountResult.Timeout;
+        }
+        catch (Exception ex)
+        {
+            // Database error or other failure
+            return CountResult.Failed(ex.Message);
         }
     }
 

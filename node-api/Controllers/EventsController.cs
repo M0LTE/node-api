@@ -8,7 +8,7 @@ namespace node_api.Controllers;
 [Route("api/events")]
 public class EventsController(IEventRepository repository) : ControllerBase
 {
-    // GET /api/events?node=...&type=...&direction=...&remote=...&local=...&port=...&from=...&to=...&limit=...&cursor=...
+    // GET /api/events?node=...&type=...&direction=...&remote=...&local=...&port=...&from=...&to=...&limit=...&cursor=...&includeCount=...
     [HttpGet]
     public async Task<ActionResult<PagedResult<EventDto>>> GetAsync(
         [FromQuery] string? node,
@@ -21,17 +21,24 @@ public class EventsController(IEventRepository repository) : ControllerBase
         [FromQuery] DateTimeOffset? to,
         [FromQuery] int limit = 100,
         [FromQuery] string? cursor = null,
+        [FromQuery] bool includeCount = false,
         CancellationToken ct = default)
     {
         limit = Math.Clamp(limit, 1, 500);
 
-        var (data, next) = await repository.GetEventsAsync(
-            node, type, direction, remote, local, port, from, to, limit, cursor, ct);
+        var (data, next, countResult) = await repository.GetEventsAsync(
+            node, type, direction, remote, local, port, from, to, limit, cursor, includeCount, ct);
 
-        return Ok(new PagedResult<EventDto>(data, new PageInfo(limit, next)));
+        // If count was requested but failed (not timeout), return error
+        if (includeCount && countResult.Error != null)
+        {
+            return StatusCode(500, new { error = $"Failed to retrieve count: {countResult.Error}" });
+        }
+
+        return Ok(new PagedResult<EventDto>(data, new PageInfo(limit, next, countResult.Value, countResult.TimedOut)));
     }
 
     public record EventDto(long Id, DateTime Timestamp, JsonElement Event);
     public record PagedResult<T>(IReadOnlyList<T> Data, PageInfo Page);
-    public record PageInfo(int Limit, string? Next);
+    public record PageInfo(int Limit, string? Next, long? TotalCount, bool? CountTimedOut = null);
 }

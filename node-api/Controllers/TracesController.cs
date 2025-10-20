@@ -8,7 +8,7 @@ namespace node_api.Controllers;
 [Route("api/traces")]
 public class TracesController(ITraceRepository repository) : ControllerBase
 {
-    // GET /api/traces?source=...&dest=...&from=...&to=...&limit=...&cursor=...
+    // GET /api/traces?source=...&dest=...&from=...&to=...&type=...&reportFrom=...&limit=...&cursor=...&includeCount=...
     [HttpGet]
     public async Task<ActionResult<PagedResult<TraceDto>>> GetAsync(
         [FromQuery] string? source,
@@ -19,17 +19,24 @@ public class TracesController(ITraceRepository repository) : ControllerBase
         [FromQuery] string? reportFrom,
         [FromQuery] int limit = 100,
         [FromQuery] string? cursor = null,
+        [FromQuery] bool includeCount = false,
         CancellationToken ct = default)
     {
         limit = Math.Clamp(limit, 1, 500);
 
-        var (data, next) = await repository.GetTracesAsync(
-            source, dest, from, to, type, reportFrom, limit, cursor, ct);
+        var (data, next, countResult) = await repository.GetTracesAsync(
+            source, dest, from, to, type, reportFrom, limit, cursor, includeCount, ct);
 
-        return Ok(new PagedResult<TraceDto>(data, new PageInfo(limit, next)));
+        // If count was requested but failed (not timeout), return error
+        if (includeCount && countResult.Error != null)
+        {
+            return StatusCode(500, new { error = $"Failed to retrieve count: {countResult.Error}" });
+        }
+
+        return Ok(new PagedResult<TraceDto>(data, new PageInfo(limit, next, countResult.Value, countResult.TimedOut)));
     }
 
     public record TraceDto(long Id, DateTime Timestamp, JsonElement Report);
     public record PagedResult<T>(IReadOnlyList<T> Data, PageInfo Page);
-    public record PageInfo(int Limit, string? Next);
+    public record PageInfo(int Limit, string? Next, long? TotalCount, bool? CountTimedOut = null);
 }

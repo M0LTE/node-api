@@ -4,7 +4,7 @@ namespace node_api.Services;
 
 public interface ITraceRepository
 {
-    Task<(IReadOnlyList<TracesController.TraceDto> Data, string? NextCursor)> GetTracesAsync(
+    Task<(IReadOnlyList<TracesController.TraceDto> Data, string? NextCursor, CountResult TotalCount)> GetTracesAsync(
         string? source,
         string? dest,
         DateTimeOffset? from,
@@ -13,5 +13,6 @@ public interface ITraceRepository
         string? reportFrom,
         int limit,
         string? cursor,
+        bool includeTotalCount,
         CancellationToken ct);
 }
