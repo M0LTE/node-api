@@ -154,15 +154,6 @@ public class MySqlEventRepository : IEventRepository
             
             return CountResult.Success(count);
         }
-        catch (MySql.Data.MySqlClient.MySqlException ex) when (ex.Message.Contains("Timeout") || ex.Message.Contains("timeout"))
-        {
-            // Command timeout from connection string
-            return CountResult.Timeout;
-        }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
-        {
-            return CountResult.Timeout;
-        }
         catch (Exception ex)
         {
             return CountResult.Failed(ex.Message);
