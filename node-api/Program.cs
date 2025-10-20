@@ -16,6 +16,17 @@ builder.Logging.AddConsole(options =>
     options.FormatterName = ConsoleFormatterNames.Systemd;
 });
 
+// Add CORS services
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
@@ -51,6 +62,10 @@ var options = new ForwardedHeadersOptions
 options.KnownNetworks.Add(new IPNetwork(IPAddress.Parse("172.17.0.0"), 16));
 
 app.UseForwardedHeaders(options);
+
+// Enable CORS middleware
+app.UseCors();
+
 app.MapOpenApi();
 app.MapScalarApiReference();
 app.MapGet("/", () => Results.Redirect("/scalar"));
@@ -58,3 +73,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+// Make the implicit Program class public for integration tests
+public partial class Program { }
