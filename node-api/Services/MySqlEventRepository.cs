@@ -151,14 +151,21 @@ public class MySqlEventRepository : IEventRepository
             
             try
             {
-                // Set a reasonable timeout for count queries (e.g., 5 seconds)
-                using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
+                // Set command timeout directly (5 seconds) - more reliable than CancellationToken for MySQL
+                var command = new CommandDefinition(
+                    countSql, 
+                    p, 
+                    commandTimeout: 5,
+                    cancellationToken: ct);
                 
-                var count = await countConn.ExecuteScalarAsync<long>(
-                    new CommandDefinition(countSql, p, cancellationToken: linkedCts.Token));
+                var count = await countConn.ExecuteScalarAsync<long>(command);
                 
                 return CountResult.Success(count);
+            }
+            catch (Exception ex) when (ex.Message.Contains("Timeout") || ex.Message.Contains("timeout"))
+            {
+                // Query exceeded timeout
+                return CountResult.Timeout;
             }
             finally
             {
