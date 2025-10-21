@@ -5,8 +5,10 @@ using System.Text.Json;
 
 namespace node_api.Services;
 
-public class MySqlEventRepository : IEventRepository
+public class MySqlEventRepository(ILogger<MySqlEventRepository> logger) : IEventRepository
 {
+    private const int SlowQueryThresholdMs = 5000;
+
     public async Task<(IReadOnlyList<EventsController.EventDto> Data, string? NextCursor, CountResult TotalCount)> GetEventsAsync(
         string? node,
         string? type,
@@ -100,7 +102,11 @@ public class MySqlEventRepository : IEventRepository
         await _conn.OpenAsync(ct);
         try
         {
-            var rows = (await _conn.QueryAsync<EventRow>(new CommandDefinition(sql, p, cancellationToken: ct))).ToList();
+            var rows = (await QueryLogger.QueryWithLoggingAsync<EventRow>(
+                _conn,
+                new CommandDefinition(sql, p, cancellationToken: ct),
+                logger,
+                SlowQueryThresholdMs)).ToList();
 
             // Materialize JSON column to JsonElement
             var data = new List<EventsController.EventDto>(rows.Count);
@@ -123,7 +129,7 @@ public class MySqlEventRepository : IEventRepository
 
             // Optional total count (expensive operation, only when requested)
             var countResult = includeTotalCount 
-                ? await GetTotalCountAsync(where, p, ct)
+                ? await GetTotalCountAsync(where, p, logger, ct)
                 : CountResult.NotRequested;
 
             return (data, next, countResult);
@@ -134,7 +140,11 @@ public class MySqlEventRepository : IEventRepository
         }
     }
 
-    private static async Task<CountResult> GetTotalCountAsync(List<string> where, DynamicParameters p, CancellationToken ct)
+    private static async Task<CountResult> GetTotalCountAsync(
+        List<string> where, 
+        DynamicParameters p, 
+        ILogger logger,
+        CancellationToken ct)
     {
         // Build count query without cursor filter and without LIMIT
         var countWhere = where.Where(w => !w.Contains("timestamp") || !w.Contains("@cts")).ToList();
@@ -149,8 +159,11 @@ public class MySqlEventRepository : IEventRepository
             using var countConn = Database.GetConnection(open: false);
             await countConn.OpenAsync(ct);
             
-            var count = await countConn.ExecuteScalarAsync<long>(
-                new CommandDefinition(countSql, p, cancellationToken: ct));
+            var count = await QueryLogger.ExecuteScalarWithLoggingAsync<long>(
+                countConn,
+                new CommandDefinition(countSql, p, cancellationToken: ct),
+                logger,
+                SlowQueryThresholdMs);
             
             return CountResult.Success(count);
         }

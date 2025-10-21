@@ -7,6 +7,8 @@ namespace node_api.Services;
 
 public class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger) : ITraceRepository
 {
+    private const int SlowQueryThresholdMs = 5000;
+
     public async Task<(IReadOnlyList<TracesController.TraceDto> Data, string? NextCursor, CountResult TotalCount)> GetTracesAsync(
         string? source,
         string? dest,
@@ -84,7 +86,11 @@ public class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger) : ITrace
         await _conn.OpenAsync(ct);
         try
         {
-            var rows = (await _conn.QueryAsync<TraceRow>(new CommandDefinition(sql, p, cancellationToken: ct))).ToList();
+            var rows = (await QueryLogger.QueryWithLoggingAsync<TraceRow>(
+                _conn, 
+                new CommandDefinition(sql, p, cancellationToken: ct),
+                logger,
+                SlowQueryThresholdMs)).ToList();
 
             // Materialize JSON column to JsonElement
             var data = new List<TracesController.TraceDto>(rows.Count);
@@ -118,7 +124,11 @@ public class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger) : ITrace
         }
     }
 
-    private static async Task<CountResult> GetTotalCountAsync(List<string> where, DynamicParameters p, ILogger logger, CancellationToken ct)
+    private static async Task<CountResult> GetTotalCountAsync(
+        List<string> where, 
+        DynamicParameters p, 
+        ILogger logger, 
+        CancellationToken ct)
     {
         // Build count query without cursor filter and without LIMIT
         var countWhere = where.Where(w => !w.Contains("timestamp") || !w.Contains("@cts")).ToList();
@@ -133,8 +143,11 @@ public class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger) : ITrace
             using var countConn = Database.GetConnection(open: false);
             await countConn.OpenAsync(ct);
             
-            var count = await countConn.ExecuteScalarAsync<long>(
-                new CommandDefinition(countSql, p, cancellationToken: ct));
+            var count = await QueryLogger.ExecuteScalarWithLoggingAsync<long>(
+                countConn,
+                new CommandDefinition(countSql, p, cancellationToken: ct),
+                logger,
+                SlowQueryThresholdMs);
             
             return CountResult.Success(count);
         }
