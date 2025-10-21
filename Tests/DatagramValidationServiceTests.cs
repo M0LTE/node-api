@@ -243,6 +243,7 @@ public class DatagramValidationServiceTests
                 Port = "2",
                 Remote = "KIDDER-1",
                 Local = "G8PZT-11",
+                UpForSecs = 300,
                 FramesSent = 100,
                 FramesReceived = 50,
                 FramesResent = 5,

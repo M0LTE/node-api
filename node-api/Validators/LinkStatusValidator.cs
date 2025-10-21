@@ -41,6 +41,10 @@ public class LinkStatusValidator : AbstractValidator<LinkStatus>
             .NotEmpty()
             .WithMessage("Local callsign is required");
 
+        RuleFor(x => x.UpForSecs)
+            .GreaterThanOrEqualTo(0)
+            .WithMessage("UpForSecs cannot be negative");
+
         RuleFor(x => x.FramesSent)
             .GreaterThanOrEqualTo(0)
             .WithMessage("FramesSent cannot be negative");

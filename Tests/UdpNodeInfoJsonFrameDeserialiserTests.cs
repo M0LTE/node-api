@@ -1458,6 +1458,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         "port": "2",
         "remote": "KIDDER-1",
         "local": "G8PZT-11",
+        "upForSecs": 300,
         "frmsSent": 150,
         "frmsRcvd": 142,
         "frmsResent": 5,
@@ -1478,6 +1479,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         evt.Port.Should().Be("2");
         evt.Remote.Should().Be("KIDDER-1");
         evt.Local.Should().Be("G8PZT-11");
+        evt.UpForSecs.Should().Be(300);
         evt.FramesSent.Should().Be(150);
         evt.FramesReceived.Should().Be(142);
         evt.FramesResent.Should().Be(5);
@@ -1500,6 +1502,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         "port": "2",
         "remote": "G8PZT",
         "local": "G8PZT-1",
+        "upForSecs": 300,
         "frmsSent": 4,
         "frmsRcvd": 9,
         "frmsResent": 0,
@@ -1527,6 +1530,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         evt.Port.Should().Be("2");
         evt.Remote.Should().Be("G8PZT");
         evt.Local.Should().Be("G8PZT-1");
+        evt.UpForSecs.Should().Be(300);
         evt.FramesSent.Should().Be(4);
         evt.FramesReceived.Should().Be(9);
         evt.FramesResent.Should().Be(0);

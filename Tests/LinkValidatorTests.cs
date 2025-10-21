@@ -443,6 +443,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 300,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -466,6 +467,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 0,
             FramesSent = 0,
             FramesReceived = 0,
             FramesResent = 0,
@@ -492,6 +494,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 300,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -515,6 +518,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 300,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -542,6 +546,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 300,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -573,6 +578,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 300,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -598,6 +604,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 300,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -623,6 +630,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 300,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -649,6 +657,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 300,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -674,6 +683,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "G8PZT",
             Local = "G8PZT-1",
+            UpForSecs = 300,
             FramesSent = 4,
             FramesReceived = 9,
             FramesResent = 0,
@@ -708,6 +718,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 300,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -738,6 +749,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 300,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -768,6 +780,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 300,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -793,6 +806,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 300,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -818,6 +832,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 300,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -843,6 +858,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 300,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -868,6 +884,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 300,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -893,6 +910,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 300,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -918,6 +936,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 300,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -946,6 +965,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 300,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -982,6 +1002,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 300,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -1007,6 +1028,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 300,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -1032,6 +1054,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 300,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -1058,6 +1081,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 300,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -1081,6 +1105,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 300,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -1091,5 +1116,57 @@ public class LinkStatusValidatorTests
         result.ShouldHaveValidationErrorFor(x => x.DatagramType);
     }
 
+    [Fact]
+    public void Should_Reject_Negative_UpForSecs()
+    {
+        var model = new LinkStatus
+        {
+            DatagramType = "LinkStatus",
+            TimeUnixSeconds = 1729512000,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = "incoming",
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = -1,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 2
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.UpForSecs)
+            .WithErrorMessage("UpForSecs cannot be negative");
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(60)]
+    [InlineData(300)]
+    [InlineData(86400)]
+    public void Should_Accept_Valid_UpForSecs(int uptime)
+    {
+        var model = new LinkStatus
+        {
+            DatagramType = "LinkStatus",
+            TimeUnixSeconds = 1729512000,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = "incoming",
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = uptime,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 2
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.UpForSecs);
+    }
     #endregion
 }
