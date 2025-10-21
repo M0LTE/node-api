@@ -17,6 +17,7 @@ public class L2TraceValidatorTests
         {
             DatagramType = "L2Trace",
             FromCallsign = "G9XXX",
+            TimeUnixSeconds = 1729512000, // Valid timestamp: 2024-10-21 12:00:00 UTC
             Port = "1",
             Source = "G8PZT-1",
             Destination = "ID",
@@ -40,6 +41,7 @@ public class L2TraceValidatorTests
         {
             DatagramType = "WrongType",
             FromCallsign = "G9XXX",
+            TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
             Destination = "ID",
@@ -62,6 +64,7 @@ public class L2TraceValidatorTests
         {
             DatagramType = "L2Trace",
             FromCallsign = callsign,
+            TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
             Destination = "ID",
@@ -84,6 +87,7 @@ public class L2TraceValidatorTests
         {
             DatagramType = "L2Trace",
             FromCallsign = "G9XXX",
+            TimeUnixSeconds = 1729512000,
             Port = port,
             Source = "G8PZT-1",
             Destination = "ID",
@@ -104,6 +108,7 @@ public class L2TraceValidatorTests
         {
             DatagramType = "L2Trace",
             FromCallsign = "G9XXX",
+            TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
             Destination = "ID",
@@ -115,6 +120,252 @@ public class L2TraceValidatorTests
 
         var result = _validator.TestValidate(model);
         result.ShouldHaveValidationErrorFor(x => x.Control);
+    }
+
+    #endregion
+
+    #region TimeUnixSeconds Validation Tests
+
+    [Fact]
+    public void Should_Accept_Zero_For_TimeUnixSeconds()
+    {
+        // Unix epoch (1970-01-01 00:00:00 UTC)
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            FromCallsign = "G9XXX",
+            TimeUnixSeconds = 0,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            Modulo = 8,
+            CommandResponse = "C"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_TimeUnixSeconds()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            FromCallsign = "G9XXX",
+            TimeUnixSeconds = -1,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            Modulo = 8,
+            CommandResponse = "C"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.TimeUnixSeconds)
+            .WithErrorMessage("TimeUnixSeconds cannot be negative");
+    }
+
+    [Theory]
+    [InlineData(-100)]
+    [InlineData(-1000)]
+    [InlineData(-999999999)]
+    public void Should_Reject_Various_Negative_TimeUnixSeconds(long timestamp)
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            FromCallsign = "G9XXX",
+            TimeUnixSeconds = timestamp,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            Modulo = 8,
+            CommandResponse = "C"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.TimeUnixSeconds)
+            .WithErrorMessage("TimeUnixSeconds cannot be negative");
+    }
+
+    [Theory]
+    [InlineData(1609459200)]  // 2021-01-01 00:00:00 UTC
+    [InlineData(1640995200)]  // 2022-01-01 00:00:00 UTC
+    [InlineData(1672531200)]  // 2023-01-01 00:00:00 UTC
+    [InlineData(1704067200)]  // 2024-01-01 00:00:00 UTC
+    [InlineData(1729512000)]  // 2024-10-21 12:00:00 UTC
+    [InlineData(1735689600)]  // 2025-01-01 00:00:00 UTC
+    public void Should_Accept_Valid_Recent_TimeUnixSeconds(long timestamp)
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            FromCallsign = "G9XXX",
+            TimeUnixSeconds = timestamp,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            Modulo = 8,
+            CommandResponse = "C"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Accept_Current_Timestamp()
+    {
+        var currentTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            FromCallsign = "G9XXX",
+            TimeUnixSeconds = currentTimestamp,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            Modulo = 8,
+            CommandResponse = "C"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Accept_Maximum_Valid_Unix_Timestamp()
+    {
+        var maxTimestamp = DateTimeOffset.MaxValue.ToUnixTimeSeconds();
+        
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            FromCallsign = "G9XXX",
+            TimeUnixSeconds = maxTimestamp,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            Modulo = 8,
+            CommandResponse = "C"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Reject_TimeUnixSeconds_Exceeding_Maximum()
+    {
+        var maxTimestamp = DateTimeOffset.MaxValue.ToUnixTimeSeconds();
+        var exceedingTimestamp = maxTimestamp + 1;
+        
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            FromCallsign = "G9XXX",
+            TimeUnixSeconds = exceedingTimestamp,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            Modulo = 8,
+            CommandResponse = "C"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.TimeUnixSeconds)
+            .WithErrorMessage("TimeUnixSeconds exceeds maximum valid Unix timestamp");
+    }
+
+    [Fact]
+    public void Should_Accept_TimeUnixSeconds_In_Past()
+    {
+        // Test with a timestamp from 1980 (315532800 = 1980-01-01 00:00:00 UTC)
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            FromCallsign = "G9XXX",
+            TimeUnixSeconds = 315532800,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            Modulo = 8,
+            CommandResponse = "C"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Accept_TimeUnixSeconds_In_Future()
+    {
+        // Test with a timestamp far in the future (2100-01-01)
+        var futureTimestamp = new DateTimeOffset(2100, 1, 1, 0, 0, 0, TimeSpan.Zero).ToUnixTimeSeconds();
+        
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            FromCallsign = "G9XXX",
+            TimeUnixSeconds = futureTimestamp,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            Modulo = 8,
+            CommandResponse = "C"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Accept_TimeUnixSeconds_With_All_Fields_Present()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            FromCallsign = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            Modulo = 8,
+            CommandResponse = "C",
+            IFieldLength = 24,
+            ProtocolId = 240,
+            ProtocolName = "DATA",
+            PollFinal = "P",
+            Digipeaters = new[]
+            {
+                new L2Trace.Digipeater { Callsign = "RELAY-1", Repeated = true }
+            }
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
     }
 
     #endregion
@@ -140,6 +391,7 @@ public class L2TraceValidatorTests
         {
             DatagramType = "L2Trace",
             FromCallsign = "G9XXX",
+            TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
             Destination = "ID",
@@ -160,6 +412,7 @@ public class L2TraceValidatorTests
         {
             DatagramType = "L2Trace",
             FromCallsign = "G9XXX",
+            TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
             Destination = "ID",
@@ -186,6 +439,7 @@ public class L2TraceValidatorTests
         {
             DatagramType = "L2Trace",
             FromCallsign = "G9XXX",
+            TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
             Destination = "ID",
@@ -210,6 +464,7 @@ public class L2TraceValidatorTests
         {
             DatagramType = "L2Trace",
             FromCallsign = "G9XXX",
+            TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
             Destination = "ID",
@@ -238,6 +493,7 @@ public class L2TraceValidatorTests
         {
             DatagramType = "L2Trace",
             FromCallsign = "G9XXX",
+            TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
             Destination = "ID",
@@ -261,6 +517,7 @@ public class L2TraceValidatorTests
         {
             DatagramType = "L2Trace",
             FromCallsign = "G9XXX",
+            TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
             Destination = "ID",
@@ -291,6 +548,7 @@ public class L2TraceValidatorTests
         {
             DatagramType = "L2Trace",
             FromCallsign = "G9XXX",
+            TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
             Destination = "ID",
@@ -312,6 +570,7 @@ public class L2TraceValidatorTests
         {
             DatagramType = "L2Trace",
             FromCallsign = "G9XXX",
+            TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
             Destination = "ID",
@@ -337,6 +596,7 @@ public class L2TraceValidatorTests
         {
             DatagramType = "L2Trace",
             FromCallsign = "G9XXX",
+            TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
             Destination = "ID",
@@ -358,6 +618,7 @@ public class L2TraceValidatorTests
         {
             DatagramType = "L2Trace",
             FromCallsign = "G9XXX",
+            TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
             Destination = "ID",
@@ -379,6 +640,7 @@ public class L2TraceValidatorTests
         {
             DatagramType = "L2Trace",
             FromCallsign = "G9XXX",
+            TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
             Destination = "ID",
@@ -404,6 +666,7 @@ public class L2TraceValidatorTests
         {
             DatagramType = "L2Trace",
             FromCallsign = "G9XXX",
+            TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
             Destination = "ID",
@@ -429,6 +692,7 @@ public class L2TraceValidatorTests
         {
             DatagramType = "L2Trace",
             FromCallsign = "G9XXX",
+            TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
             Destination = "ID",

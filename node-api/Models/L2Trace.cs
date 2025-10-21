@@ -15,6 +15,9 @@ public record L2Trace : UdpNodeInfoJsonDatagram
     [JsonPropertyName("reportFrom")]
     public required string FromCallsign { get; init; }
 
+    [JsonPropertyName("time")]
+    public long TimeUnixSeconds { get; init; }
+
     /// <summary>
     /// Port ID, e.g. "3" or "4mlink" (Required)
     /// </summary>

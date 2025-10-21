@@ -24,6 +24,13 @@ public class L2TraceValidator : AbstractValidator<L2Trace>
             .NotEmpty()
             .WithMessage("Reporter's callsign is required");
 
+        // TimeUnixSeconds validation - should be a valid Unix timestamp
+        RuleFor(x => x.TimeUnixSeconds)
+            .GreaterThanOrEqualTo(0)
+            .WithMessage("TimeUnixSeconds cannot be negative")
+            .LessThanOrEqualTo(DateTimeOffset.MaxValue.ToUnixTimeSeconds())
+            .WithMessage("TimeUnixSeconds exceeds maximum valid Unix timestamp");
+
         RuleFor(x => x.Port)
             .NotEmpty()
             .WithMessage("Port ID is required");
