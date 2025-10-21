@@ -493,13 +493,18 @@ About This Document
 2.2.1.  NetRom Routing Info
 
    A NetRom routing info frame (aka "nodes broadcast") produces the
-   following JSON fields (all required):
+   following JSON fields:
 
       Name  Required  Type     Description
       ---------------------------------------------------
       "type"       Y  String   Routing info type: "NODES"
-      "fromAlias"  Y  String   Sender's alias
+      "fromAlias"  N  String   Sender's alias (*14a)
       "nodes"      Y  Array    One or more destination nodes
+
+      (*14a) While earlier versions of this specification marked
+             "fromAlias" as required, real-world implementations
+             often omit this field. Implementations should accept
+             NODES routing broadcasts both with and without this field.
 
       Each member of the "nodes" array is JSON object containing the
       following fields (all required):
@@ -1079,9 +1084,3 @@ About This Document
                                     NodeDown, LinkStatus, LinkDown,
                                     CircuitStatus and CircuitDown.
                                     Added "time" to all reports
-   0.8a     2025-10-21  P. Dowie    Changed all "time" fields from
-                                    Required (Y) to Optional (N)
-   0.8b     2025-01-23  P. Dowie    Clarified that "alias" field in
-                                    NODES routing may be empty string
-
-

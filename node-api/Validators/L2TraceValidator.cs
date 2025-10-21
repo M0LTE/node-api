@@ -216,10 +216,9 @@ public class L2TraceValidator : AbstractValidator<L2Trace>
             // NODES routing validation (NetRom routing broadcast)
             When(x => x.Type == "NODES", () =>
             {
-                RuleFor(x => x.FromAlias)
-                    .NotEmpty()
-                    .WithMessage("FromAlias is required for NODES routing");
-
+                // FromAlias is marked as required in spec v0.8a section 2.2.1
+                // but real-world implementations don't include it, so making it optional
+                
                 RuleForEach(x => x.Nodes)
                     .SetValidator(new NetRomNodeValidator())
                     .When(x => x.Nodes != null);
