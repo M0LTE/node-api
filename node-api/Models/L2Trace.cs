@@ -59,7 +59,7 @@ public record L2Trace : UdpNodeInfoJsonDatagram
     /// AX.25 modulo (8 or 128)
     /// </summary>
     [JsonPropertyName("modulo")]
-    public required int Modulo { get; init; }
+    public int? Modulo { get; init; }
 
     /// <summary>
     /// List of digipeater calls (Optional)

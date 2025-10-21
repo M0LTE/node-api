@@ -23,7 +23,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C",
             IFieldLength = 24,
             ProtocolId = 240,
@@ -47,7 +46,7 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
+            // Modulo is now optional
             CommandResponse = "C"
         };
 
@@ -70,7 +69,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C"
         };
 
@@ -93,7 +91,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C"
         };
 
@@ -114,7 +111,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = -1,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C"
         };
 
@@ -124,7 +120,7 @@ public class L2TraceValidatorTests
 
     #endregion
 
-    #region TimeUnixSeconds Validation Tests
+    #region TimeUnixSeconds Validation
 
     [Fact]
     public void Should_Accept_Zero_For_TimeUnixSeconds()
@@ -140,7 +136,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C"
         };
 
@@ -161,7 +156,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C"
         };
 
@@ -186,7 +180,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C"
         };
 
@@ -214,7 +207,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C"
         };
 
@@ -237,7 +229,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C"
         };
 
@@ -260,7 +251,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C"
         };
 
@@ -284,7 +274,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C"
         };
 
@@ -307,7 +296,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C"
         };
 
@@ -331,7 +319,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C"
         };
 
@@ -352,7 +339,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C",
             IFieldLength = 24,
             ProtocolId = 240,
@@ -400,7 +386,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = l2Type,
-            Modulo = 8,
             CommandResponse = "C"
         };
 
@@ -421,7 +406,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "INVALID",
-            Modulo = 8,
             CommandResponse = "C"
         };
 
@@ -447,7 +431,6 @@ public class L2TraceValidatorTests
             Destination = "G8PZT-3",
             Control = 243,
             L2Type = "TEST",
-            Modulo = 8,
             CommandResponse = "C"
         };
 
@@ -468,7 +451,6 @@ public class L2TraceValidatorTests
             Destination = "G8PZT-11",
             Control = 243,
             L2Type = "TEST",
-            Modulo = 8,
             CommandResponse = "R"
         };
 
@@ -489,7 +471,6 @@ public class L2TraceValidatorTests
             Destination = "M0ABC",
             Control = 227,
             L2Type = "TEST",
-            Modulo = 8,
             CommandResponse = "C",
             PollFinal = "P"
         };
@@ -511,7 +492,6 @@ public class L2TraceValidatorTests
             Destination = "M0LTE-1",
             Control = 227,
             L2Type = "TEST",
-            Modulo = 8,
             CommandResponse = "R",
             PollFinal = "F"
         };
@@ -533,9 +513,9 @@ public class L2TraceValidatorTests
             Destination = "G8PZT-2",
             Control = 227,
             L2Type = "TEST",
-            Modulo = 128,
             CommandResponse = "C",
-            PollFinal = "P"
+            PollFinal = "P",
+            Modulo = 128
         };
 
         var result = _validator.TestValidate(model);
@@ -555,7 +535,6 @@ public class L2TraceValidatorTests
             Destination = "G8PZT-3",
             Control = 243,
             L2Type = "TEST",
-            Modulo = 8,
             CommandResponse = "C"
         };
 
@@ -567,6 +546,27 @@ public class L2TraceValidatorTests
     #endregion
 
     #region Modulo Validation
+
+    [Fact]
+    public void Should_Accept_Null_Modulo()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            CommandResponse = "C",
+            Modulo = null
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.Modulo);
+    }
 
     [Theory]
     [InlineData(8)]
@@ -583,8 +583,8 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "UI",
-            Modulo = modulo,
-            CommandResponse = "C"
+            CommandResponse = "C",
+            Modulo = modulo
         };
 
         var result = _validator.TestValidate(model);
@@ -608,8 +608,8 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "UI",
-            Modulo = modulo,
-            CommandResponse = "C"
+            CommandResponse = "C",
+            Modulo = modulo
         };
 
         var result = _validator.TestValidate(model);
@@ -637,7 +637,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = cr
         };
 
@@ -661,7 +660,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = cr
         };
 
@@ -693,7 +691,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C",
             ProtocolName = protocol
         };
@@ -715,7 +712,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C",
             ProtocolName = "INVALID"
         };
@@ -741,7 +737,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "I",
-            Modulo = 8,
             CommandResponse = "C",
             IFieldLength = 100
         };
@@ -763,7 +758,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C",
             IFieldLength = 100
         };
@@ -785,7 +779,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C",
             IFieldLength = -1
         };
@@ -811,7 +804,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C",
             Digipeaters =
             [
@@ -837,7 +829,6 @@ public class L2TraceValidatorTests
             Destination = "ID",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C",
             Digipeaters =
             [
@@ -865,7 +856,6 @@ public class L2TraceValidatorTests
             Destination = "G8PZT-1",
             Control = 32,
             L2Type = "I",
-            Modulo = 8,
             CommandResponse = "C",
             ProtocolName = "NET/ROM"
             // Missing L3Type
@@ -891,7 +881,6 @@ public class L2TraceValidatorTests
             Destination = "G8PZT-1",
             Control = 32,
             L2Type = "I",
-            Modulo = 8,
             CommandResponse = "C",
             ProtocolName = "NET/ROM",
             L3Type = l3Type
@@ -913,7 +902,6 @@ public class L2TraceValidatorTests
             Destination = "G8PZT",
             Control = 232,
             L2Type = "I",
-            Modulo = 8,
             CommandResponse = "C",
             IFieldLength = 36,
             ProtocolId = 207,
@@ -941,9 +929,6 @@ public class L2TraceValidatorTests
             Destination = "G8PZT",
             Control = 232,
             L2Type = "I",
-            Modulo = 8,
-            ReceiveSequence = 7,
-            TransmitSequence = 4,
             CommandResponse = "C",
             IFieldLength = 36,
             ProtocolId = 207,
@@ -975,7 +960,6 @@ public class L2TraceValidatorTests
             Destination = "G8PZT",
             Control = 232,
             L2Type = "I",
-            Modulo = 8,
             CommandResponse = "C",
             ProtocolName = "NET/ROM",
             L3Type = "NetRom",
@@ -1004,7 +988,6 @@ public class L2TraceValidatorTests
             Destination = "G8PZT",
             Control = 232,
             L2Type = "I",
-            Modulo = 8,
             CommandResponse = "C",
             ProtocolName = "NET/ROM",
             L3Type = "NetRom",
@@ -1039,7 +1022,6 @@ public class L2TraceValidatorTests
             Destination = "G8PZT-1",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C",
             ProtocolName = "NET/ROM",
             L3Type = "Routing info",
@@ -1074,7 +1056,6 @@ public class L2TraceValidatorTests
             Destination = "G8PZT-1",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C",
             ProtocolName = "NET/ROM",
             L3Type = "Routing info",
@@ -1105,7 +1086,6 @@ public class L2TraceValidatorTests
             Destination = "G8PZT-1",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C",
             ProtocolName = "NET/ROM",
             L3Type = "Routing info",
@@ -1139,7 +1119,6 @@ public class L2TraceValidatorTests
             Destination = "G8PZT-1",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C",
             ProtocolName = "NET/ROM",
             L3Type = "Routing info",
@@ -1165,7 +1144,6 @@ public class L2TraceValidatorTests
             Destination = "G8PZT-1",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C",
             ProtocolName = "NET/ROM",
             L3Type = "Routing info",
@@ -1199,7 +1177,6 @@ public class L2TraceValidatorTests
             Destination = "G8PZT-1",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C",
             ProtocolName = "NET/ROM",
             L3Type = "Routing info",
@@ -1233,7 +1210,6 @@ public class L2TraceValidatorTests
             Destination = "G8PZT-1",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C",
             ProtocolName = "NET/ROM",
             L3Type = "Routing info",
@@ -1266,7 +1242,6 @@ public class L2TraceValidatorTests
             Destination = "G8PZT-1",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C",
             ProtocolName = "NET/ROM",
             L3Type = "Routing info",
@@ -1299,7 +1274,6 @@ public class L2TraceValidatorTests
             Destination = "G8PZT-1",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C",
             ProtocolName = "NET/ROM",
             L3Type = "Routing info",
@@ -1335,7 +1309,6 @@ public class L2TraceValidatorTests
             Destination = "G8PZT-1",
             Control = 3,
             L2Type = "UI",
-            Modulo = 8,
             CommandResponse = "C",
             ProtocolName = "NET/ROM",
             L3Type = "Routing info",

@@ -57,6 +57,7 @@ public class L2TraceValidator : AbstractValidator<L2Trace>
 
         RuleFor(x => x.Modulo)
             .Must(m => m == 8 || m == 128)
+            .When(x => x.Modulo.HasValue)
             .WithMessage("Modulo must be 8 or 128");
 
         // Optional fields validation
