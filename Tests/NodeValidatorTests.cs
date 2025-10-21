@@ -28,6 +28,183 @@ public class NodeUpEventValidatorTests
     }
 
     [Fact]
+    public void Should_Accept_Null_TimeUnixSeconds()
+    {
+        var model = new NodeUpEvent
+        {
+            DatagramType = "NodeUpEvent",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            TimeUnixSeconds = null
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Accept_Valid_TimeUnixSeconds()
+    {
+        var model = new NodeUpEvent
+        {
+            DatagramType = "NodeUpEvent",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            TimeUnixSeconds = 1759682231
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Accept_Zero_For_TimeUnixSeconds()
+    {
+        var model = new NodeUpEvent
+        {
+            DatagramType = "NodeUpEvent",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            TimeUnixSeconds = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_TimeUnixSeconds()
+    {
+        var model = new NodeUpEvent
+        {
+            DatagramType = "NodeUpEvent",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            TimeUnixSeconds = -1
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.TimeUnixSeconds)
+            .WithErrorMessage("TimeUnixSeconds cannot be negative");
+    }
+
+    [Theory]
+    [InlineData(-100)]
+    [InlineData(-1000)]
+    [InlineData(-999999999)]
+    public void Should_Reject_Various_Negative_TimeUnixSeconds(long timestamp)
+    {
+        var model = new NodeUpEvent
+        {
+            DatagramType = "NodeUpEvent",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            TimeUnixSeconds = timestamp
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.TimeUnixSeconds)
+            .WithErrorMessage("TimeUnixSeconds cannot be negative");
+    }
+
+    [Theory]
+    [InlineData(1609459200)]  // 2021-01-01 00:00:00 UTC
+    [InlineData(1759682231)]  // From spec example
+    public void Should_Accept_Valid_Recent_TimeUnixSeconds(long timestamp)
+    {
+        var model = new NodeUpEvent
+        {
+            DatagramType = "NodeUpEvent",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            TimeUnixSeconds = timestamp
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Accept_Current_Timestamp()
+    {
+        var currentTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        
+        var model = new NodeUpEvent
+        {
+            DatagramType = "NodeUpEvent",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            TimeUnixSeconds = currentTimestamp
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Accept_Maximum_Valid_Unix_Timestamp()
+    {
+        var maxTimestamp = DateTimeOffset.MaxValue.ToUnixTimeSeconds();
+        
+        var model = new NodeUpEvent
+        {
+            DatagramType = "NodeUpEvent",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            TimeUnixSeconds = maxTimestamp
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Reject_TimeUnixSeconds_Exceeding_Maximum()
+    {
+        var maxTimestamp = DateTimeOffset.MaxValue.ToUnixTimeSeconds();
+        var exceedingTimestamp = maxTimestamp + 1;
+        
+        var model = new NodeUpEvent
+        {
+            DatagramType = "NodeUpEvent",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            TimeUnixSeconds = exceedingTimestamp
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.TimeUnixSeconds)
+            .WithErrorMessage("TimeUnixSeconds exceeds maximum valid Unix timestamp");
+    }
+
+    [Fact]
     public void Should_Accept_Null_Coordinates()
     {
         var model = new NodeUpEvent
@@ -717,6 +894,192 @@ public class NodeStatusReportEventValidatorTests
     }
 
     [Fact]
+    public void Should_Accept_Null_TimeUnixSeconds()
+    {
+        var model = new NodeStatusReportEvent
+        {
+            DatagramType = "NodeStatus",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            UptimeSecs = 100,
+            TimeUnixSeconds = null
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Accept_Valid_TimeUnixSeconds()
+    {
+        var model = new NodeStatusReportEvent
+        {
+            DatagramType = "NodeStatus",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            UptimeSecs = 100,
+            TimeUnixSeconds = 1759682231
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Accept_Zero_For_TimeUnixSeconds()
+    {
+        var model = new NodeStatusReportEvent
+        {
+            DatagramType = "NodeStatus",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            UptimeSecs = 100,
+            TimeUnixSeconds = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_TimeUnixSeconds()
+    {
+        var model = new NodeStatusReportEvent
+        {
+            DatagramType = "NodeStatus",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            UptimeSecs = 100,
+            TimeUnixSeconds = -1
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.TimeUnixSeconds)
+            .WithErrorMessage("TimeUnixSeconds cannot be negative");
+    }
+
+    [Theory]
+    [InlineData(-100)]
+    [InlineData(-1000)]
+    [InlineData(-999999999)]
+    public void Should_Reject_Various_Negative_TimeUnixSeconds(long timestamp)
+    {
+        var model = new NodeStatusReportEvent
+        {
+            DatagramType = "NodeStatus",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            UptimeSecs = 100,
+            TimeUnixSeconds = timestamp
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.TimeUnixSeconds)
+            .WithErrorMessage("TimeUnixSeconds cannot be negative");
+    }
+
+    [Theory]
+    [InlineData(1609459200)]  // 2021-01-01 00:00:00 UTC
+    [InlineData(1759682231)]  // From spec example
+    public void Should_Accept_Valid_Recent_TimeUnixSeconds(long timestamp)
+    {
+        var model = new NodeStatusReportEvent
+        {
+            DatagramType = "NodeStatus",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            UptimeSecs = 100,
+            TimeUnixSeconds = timestamp
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Accept_Current_Timestamp()
+    {
+        var currentTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        
+        var model = new NodeStatusReportEvent
+        {
+            DatagramType = "NodeStatus",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            UptimeSecs = 100,
+            TimeUnixSeconds = currentTimestamp
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Accept_Maximum_Valid_Unix_Timestamp()
+    {
+        var maxTimestamp = DateTimeOffset.MaxValue.ToUnixTimeSeconds();
+        
+        var model = new NodeStatusReportEvent
+        {
+            DatagramType = "NodeStatus",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            UptimeSecs = 100,
+            TimeUnixSeconds = maxTimestamp
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Reject_TimeUnixSeconds_Exceeding_Maximum()
+    {
+        var maxTimestamp = DateTimeOffset.MaxValue.ToUnixTimeSeconds();
+        var exceedingTimestamp = maxTimestamp + 1;
+        
+        var model = new NodeStatusReportEvent
+        {
+            DatagramType = "NodeStatus",
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            Locator = "IO70KD",
+            Software = "XrLin",
+            Version = "504j",
+            UptimeSecs = 100,
+            TimeUnixSeconds = exceedingTimestamp
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.TimeUnixSeconds)
+            .WithErrorMessage("TimeUnixSeconds exceeds maximum valid Unix timestamp");
+    }
+
+    [Fact]
     public void Should_Accept_Zero_Uptime()
     {
         var model = new NodeStatusReportEvent
@@ -732,24 +1095,6 @@ public class NodeStatusReportEventValidatorTests
 
         var result = _validator.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(x => x.UptimeSecs);
-    }
-
-    [Fact]
-    public void Should_Reject_Negative_Uptime()
-    {
-        var model = new NodeStatusReportEvent
-        {
-            DatagramType = "NodeStatus",
-            NodeCall = "G8PZT-1",
-            NodeAlias = "XRLN64",
-            Locator = "IO70KD",
-            Software = "XrLin",
-            Version = "504j",
-            UptimeSecs = -1
-        };
-
-        var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(x => x.UptimeSecs);
     }
 
     [Theory]

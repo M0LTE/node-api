@@ -11,6 +11,14 @@ public class NodeUpEventValidator : AbstractValidator<NodeUpEvent>
             .Equal("NodeUpEvent")
             .WithMessage("DatagramType must be 'NodeUpEvent'");
 
+        RuleFor(x => x.TimeUnixSeconds)
+            .GreaterThanOrEqualTo(0)
+            .When(x => x.TimeUnixSeconds.HasValue)
+            .WithMessage("TimeUnixSeconds cannot be negative")
+            .LessThanOrEqualTo(DateTimeOffset.MaxValue.ToUnixTimeSeconds())
+            .When(x => x.TimeUnixSeconds.HasValue)
+            .WithMessage("TimeUnixSeconds exceeds maximum valid Unix timestamp");
+
         RuleFor(x => x.NodeCall)
             .NotEmpty()
             .WithMessage("NodeCall is required");

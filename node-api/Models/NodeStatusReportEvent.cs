@@ -13,6 +13,12 @@ namespace node_api.Models;
 public record NodeStatusReportEvent : UdpNodeInfoJsonDatagram
 {
     /// <summary>
+    /// Timestamp (secs since 1/1/70) (Optional)
+    /// </summary>
+    [JsonPropertyName("time")]
+    public long? TimeUnixSeconds { get; init; }
+
+    /// <summary>
     /// Node Callsign (Required)
     /// </summary>
     [JsonPropertyName("nodeCall")]
