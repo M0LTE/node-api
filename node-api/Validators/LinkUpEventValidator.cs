@@ -11,6 +11,12 @@ public class LinkUpEventValidator : AbstractValidator<LinkUpEvent>
             .Equal("LinkUpEvent")
             .WithMessage("DatagramType must be 'LinkUpEvent'");
 
+        RuleFor(x => x.TimeUnixSeconds)
+            .GreaterThanOrEqualTo(0)
+            .WithMessage("TimeUnixSeconds cannot be negative")
+            .LessThanOrEqualTo(DateTimeOffset.MaxValue.ToUnixTimeSeconds())
+            .WithMessage("TimeUnixSeconds exceeds maximum valid Unix timestamp");
+
         RuleFor(x => x.Node)
             .NotEmpty()
             .WithMessage("Node callsign is required");

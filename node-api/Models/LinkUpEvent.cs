@@ -10,6 +10,9 @@ namespace node_api.Models;
 /// </summary>
 public record LinkUpEvent : UdpNodeInfoJsonDatagram
 {
+    [JsonPropertyName("time")]
+    public required long TimeUnixSeconds { get; init; }
+    
     /// <summary>
     /// Callsign of reporting node (Required)
     /// </summary>

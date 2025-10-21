@@ -1296,10 +1296,11 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
     [Fact]
     public void Should_Deserialize_Spec_Example_Outgoing_AX25_Connection_Event()
     {
-        // Example from specification section 3.9
+        // Example from specification section 3.4.4
         var json = """
         {
         "@type": "LinkUpEvent",
+        "time": 1759688220,
         "node": "G8PZT-1",
         "id": 3,
         "direction": "outgoing",
@@ -1315,6 +1316,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
 
         // Assert
         evt.DatagramType.Should().Be("LinkUpEvent");
+        evt.TimeUnixSeconds.Should().Be(1759688220);
         evt.Node.Should().Be("G8PZT-1");
         evt.Id.Should().Be(3);
         evt.Direction.Should().Be("outgoing");
@@ -1332,6 +1334,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var json = """
         {
         "@type": "LinkUpEvent",
+        "time": 1759688220,
         "node": "G8PZT-1",
         "id": 5,
         "direction": "incoming",
@@ -1347,6 +1350,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
 
         // Assert
         evt.DatagramType.Should().Be("LinkUpEvent");
+        evt.TimeUnixSeconds.Should().Be(1759688220);
         evt.Node.Should().Be("G8PZT-1");
         evt.Id.Should().Be(5);
         evt.Direction.Should().Be("incoming");

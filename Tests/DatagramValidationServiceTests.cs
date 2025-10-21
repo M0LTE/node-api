@@ -71,6 +71,7 @@ public class DatagramValidationServiceTests
         var datagram = new LinkUpEvent
         {
             DatagramType = "LinkUpEvent",
+            TimeUnixSeconds = 1729512000,
             Node = "G8PZT-1",
             Id = 3,
             Direction = "outgoing",
@@ -210,6 +211,7 @@ public class DatagramValidationServiceTests
             new LinkUpEvent
             {
                 DatagramType = "LinkUpEvent",
+                TimeUnixSeconds = 1729512000,
                 Node = "G8PZT-1",
                 Id = 3,
                 Direction = "outgoing",
