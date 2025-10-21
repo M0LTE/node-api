@@ -384,6 +384,9 @@ public class L2TraceValidatorTests
     [InlineData("RR")]
     [InlineData("RNR")]
     [InlineData("REJ")]
+    [InlineData("TEST")]
+    [InlineData("XID")]
+    [InlineData("SREJ")]
     [InlineData("?")]
     public void Should_Accept_Valid_L2Types(string l2Type)
     {
@@ -424,6 +427,141 @@ public class L2TraceValidatorTests
 
         var result = _validator.TestValidate(model);
         result.ShouldHaveValidationErrorFor(x => x.L2Type);
+    }
+
+    #endregion
+
+    #region TEST Frame Validation
+
+    [Fact]
+    public void Should_Validate_TEST_Frame_Command()
+    {
+        // Example from specification section 1.1.7
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G8PZT-1",
+            TimeUnixSeconds = 1761058466,
+            Port = "2",
+            Source = "G8PZT-11",
+            Destination = "G8PZT-3",
+            Control = 243,
+            L2Type = "TEST",
+            Modulo = 8,
+            CommandResponse = "C"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void Should_Validate_TEST_Frame_Response()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G8PZT-3",
+            TimeUnixSeconds = 1761058467,
+            Port = "2",
+            Source = "G8PZT-3",
+            Destination = "G8PZT-11",
+            Control = 243,
+            L2Type = "TEST",
+            Modulo = 8,
+            CommandResponse = "R"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void Should_Validate_TEST_Frame_With_Poll_Bit()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "M0LTE",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Source = "M0LTE-1",
+            Destination = "M0ABC",
+            Control = 227,
+            L2Type = "TEST",
+            Modulo = 8,
+            CommandResponse = "C",
+            PollFinal = "P"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void Should_Validate_TEST_Frame_With_Final_Bit()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "M0ABC",
+            TimeUnixSeconds = 1729512001,
+            Port = "1",
+            Source = "M0ABC",
+            Destination = "M0LTE-1",
+            Control = 227,
+            L2Type = "TEST",
+            Modulo = 8,
+            CommandResponse = "R",
+            PollFinal = "F"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void Should_Validate_TEST_Frame_Extended_Modulo()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G8PZT-1",
+            TimeUnixSeconds = 1729512000,
+            Port = "3",
+            Source = "G8PZT-1",
+            Destination = "G8PZT-2",
+            Control = 227,
+            L2Type = "TEST",
+            Modulo = 128,
+            CommandResponse = "C",
+            PollFinal = "P"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void Should_Validate_TEST_Frame_With_Timestamp()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G8PZT-1",
+            TimeUnixSeconds = 1761058466,
+            Port = "2",
+            Source = "G8PZT-11",
+            Destination = "G8PZT-3",
+            Control = 243,
+            L2Type = "TEST",
+            Modulo = 8,
+            CommandResponse = "C"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
     }
 
     #endregion

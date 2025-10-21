@@ -976,6 +976,166 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
 
     #endregion
 
+    #region TEST Frame Examples
+
+    [Fact]
+    public void Should_Deserialize_Spec_Example_Link_Test_Frame()
+    {
+        // Example from specification section 1.1.7
+        var json = """
+        {
+        "@type": "L2Trace",
+        "reportFrom": "G8PZT-1",
+        "time": 1761058466,
+        "port": "2",
+        "srce": "G8PZT-11",
+        "dest": "G8PZT-3",
+        "ctrl": 243,
+        "l2Type": "TEST",
+        "modulo": 8,
+        "cr": "C"
+        }
+        """;
+
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
+
+        // Assert
+        frame.DatagramType.Should().Be("L2Trace");
+        frame.ReportFrom.Should().Be("G8PZT-1");
+        frame.TimeUnixSeconds.Should().Be(1761058466);
+        frame.Port.Should().Be("2");
+        frame.Source.Should().Be("G8PZT-11");
+        frame.Destination.Should().Be("G8PZT-3");
+        frame.Control.Should().Be(243);
+        frame.L2Type.Should().Be("TEST");
+        frame.Modulo.Should().Be(8);
+        frame.CommandResponse.Should().Be("C");
+        
+        parsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Should_Deserialize_TEST_Frame_As_Response()
+    {
+        // Test a TEST frame as response instead of command
+        var json = """
+        {
+        "@type": "L2Trace",
+        "reportFrom": "G8PZT-3",
+        "time": 1761058467,
+        "port": "2",
+        "srce": "G8PZT-3",
+        "dest": "G8PZT-11",
+        "ctrl": 243,
+        "l2Type": "TEST",
+        "modulo": 8,
+        "cr": "R"
+        }
+        """;
+
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
+
+        // Assert
+        frame.DatagramType.Should().Be("L2Trace");
+        frame.ReportFrom.Should().Be("G8PZT-3");
+        frame.TimeUnixSeconds.Should().Be(1761058467);
+        frame.Port.Should().Be("2");
+        frame.Source.Should().Be("G8PZT-3");
+        frame.Destination.Should().Be("G8PZT-11");
+        frame.Control.Should().Be(243);
+        frame.L2Type.Should().Be("TEST");
+        frame.Modulo.Should().Be(8);
+        frame.CommandResponse.Should().Be("R");
+        
+        parsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Should_Deserialize_TEST_Frame_With_Poll_Final()
+    {
+        // Test a TEST frame with Poll/Final bit
+        var json = """
+        {
+        "@type": "L2Trace",
+        "reportFrom": "M0LTE",
+        "time": 1729512000,
+        "port": "1",
+        "srce": "M0LTE-1",
+        "dest": "M0ABC",
+        "ctrl": 227,
+        "l2Type": "TEST",
+        "modulo": 8,
+        "cr": "C",
+        "pf": "P"
+        }
+        """;
+
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
+
+        // Assert
+        frame.DatagramType.Should().Be("L2Trace");
+        frame.ReportFrom.Should().Be("M0LTE");
+        frame.TimeUnixSeconds.Should().Be(1729512000);
+        frame.Port.Should().Be("1");
+        frame.Source.Should().Be("M0LTE-1");
+        frame.Destination.Should().Be("M0ABC");
+        frame.Control.Should().Be(227);
+        frame.L2Type.Should().Be("TEST");
+        frame.Modulo.Should().Be(8);
+        frame.CommandResponse.Should().Be("C");
+        frame.PollFinal.Should().Be("P");
+        
+        parsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Should_Deserialize_TEST_Frame_Extended_Modulo()
+    {
+        // Test a TEST frame with extended modulo (128)
+        var json = """
+        {
+        "@type": "L2Trace",
+        "reportFrom": "G8PZT-1",
+        "time": 1729512000,
+        "port": "3",
+        "srce": "G8PZT-1",
+        "dest": "G8PZT-2",
+        "ctrl": 227,
+        "l2Type": "TEST",
+        "modulo": 128,
+        "cr": "C",
+        "pf": "P"
+        }
+        """;
+
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
+
+        // Assert
+        frame.DatagramType.Should().Be("L2Trace");
+        frame.ReportFrom.Should().Be("G8PZT-1");
+        frame.TimeUnixSeconds.Should().Be(1729512000);
+        frame.Port.Should().Be("3");
+        frame.Source.Should().Be("G8PZT-1");
+        frame.Destination.Should().Be("G8PZT-2");
+        frame.Control.Should().Be(227);
+        frame.L2Type.Should().Be("TEST");
+        frame.Modulo.Should().Be(128);
+        frame.CommandResponse.Should().Be("C");
+        frame.PollFinal.Should().Be("P");
+        
+        parsed.Should().BeTrue();
+    }
+
+    #endregion
+
     #region Event and Status Report Examples from Spec
 
     [Fact]
