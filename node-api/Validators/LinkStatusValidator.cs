@@ -11,6 +11,12 @@ public class LinkStatusValidator : AbstractValidator<LinkStatus>
             .Equal("LinkStatus")
             .WithMessage("DatagramType must be 'LinkStatus'");
 
+        RuleFor(x => x.TimeUnixSeconds)
+            .GreaterThanOrEqualTo(0)
+            .WithMessage("TimeUnixSeconds cannot be negative")
+            .LessThanOrEqualTo(DateTimeOffset.MaxValue.ToUnixTimeSeconds())
+            .WithMessage("TimeUnixSeconds exceeds maximum valid Unix timestamp");
+
         RuleFor(x => x.Node)
             .NotEmpty()
             .WithMessage("Node callsign is required");
@@ -50,5 +56,55 @@ public class LinkStatusValidator : AbstractValidator<LinkStatus>
         RuleFor(x => x.FramesQueued)
             .GreaterThanOrEqualTo(0)
             .WithMessage("FramesQueued cannot be negative");
+
+        // Optional fields validation
+        When(x => x.FramesQueuedPeak.HasValue, () =>
+        {
+            RuleFor(x => x.FramesQueuedPeak!.Value)
+                .GreaterThanOrEqualTo(0)
+                .WithMessage("FramesQueuedPeak cannot be negative");
+        });
+
+        When(x => x.BytesSent.HasValue, () =>
+        {
+            RuleFor(x => x.BytesSent!.Value)
+                .GreaterThanOrEqualTo(0)
+                .WithMessage("BytesSent cannot be negative");
+        });
+
+        When(x => x.BytesReceived.HasValue, () =>
+        {
+            RuleFor(x => x.BytesReceived!.Value)
+                .GreaterThanOrEqualTo(0)
+                .WithMessage("BytesReceived cannot be negative");
+        });
+
+        When(x => x.BpsTxMean.HasValue, () =>
+        {
+            RuleFor(x => x.BpsTxMean!.Value)
+                .GreaterThanOrEqualTo(0)
+                .WithMessage("BpsTxMean cannot be negative");
+        });
+
+        When(x => x.BpsRxMean.HasValue, () =>
+        {
+            RuleFor(x => x.BpsRxMean!.Value)
+                .GreaterThanOrEqualTo(0)
+                .WithMessage("BpsRxMean cannot be negative");
+        });
+
+        When(x => x.FrmQMax.HasValue, () =>
+        {
+            RuleFor(x => x.FrmQMax!.Value)
+                .GreaterThanOrEqualTo(0)
+                .WithMessage("FrmQMax cannot be negative");
+        });
+
+        When(x => x.L2RttMs.HasValue, () =>
+        {
+            RuleFor(x => x.L2RttMs!.Value)
+                .GreaterThanOrEqualTo(0)
+                .WithMessage("L2RttMs cannot be negative");
+        });
     }
 }

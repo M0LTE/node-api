@@ -236,6 +236,7 @@ public class DatagramValidationServiceTests
             new LinkStatus
             {
                 DatagramType = "LinkStatus",
+                TimeUnixSeconds = 1729512000,
                 Node = "G8PZT-1",
                 Id = 3,
                 Direction = "incoming",

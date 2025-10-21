@@ -9,6 +9,9 @@ namespace node_api.Models;
 /// </summary>
 public record LinkStatus : UdpNodeInfoJsonDatagram
 {
+    [JsonPropertyName("time")]
+    public required long TimeUnixSeconds { get; init; }
+
     /// <summary>
     /// Callsign of reporting node (Required)
     /// </summary>
@@ -69,9 +72,34 @@ public record LinkStatus : UdpNodeInfoJsonDatagram
     [JsonPropertyName("frmsQueued")]
     public required int FramesQueued { get; init; }
 
+    /// <summary>
+    /// Peak TX queue length (frames)
+    /// </summary>
+    [JsonPropertyName("frmsQdPeak")]
+    public int? FramesQueuedPeak { get; init; }
+
     [JsonPropertyName("bytesSent")]
     public int? BytesSent { get; init; }
 
     [JsonPropertyName("bytesRcvd")]
     public int? BytesReceived { get; init; }
+
+    /*
+      "bpsTxMean"   N  Integer  Ave TX bytes/sec since last status
+      "bpsRxMean"   N  Integer  Ave RX bytes/sec since last status
+      "frmQMax"     N  Integer  Max TX queue length since last status
+      "l2rttMs"     N  Integer  Average Round Trip Time in millisecs
+     */
+
+    [JsonPropertyName("bpsTxMean")]
+    public int? BpsTxMean { get; init; }
+
+    [JsonPropertyName("bpsRxMean")]
+    public int? BpsRxMean { get; init; }
+
+    [JsonPropertyName("frmQMax")]
+    public int? FrmQMax { get; init; }
+
+    [JsonPropertyName("l2rttMs")]
+    public int? L2RttMs { get; init; }
 }
