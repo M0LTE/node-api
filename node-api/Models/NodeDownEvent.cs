@@ -12,6 +12,12 @@ namespace node_api.Models;
 public record NodeDownEvent : UdpNodeInfoJsonDatagram
 {
     /// <summary>
+    /// Timestamp (secs since 1/1/70) (Required)
+    /// </summary>
+    [JsonPropertyName("time")]
+    public required long TimeUnixSeconds { get; init; }
+
+    /// <summary>
     /// Node Callsign (Required)
     /// </summary>
     [JsonPropertyName("nodeCall")]
@@ -22,6 +28,12 @@ public record NodeDownEvent : UdpNodeInfoJsonDatagram
     /// </summary>
     [JsonPropertyName("nodeAlias")]
     public required string NodeAlias { get; init; }
+
+    /// <summary>
+    /// Node's uptime in seconds (Optional)
+    /// </summary>
+    [JsonPropertyName("uptimeSecs")]
+    public int? UptimeSecs { get; init; }
 
     /// <summary>
     /// Reason for the shutdown, e.g. "reboot" (Optional)

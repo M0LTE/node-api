@@ -192,6 +192,7 @@ public class NodeDownEventValidatorTests
         var model = new NodeDownEvent
         {
             DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = 1759682231,
             NodeCall = "G8PZT-1",
             NodeAlias = "XRLN64",
             Reason = "Reboot"
@@ -207,6 +208,7 @@ public class NodeDownEventValidatorTests
         var model = new NodeDownEvent
         {
             DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = 1759682231,
             NodeCall = "G8PZT-1",
             NodeAlias = "XRLN64"
         };
@@ -221,6 +223,7 @@ public class NodeDownEventValidatorTests
         var model = new NodeDownEvent
         {
             DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = 1759682231,
             NodeCall = "",
             NodeAlias = "XRLN64"
         };
@@ -235,6 +238,7 @@ public class NodeDownEventValidatorTests
         var model = new NodeDownEvent
         {
             DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = 1759682231,
             NodeCall = "G8PZT-1",
             NodeAlias = ""
         };
@@ -249,6 +253,7 @@ public class NodeDownEventValidatorTests
         var model = new NodeDownEvent
         {
             DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = 1759682231,
             NodeCall = "G8PZT-1",
             NodeAlias = "XRLN64",
             LinksIn = 100,
@@ -268,6 +273,7 @@ public class NodeDownEventValidatorTests
         var model = new NodeDownEvent
         {
             DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = 1759682231,
             NodeCall = "G8PZT-1",
             NodeAlias = "XRLN64"
         };
@@ -286,6 +292,7 @@ public class NodeDownEventValidatorTests
         var model = new NodeDownEvent
         {
             DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = 1759682231,
             NodeCall = "G8PZT-1",
             NodeAlias = "XRLN64",
             LinksIn = -1
@@ -301,6 +308,7 @@ public class NodeDownEventValidatorTests
         var model = new NodeDownEvent
         {
             DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = 1759682231,
             NodeCall = "G8PZT-1",
             NodeAlias = "XRLN64",
             LinksOut = -1
@@ -316,6 +324,7 @@ public class NodeDownEventValidatorTests
         var model = new NodeDownEvent
         {
             DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = 1759682231,
             NodeCall = "G8PZT-1",
             NodeAlias = "XRLN64",
             CircuitsIn = -1
@@ -331,6 +340,7 @@ public class NodeDownEventValidatorTests
         var model = new NodeDownEvent
         {
             DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = 1759682231,
             NodeCall = "G8PZT-1",
             NodeAlias = "XRLN64",
             CircuitsOut = -1
@@ -346,6 +356,7 @@ public class NodeDownEventValidatorTests
         var model = new NodeDownEvent
         {
             DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = 1759682231,
             NodeCall = "G8PZT-1",
             NodeAlias = "XRLN64",
             L3Relayed = -1
@@ -365,6 +376,7 @@ public class NodeDownEventValidatorTests
         var model = new NodeDownEvent
         {
             DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = 1759682231,
             NodeCall = "G8PZT-1",
             NodeAlias = "XRLN64",
             LinksIn = value
@@ -384,6 +396,7 @@ public class NodeDownEventValidatorTests
         var model = new NodeDownEvent
         {
             DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = 1759682231,
             NodeCall = "G8PZT-1",
             NodeAlias = "XRLN64",
             LinksOut = value
@@ -403,6 +416,7 @@ public class NodeDownEventValidatorTests
         var model = new NodeDownEvent
         {
             DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = 1759682231,
             NodeCall = "G8PZT-1",
             NodeAlias = "XRLN64",
             CircuitsIn = value
@@ -422,6 +436,7 @@ public class NodeDownEventValidatorTests
         var model = new NodeDownEvent
         {
             DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = 1759682231,
             NodeCall = "G8PZT-1",
             NodeAlias = "XRLN64",
             CircuitsOut = value
@@ -441,6 +456,7 @@ public class NodeDownEventValidatorTests
         var model = new NodeDownEvent
         {
             DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = 1759682231,
             NodeCall = "G8PZT-1",
             NodeAlias = "XRLN64",
             L3Relayed = value
@@ -448,6 +464,231 @@ public class NodeDownEventValidatorTests
 
         var result = _validator.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(x => x.L3Relayed);
+    }
+
+    #region TimeUnixSeconds Validation Tests
+
+    [Fact]
+    public void Should_Accept_Zero_For_TimeUnixSeconds()
+    {
+        var model = new NodeDownEvent
+        {
+            DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = 0,
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_TimeUnixSeconds()
+    {
+        var model = new NodeDownEvent
+        {
+            DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = -1,
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.TimeUnixSeconds)
+            .WithErrorMessage("TimeUnixSeconds cannot be negative");
+    }
+
+    [Theory]
+    [InlineData(-100)]
+    [InlineData(-1000)]
+    [InlineData(-999999999)]
+    public void Should_Reject_Various_Negative_TimeUnixSeconds(long timestamp)
+    {
+        var model = new NodeDownEvent
+        {
+            DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = timestamp,
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.TimeUnixSeconds)
+            .WithErrorMessage("TimeUnixSeconds cannot be negative");
+    }
+
+    [Theory]
+    [InlineData(1609459200)]  // 2021-01-01 00:00:00 UTC
+    [InlineData(1759682231)]  // From spec example
+    public void Should_Accept_Valid_Recent_TimeUnixSeconds(long timestamp)
+    {
+        var model = new NodeDownEvent
+        {
+            DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = timestamp,
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Accept_Current_Timestamp()
+    {
+        var currentTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        
+        var model = new NodeDownEvent
+        {
+            DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = currentTimestamp,
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Accept_Maximum_Valid_Unix_Timestamp()
+    {
+        var maxTimestamp = DateTimeOffset.MaxValue.ToUnixTimeSeconds();
+        
+        var model = new NodeDownEvent
+        {
+            DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = maxTimestamp,
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Reject_TimeUnixSeconds_Exceeding_Maximum()
+    {
+        var maxTimestamp = DateTimeOffset.MaxValue.ToUnixTimeSeconds();
+        var exceedingTimestamp = maxTimestamp + 1;
+        
+        var model = new NodeDownEvent
+        {
+            DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = exceedingTimestamp,
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.TimeUnixSeconds)
+            .WithErrorMessage("TimeUnixSeconds exceeds maximum valid Unix timestamp");
+    }
+
+    #endregion
+
+    #region UptimeSecs Validation Tests
+
+    [Fact]
+    public void Should_Accept_Null_UptimeSecs()
+    {
+        var model = new NodeDownEvent
+        {
+            DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = 1759682231,
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            UptimeSecs = null
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.UptimeSecs);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(14420)]  // From spec example
+    [InlineData(86400)]  // 1 day
+    [InlineData(2592000)]  // 30 days
+    public void Should_Accept_Valid_UptimeSecs(int uptime)
+    {
+        var model = new NodeDownEvent
+        {
+            DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = 1759682231,
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            UptimeSecs = uptime
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.UptimeSecs);
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_UptimeSecs()
+    {
+        var model = new NodeDownEvent
+        {
+            DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = 1759682231,
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            UptimeSecs = -1
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.UptimeSecs)
+            .WithErrorMessage("UptimeSecs cannot be negative");
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(-100)]
+    [InlineData(-999999)]
+    public void Should_Reject_Various_Negative_UptimeSecs(int uptime)
+    {
+        var model = new NodeDownEvent
+        {
+            DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = 1759682231,
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            UptimeSecs = uptime
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.UptimeSecs)
+            .WithErrorMessage("UptimeSecs cannot be negative");
+    }
+
+    #endregion
+
+    [Fact]
+    public void Should_Validate_Complete_Spec_Example()
+    {
+        // Example from specification section 3.4.3
+        var model = new NodeDownEvent
+        {
+            DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = 1759682231,
+            NodeCall = "G8PZT-1",
+            NodeAlias = "XRLN64",
+            UptimeSecs = 14420,
+            Reason = "Shutdown",
+            LinksIn = 0,
+            LinksOut = 2,
+            CircuitsIn = 4,
+            CircuitsOut = 5,
+            L3Relayed = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
     }
 }
 

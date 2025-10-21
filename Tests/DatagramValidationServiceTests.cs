@@ -131,6 +131,7 @@ public class DatagramValidationServiceTests
         var validDatagram = new NodeDownEvent
         {
             DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = 1759682231,
             NodeCall = "G8PZT-1",
             NodeAlias = "XRLN64"
         };
@@ -147,6 +148,7 @@ public class DatagramValidationServiceTests
         var invalidDatagram = new NodeDownEvent
         {
             DatagramType = "NodeDownEvent",
+            TimeUnixSeconds = 1759682231,
             NodeCall = "",  // Invalid
             NodeAlias = "XRLN64"
         };
@@ -268,6 +270,7 @@ public class DatagramValidationServiceTests
             new NodeDownEvent
             {
                 DatagramType = "NodeDownEvent",
+                TimeUnixSeconds = 1759682231,
                 NodeCall = "G8PZT-1",
                 NodeAlias = "XRLN64"
             },

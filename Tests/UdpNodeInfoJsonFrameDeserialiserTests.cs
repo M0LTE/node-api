@@ -1179,6 +1179,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var json = """
         {
         "@type": "NodeDownEvent",
+        "time": 1759682231,
         "nodeCall": "G8PZT-1",
         "nodeAlias": "XRLN64",
         "reason": "Reboot"
@@ -1191,6 +1192,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
 
         // Assert
         evt.DatagramType.Should().Be("NodeDownEvent");
+        evt.TimeUnixSeconds.Should().Be(1759682231);
         evt.NodeCall.Should().Be("G8PZT-1");
         evt.NodeAlias.Should().Be("XRLN64");
         evt.Reason.Should().Be("Reboot");
@@ -1205,6 +1207,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var json = """
         {
         "@type": "NodeDownEvent",
+        "time": 1759682231,
         "nodeCall": "G8PZT-1",
         "nodeAlias": "XRLN64"
         }
@@ -1216,6 +1219,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
 
         // Assert
         evt.DatagramType.Should().Be("NodeDownEvent");
+        evt.TimeUnixSeconds.Should().Be(1759682231);
         evt.NodeCall.Should().Be("G8PZT-1");
         evt.NodeAlias.Should().Be("XRLN64");
         evt.Reason.Should().BeNull();
