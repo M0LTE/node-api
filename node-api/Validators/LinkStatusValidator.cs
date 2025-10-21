@@ -50,6 +50,7 @@ public class LinkStatusValidator : AbstractValidator<LinkStatus>
 
         RuleFor(x => x.UpForSecs)
             .GreaterThanOrEqualTo(0)
+            .When(x => x.UpForSecs.HasValue)
             .WithMessage("UpForSecs cannot be negative");
 
         RuleFor(x => x.FramesSent)

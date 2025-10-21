@@ -55,10 +55,10 @@ public record LinkDisconnectionEvent : UdpNodeInfoJsonDatagram
     public required string Local { get; init; }
 
     /// <summary>
-    /// Link uptime in seconds (Required)
+    /// Link uptime in seconds (Optional)
     /// </summary>
     [JsonPropertyName("upForSecs")]
-    public required int UpForSecs { get; init; }
+    public int? UpForSecs { get; init; }
 
     /// <summary>
     /// Total frames sent since link creation (Required)

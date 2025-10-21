@@ -1491,5 +1491,158 @@ public class L2TraceValidatorTests
         var result = _validator.TestValidate(model);
         Assert.False(result.IsValid);
     }
+
+    [Fact]
+    public void Should_Accept_Empty_Timestamp_In_INP3_Node()
+    {
+        var maxTimestamp = DateTimeOffset.MaxValue.ToUnixTimeSeconds();
+        var exceedingTimestamp = maxTimestamp + 1;
+
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            Port = "2",
+            Source = "G8PZT",
+            Destination = "G8PZT-1",
+            Control = 3,
+            L2Type = "UI",
+            CommandResponse = "C",
+            ProtocolName = "NET/ROM",
+            L3Type = "Routing info",
+            Type = "INP3",
+            Nodes =
+            [
+                new L2Trace.Node
+                {
+                    Callsign = "GB7JD-8",
+                    Hops = 2,
+                    OneWayTripTimeIn10msIncrements = 2,
+                    Timestamp = exceedingTimestamp
+                }
+            ]
+        };
+
+        var result = _validator.TestValidate(model);
+        Assert.False(result.IsValid);
+    }
+
+    [Fact]
+    public void Should_Accept_Empty_Alias_In_NODES_Routing()
+    {
+        // Real-world example: some nodes send empty alias strings
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "HB9DHG-1",
+            TimeUnixSeconds = 1761087084,
+            Port = "2",
+            Source = "HB9ON-15",
+            Destination = "NODES",
+            Control = 3,
+            L2Type = "UI",
+            CommandResponse = "C",
+            ProtocolName = "NET/ROM",
+            L3Type = "Routing info",
+            Type = "NODES",
+            FromAlias = "ONVPS ",
+            Nodes =
+            [
+                new L2Trace.Node
+                {
+                    Callsign = "KB8UVN-4",
+                    Alias = "JTNET",
+                    Via = "DK0WUE",
+                    Quality = 210
+                },
+                new L2Trace.Node
+                {
+                    Callsign = "MB7NBA",
+                    Alias = "",  // Empty alias - should be accepted
+                    Via = "VE3MCH-8",
+                    Quality = 248
+                }
+            ]
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void Should_Reject_Null_Alias_In_NODES_Routing()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "HB9DHG-1",
+            TimeUnixSeconds = 1761087084,
+            Port = "2",
+            Source = "HB9ON-15",
+            Destination = "NODES",
+            Control = 3,
+            L2Type = "UI",
+            CommandResponse = "C",
+            ProtocolName = "NET/ROM",
+            L3Type = "Routing info",
+            Type = "NODES",
+            FromAlias = "ONVPS",
+            Nodes =
+            [
+                new L2Trace.Node
+                {
+                    Callsign = "MB7NBA",
+                    Alias = null,  // Null alias - should be rejected
+                    Via = "VE3MCH-8",
+                    Quality = 248
+                }
+            ]
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor("Nodes[0].Alias");
+    }
+
+    [Fact]
+    public void Should_Validate_Real_World_NODES_Routing_With_Empty_Aliases()
+    {
+        // Complete real-world example from the error report
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "HB9DHG-1",
+            TimeUnixSeconds = 1761087084,
+            Port = "2",
+            Source = "HB9ON-15",
+            Destination = "NODES",
+            Control = 3,
+            L2Type = "UI",
+            Modulo = 8,
+            CommandResponse = "C",
+            IFieldLength = 238,
+            ProtocolId = 207,
+            ProtocolName = "NET/ROM",
+            L3Type = "Routing info",
+            Type = "NODES",
+            FromAlias = "ONVPS ",
+            Nodes =
+            [
+                new L2Trace.Node { Callsign = "KB8UVN-4", Alias = "JTNET", Via = "DK0WUE", Quality = 210 },
+                new L2Trace.Node { Callsign = "MB7NBA", Alias = "", Via = "VE3MCH-8", Quality = 248 },
+                new L2Trace.Node { Callsign = "N2MH-8", Alias = "MH2BBS", Via = "VE3MCH-8", Quality = 246 },
+                new L2Trace.Node { Callsign = "N2NOV-7", Alias = "ARECS", Via = "VE3MCH-8", Quality = 244 },
+                new L2Trace.Node { Callsign = "N9LYA-8", Alias = "LYANOD", Via = "VE3MCH-8", Quality = 247 },
+                new L2Trace.Node { Callsign = "N9SEO-11", Alias = "BAXXRP", Via = "VE3MCH-8", Quality = 248 },
+                new L2Trace.Node { Callsign = "N9SEO-12", Alias = "BAXXCT", Via = "VE3MCH-8", Quality = 248 },
+                new L2Trace.Node { Callsign = "OH5RM-10", Alias = "RMGTW", Via = "VE3MCH-8", Quality = 246 },
+                new L2Trace.Node { Callsign = "PA3GJX-9", Alias = "GJXTCP", Via = "VE3MCH-8", Quality = 177 },
+                new L2Trace.Node { Callsign = "SV1DZI-7", Alias = "ATHXRT", Via = "VE3MCH-8", Quality = 242 },
+                new L2Trace.Node { Callsign = "VA2OM-8", Alias = "OMCHAT", Via = "VE3MCH-8", Quality = 248 }
+            ]
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
     #endregion
 }

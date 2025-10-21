@@ -218,7 +218,7 @@ public class L2TraceValidator : AbstractValidator<L2Trace>
             {
                 RuleFor(x => x.FromAlias)
                     .NotEmpty()
-                    .WithMessage("FromAlias is required for NODES routing info");
+                    .WithMessage("FromAlias is required for NODES routing");
 
                 RuleForEach(x => x.Nodes)
                     .SetValidator(new NetRomNodeValidator())
@@ -257,7 +257,7 @@ public class NetRomNodeValidator : AbstractValidator<L2Trace.Node>
             .MustBeValidCallsign();
 
         RuleFor(x => x.Alias)
-            .NotEmpty()
+            .NotNull()
             .WithMessage("Alias is required for NETROM routing");
 
         RuleFor(x => x.Via)

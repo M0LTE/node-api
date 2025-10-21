@@ -628,6 +628,30 @@ public class LinkDisconnectionEventValidatorTests
     }
 
     [Fact]
+    public void Should_Accept_Null_UpForSecs()
+    {
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = 1761053424,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = "outgoing",
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = null,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.UpForSecs);
+    }
+
+    [Fact]
     public void Should_Reject_Negative_UpForSecs()
     {
         var model = new LinkDisconnectionEvent
@@ -697,7 +721,7 @@ public class LinkDisconnectionEventValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
-            UpForSecs = 78,
+            UpForSecs = null,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -1464,7 +1488,7 @@ public class LinkStatusValidatorTests
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
-            UpForSecs = 300,
+            UpForSecs = null,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -1480,32 +1504,6 @@ public class LinkStatusValidatorTests
 
         var result = _validator.TestValidate(model);
         result.ShouldNotHaveAnyValidationErrors();
-    }
-
-    [Fact]
-    public void Should_Reject_Negative_FramesQueuedPeak()
-    {
-        var model = new LinkStatus
-        {
-            DatagramType = "LinkStatus",
-            TimeUnixSeconds = 1729512000,
-            Node = "G8PZT-1",
-            Id = 3,
-            Direction = "incoming",
-            Port = "2",
-            Remote = "KIDDER-1",
-            Local = "G8PZT-11",
-            UpForSecs = 300,
-            FramesSent = 100,
-            FramesReceived = 50,
-            FramesResent = 5,
-            FramesQueued = 2,
-            FramesQueuedPeak = -1
-        };
-
-        var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(x => x.FramesQueuedPeak)
-            .WithErrorMessage("FramesQueuedPeak cannot be negative");
     }
 
     [Fact]

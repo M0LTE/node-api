@@ -502,14 +502,18 @@ About This Document
       "nodes"      Y  Array    One or more destination nodes
 
       Each member of the "nodes" array is JSON object containing the
-      following fields (all required:
+      following fields (all required):
 
          Name  Required  Type     Description
          -----------------------------------------------
          "call"       Y  String   Destination node callsign
-         "alias"      Y  String   Destination node alias
+         "alias"      Y  String   Destination node alias (*14)
          "via"        Y  String   Callsign of next hop
          "qual"       Y  Integer  Route "quality" (0-255)
+
+      (*14) The "alias" field must be present in the JSON, but may be
+            an empty string if the node does not have an alias. Some
+            nodes in the wild send empty strings for this field.
 
 2.2.2.  INP3 Routing Info
 
@@ -737,7 +741,7 @@ About This Document
       "port"        Y  String   Port identifier, e.g. "2"
       "remote"      Y  String   Remote callsign, e.g. "G8PZT-2"
       "local"       Y  String   Local callsign
-      "upForSecs"   Y  Integer  Link uptime in seconds
+      "upForSecs"   N  Integer  Link uptime in seconds
       "frmsSent"    Y  Integer  Total frames sent since link creation
       "frmsRcvd"    Y  Integer  Total frames rcvd since link creation
       "frmsResent"  Y  Integer  Total frames resent since link creation
@@ -783,7 +787,7 @@ About This Document
       "port"        Y  String   Port identifier, e.g. "2"
       "remote"      Y  String   Remote callsign
       "local"       Y  String   Local callsign
-      "upForSecs"   Y  Integer  Link uptime in seconds
+      "upForSecs"   N  Integer  Link uptime in seconds
       "frmsSent"    Y  Integer  Total frames sent since link creation
       "frmsRcvd"    Y  Integer  Total frames rcvd since link creation
       "frmsResent"  Y  Integer  Total frames re-sent
@@ -1062,7 +1066,7 @@ About This Document
    0.1      2025-10-07  P. Dowie    Initial Draft
    0.2      2025-10-07	P. Dowie    Added AX25 and NetRom Examples
    0.3      2025-10-07  P. Dowie    Added Events section
-   0.4      2025-09  P. Dowie    Added "@type" fields & much more
+   0.4      2025-09     P. Dowie    Added "@type" fields & much more
    0.5      2025-10-10  P. Dowie    Clarification of required fields
                                     Changed "from" to "reportFrom"
                                     Added extra fields to LinkDownEvent
@@ -1077,5 +1081,7 @@ About This Document
                                     Added "time" to all reports
    0.8a     2025-10-21  P. Dowie    Changed all "time" fields from
                                     Required (Y) to Optional (N)
+   0.8b     2025-01-23  P. Dowie    Clarified that "alias" field in
+                                    NODES routing may be empty string
 
 
