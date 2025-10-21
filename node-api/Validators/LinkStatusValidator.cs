@@ -5,6 +5,8 @@ namespace node_api.Validators;
 
 public class LinkStatusValidator : AbstractValidator<LinkStatus>
 {
+    private static readonly string[] ValidDirections = ["incoming", "outgoing"];
+
     public LinkStatusValidator()
     {
         RuleFor(x => x.DatagramType)
@@ -25,15 +27,15 @@ public class LinkStatusValidator : AbstractValidator<LinkStatus>
 
         RuleFor(x => x.Id)
             .GreaterThan(0)
-            .WithMessage("Link ID must be greater than 0");
+            .WithMessage("Id must be greater than 0");
 
         RuleFor(x => x.Direction)
-            .Must(d => d == "incoming" || d == "outgoing")
-            .WithMessage("Direction must be 'incoming' or 'outgoing'");
+            .Must(d => ValidDirections.Contains(d.ToLower()))
+            .WithMessage($"Direction must be one of: {string.Join(", ", ValidDirections)}");
 
         RuleFor(x => x.Port)
             .NotEmpty()
-            .WithMessage("Port identifier is required");
+            .WithMessage("Port is required");
 
         RuleFor(x => x.Remote)
             .NotEmpty()
@@ -63,54 +65,39 @@ public class LinkStatusValidator : AbstractValidator<LinkStatus>
             .GreaterThanOrEqualTo(0)
             .WithMessage("FramesQueued cannot be negative");
 
-        // Optional fields validation
-        When(x => x.FramesQueuedPeak.HasValue, () =>
-        {
-            RuleFor(x => x.FramesQueuedPeak!.Value)
-                .GreaterThanOrEqualTo(0)
-                .WithMessage("FramesQueuedPeak cannot be negative");
-        });
+        RuleFor(x => x.FramesQueuedPeak)
+            .GreaterThanOrEqualTo(0)
+            .When(x => x.FramesQueuedPeak.HasValue)
+            .WithMessage("FramesQueuedPeak cannot be negative");
 
-        When(x => x.BytesSent.HasValue, () =>
-        {
-            RuleFor(x => x.BytesSent!.Value)
-                .GreaterThanOrEqualTo(0)
-                .WithMessage("BytesSent cannot be negative");
-        });
+        RuleFor(x => x.BytesSent)
+            .GreaterThanOrEqualTo(0)
+            .When(x => x.BytesSent.HasValue)
+            .WithMessage("BytesSent cannot be negative");
 
-        When(x => x.BytesReceived.HasValue, () =>
-        {
-            RuleFor(x => x.BytesReceived!.Value)
-                .GreaterThanOrEqualTo(0)
-                .WithMessage("BytesReceived cannot be negative");
-        });
+        RuleFor(x => x.BytesReceived)
+            .GreaterThanOrEqualTo(0)
+            .When(x => x.BytesReceived.HasValue)
+            .WithMessage("BytesReceived cannot be negative");
 
-        When(x => x.BpsTxMean.HasValue, () =>
-        {
-            RuleFor(x => x.BpsTxMean!.Value)
-                .GreaterThanOrEqualTo(0)
-                .WithMessage("BpsTxMean cannot be negative");
-        });
+        RuleFor(x => x.BpsTxMean)
+            .GreaterThanOrEqualTo(0)
+            .When(x => x.BpsTxMean.HasValue)
+            .WithMessage("BpsTxMean cannot be negative");
 
-        When(x => x.BpsRxMean.HasValue, () =>
-        {
-            RuleFor(x => x.BpsRxMean!.Value)
-                .GreaterThanOrEqualTo(0)
-                .WithMessage("BpsRxMean cannot be negative");
-        });
+        RuleFor(x => x.BpsRxMean)
+            .GreaterThanOrEqualTo(0)
+            .When(x => x.BpsRxMean.HasValue)
+            .WithMessage("BpsRxMean cannot be negative");
 
-        When(x => x.FrmQMax.HasValue, () =>
-        {
-            RuleFor(x => x.FrmQMax!.Value)
-                .GreaterThanOrEqualTo(0)
-                .WithMessage("FrmQMax cannot be negative");
-        });
+        RuleFor(x => x.FrameQueueMax)
+            .GreaterThanOrEqualTo(0)
+            .When(x => x.FrameQueueMax.HasValue)
+            .WithMessage("FrameQueueMax cannot be negative");
 
-        When(x => x.L2RttMs.HasValue, () =>
-        {
-            RuleFor(x => x.L2RttMs!.Value)
-                .GreaterThanOrEqualTo(0)
-                .WithMessage("L2RttMs cannot be negative");
-        });
+        RuleFor(x => x.L2RttMs)
+            .GreaterThanOrEqualTo(0)
+            .When(x => x.L2RttMs.HasValue)
+            .WithMessage("L2RttMs cannot be negative");
     }
 }

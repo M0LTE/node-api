@@ -3,9 +3,10 @@ using System.Text.Json.Serialization;
 namespace node_api.Models;
 
 /// <summary>
-/// 3.9. Circuit Status Report
+/// 3.3.2. Circuit Status Report
 /// This report is sent at regular intervals during the lifetime of the circuit,
 /// to convey additional information about the performance of the circuit.
+/// The interval between status reports is currently 5 minutes.
 /// </summary>
 public record CircuitStatus : UdpNodeInfoJsonDatagram
 {
@@ -55,35 +56,35 @@ public record CircuitStatus : UdpNodeInfoJsonDatagram
     /// Segments sent since circuit creation (Required)
     /// </summary>
     [JsonPropertyName("segsSent")]
-    public required int SegsSent { get; init; }
+    public required int SegmentsSent { get; init; }
 
     /// <summary>
     /// Segments received since circuit creation (Required)
     /// </summary>
     [JsonPropertyName("segsRcvd")]
-    public required int SegsRcvd { get; init; }
+    public required int SegmentsReceived { get; init; }
 
     /// <summary>
-    /// Segments re-sent since circuit creation (Required)
+    /// Segments resent since circuit creation (Required)
     /// </summary>
     [JsonPropertyName("segsResent")]
-    public required int SegsResent { get; init; }
+    public required int SegmentsResent { get; init; }
 
     /// <summary>
     /// Current TX queue length (Required)
     /// </summary>
     [JsonPropertyName("segsQueued")]
-    public required int SegsQueued { get; init; }
+    public required int SegmentsQueued { get; init; }
 
     /// <summary>
-    /// Number of info bytes received and queued for the consumer (Optional)
-    /// </summary>
-    [JsonPropertyName("bytesRcvd")]
-    public int? BytesReceived { get; init; }
-
-    /// <summary>
-    /// Number of info bytes transferred and acknowledged by the other end (Optional)
+    /// Total bytes sent since circuit creation (Optional)
     /// </summary>
     [JsonPropertyName("bytesSent")]
     public int? BytesSent { get; init; }
+
+    /// <summary>
+    /// Total bytes received since circuit creation (Optional)
+    /// </summary>
+    [JsonPropertyName("bytesRcvd")]
+    public int? BytesReceived { get; init; }
 }

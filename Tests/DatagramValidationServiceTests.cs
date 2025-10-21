@@ -56,10 +56,10 @@ public class DatagramValidationServiceTests
             Direction = "incoming",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0
         };
 
         var result = _service.Validate(datagram);
@@ -114,10 +114,10 @@ public class DatagramValidationServiceTests
             Direction = "sideways",  // Invalid
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = -1,  // Invalid
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0
+            SegmentsSent = -1,  // Invalid
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0
         };
 
         var result = _service.Validate(datagram);
@@ -186,10 +186,10 @@ public class DatagramValidationServiceTests
                 Direction = "incoming",
                 Remote = "G8PZT@G8PZT:14c0",
                 Local = "G8PZT-4:0001",
-                SegsSent = 5,
-                SegsRcvd = 27,
-                SegsResent = 0,
-                SegsQueued = 0
+                SegmentsSent = 5,
+                SegmentsReceived = 27,
+                SegmentsResent = 0,
+                SegmentsQueued = 0
             },
             new CircuitUpEvent
             {
@@ -210,10 +210,10 @@ public class DatagramValidationServiceTests
                 Direction = "incoming",
                 Remote = "G8PZT@G8PZT:14c0",
                 Local = "G8PZT-4:0001",
-                SegsSent = 5,
-                SegsRcvd = 27,
-                SegsResent = 0,
-                SegsQueued = 0
+                SegmentsSent = 5,
+                SegmentsReceived = 27,
+                SegmentsResent = 0,
+                SegmentsQueued = 0
             },
             new LinkUpEvent
             {

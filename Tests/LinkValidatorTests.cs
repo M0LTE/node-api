@@ -734,7 +734,7 @@ public class LinkDisconnectionEventValidatorTests
         };
 
         var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor("FramesQueuedPeak.Value")
+        result.ShouldHaveValidationErrorFor(x => x.FramesQueuedPeak)
             .WithErrorMessage("FramesQueuedPeak cannot be negative");
     }
 
@@ -760,7 +760,7 @@ public class LinkDisconnectionEventValidatorTests
         };
 
         var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor("BytesSent.Value")
+        result.ShouldHaveValidationErrorFor(x => x.BytesSent)
             .WithErrorMessage("BytesSent cannot be negative");
     }
 
@@ -786,7 +786,7 @@ public class LinkDisconnectionEventValidatorTests
         };
 
         var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor("BytesReceived.Value")
+        result.ShouldHaveValidationErrorFor(x => x.BytesReceived)
             .WithErrorMessage("BytesReceived cannot be negative");
     }
 
@@ -1408,7 +1408,7 @@ public class LinkStatusValidatorTests
             BytesReceived = 1354,
             BpsTxMean = 1,
             BpsRxMean = 4,
-            FrmQMax = 1,
+            FrameQueueMax = 1,
             L2RttMs = 379
         };
 
@@ -1443,7 +1443,7 @@ public class LinkStatusValidatorTests
             BytesReceived = 3000,
             BpsTxMean = 50,
             BpsRxMean = 30,
-            FrmQMax = 8,
+            FrameQueueMax = 8,
             L2RttMs = 250
         };
 
@@ -1474,7 +1474,7 @@ public class LinkStatusValidatorTests
             BytesReceived = null,
             BpsTxMean = null,
             BpsRxMean = null,
-            FrmQMax = null,
+            FrameQueueMax = null,
             L2RttMs = null
         };
 
@@ -1504,7 +1504,7 @@ public class LinkStatusValidatorTests
         };
 
         var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor("FramesQueuedPeak.Value")
+        result.ShouldHaveValidationErrorFor(x => x.FramesQueuedPeak)
             .WithErrorMessage("FramesQueuedPeak cannot be negative");
     }
 
@@ -1530,7 +1530,7 @@ public class LinkStatusValidatorTests
         };
 
         var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor("BytesSent.Value")
+        result.ShouldHaveValidationErrorFor(x => x.BytesSent)
             .WithErrorMessage("BytesSent cannot be negative");
     }
 
@@ -1556,7 +1556,7 @@ public class LinkStatusValidatorTests
         };
 
         var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor("BytesReceived.Value")
+        result.ShouldHaveValidationErrorFor(x => x.BytesReceived)
             .WithErrorMessage("BytesReceived cannot be negative");
     }
 
@@ -1582,7 +1582,7 @@ public class LinkStatusValidatorTests
         };
 
         var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor("BpsTxMean.Value")
+        result.ShouldHaveValidationErrorFor(x => x.BpsTxMean)
             .WithErrorMessage("BpsTxMean cannot be negative");
     }
 
@@ -1608,12 +1608,12 @@ public class LinkStatusValidatorTests
         };
 
         var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor("BpsRxMean.Value")
+        result.ShouldHaveValidationErrorFor(x => x.BpsRxMean)
             .WithErrorMessage("BpsRxMean cannot be negative");
     }
 
     [Fact]
-    public void Should_Reject_Negative_FrmQMax()
+    public void Should_Reject_Negative_FrameQueueMax()
     {
         var model = new LinkStatus
         {
@@ -1630,12 +1630,12 @@ public class LinkStatusValidatorTests
             FramesReceived = 50,
             FramesResent = 5,
             FramesQueued = 2,
-            FrmQMax = -1
+            FrameQueueMax = -1
         };
 
         var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor("FrmQMax.Value")
-            .WithErrorMessage("FrmQMax cannot be negative");
+        result.ShouldHaveValidationErrorFor(x => x.FrameQueueMax)
+            .WithErrorMessage("FrameQueueMax cannot be negative");
     }
 
     [Fact]
@@ -1660,7 +1660,7 @@ public class LinkStatusValidatorTests
         };
 
         var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor("L2RttMs.Value")
+        result.ShouldHaveValidationErrorFor(x => x.L2RttMs)
             .WithErrorMessage("L2RttMs cannot be negative");
     }
 
@@ -1690,7 +1690,7 @@ public class LinkStatusValidatorTests
             BytesReceived = value,
             BpsTxMean = value,
             BpsRxMean = value,
-            FrmQMax = value,
+            FrameQueueMax = value,
             L2RttMs = value
         };
 

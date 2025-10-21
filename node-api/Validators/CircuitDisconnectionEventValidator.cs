@@ -5,6 +5,8 @@ namespace node_api.Validators;
 
 public class CircuitDisconnectionEventValidator : AbstractValidator<CircuitDisconnectionEvent>
 {
+    private static readonly string[] ValidDirections = ["incoming", "outgoing"];
+
     public CircuitDisconnectionEventValidator()
     {
         RuleFor(x => x.DatagramType)
@@ -25,11 +27,11 @@ public class CircuitDisconnectionEventValidator : AbstractValidator<CircuitDisco
 
         RuleFor(x => x.Id)
             .GreaterThan(0)
-            .WithMessage("Circuit ID must be greater than 0");
+            .WithMessage("Id must be greater than 0");
 
         RuleFor(x => x.Direction)
-            .Must(d => d == "incoming" || d == "outgoing")
-            .WithMessage("Direction must be 'incoming' or 'outgoing'");
+            .Must(d => ValidDirections.Contains(d.ToLower()))
+            .WithMessage($"Direction must be one of: {string.Join(", ", ValidDirections)}");
 
         RuleFor(x => x.Remote)
             .NotEmpty()
@@ -39,30 +41,35 @@ public class CircuitDisconnectionEventValidator : AbstractValidator<CircuitDisco
             .NotEmpty()
             .WithMessage("Local address is required");
 
-        RuleFor(x => x.SegsSent)
+        RuleFor(x => x.SegmentsSent)
             .GreaterThanOrEqualTo(0)
-            .WithMessage("SegsSent cannot be negative");
+            .WithMessage("SegmentsSent cannot be negative");
 
-        RuleFor(x => x.SegsRcvd)
+        RuleFor(x => x.SegmentsReceived)
             .GreaterThanOrEqualTo(0)
-            .WithMessage("SegsRcvd cannot be negative");
+            .WithMessage("SegmentsReceived cannot be negative");
 
-        RuleFor(x => x.SegsResent)
+        RuleFor(x => x.SegmentsResent)
             .GreaterThanOrEqualTo(0)
-            .WithMessage("SegsResent cannot be negative");
+            .WithMessage("SegmentsResent cannot be negative");
 
-        RuleFor(x => x.SegsQueued)
+        RuleFor(x => x.SegmentsQueued)
             .GreaterThanOrEqualTo(0)
-            .WithMessage("SegsQueued cannot be negative");
+            .WithMessage("SegmentsQueued cannot be negative");
 
-        RuleFor(x => x.BytesReceived)
+        RuleFor(x => x.Service)
             .GreaterThanOrEqualTo(0)
-            .When(x => x.BytesReceived.HasValue)
-            .WithMessage("BytesReceived cannot be negative");
+            .When(x => x.Service.HasValue)
+            .WithMessage("Service cannot be negative");
 
         RuleFor(x => x.BytesSent)
             .GreaterThanOrEqualTo(0)
             .When(x => x.BytesSent.HasValue)
             .WithMessage("BytesSent cannot be negative");
+
+        RuleFor(x => x.BytesReceived)
+            .GreaterThanOrEqualTo(0)
+            .When(x => x.BytesReceived.HasValue)
+            .WithMessage("BytesReceived cannot be negative");
     }
 }

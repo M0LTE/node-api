@@ -6,7 +6,7 @@ namespace node_api.Models;
 /// 3.2.2. Link Status Report
 /// This report is sent at regular intervals during the lifetime of the connection,
 /// to convey additional information about the performance of the link.
-/// The interval is currently 5 minutes.
+/// The interval between status reports is currently 5 minutes.
 /// </summary>
 public record LinkStatus : UdpNodeInfoJsonDatagram
 {
@@ -29,7 +29,7 @@ public record LinkStatus : UdpNodeInfoJsonDatagram
     public required int Id { get; init; }
 
     /// <summary>
-    /// "Incoming" or "outgoing" (Required)
+    /// "incoming" or "outgoing" (Required)
     /// </summary>
     [JsonPropertyName("direction")]
     public required string Direction { get; init; }
@@ -65,7 +65,7 @@ public record LinkStatus : UdpNodeInfoJsonDatagram
     public required int FramesSent { get; init; }
 
     /// <summary>
-    /// Total frames rcvd since link creation (Required)
+    /// Total frames received since link creation (Required)
     /// </summary>
     [JsonPropertyName("frmsRcvd")]
     public required int FramesReceived { get; init; }
@@ -83,43 +83,49 @@ public record LinkStatus : UdpNodeInfoJsonDatagram
     public required int FramesQueued { get; init; }
 
     /// <summary>
-    /// Peak TX queue length (frames) (Optional)
+    /// Peak TX queue length (frames) over lifetime of connection (Optional)
     /// </summary>
     [JsonPropertyName("frmsQdPeak")]
     public int? FramesQueuedPeak { get; init; }
 
     /// <summary>
     /// Info bytes sent since link creation (Optional)
+    /// Does not include AX25 headers or resends.
     /// </summary>
     [JsonPropertyName("bytesSent")]
     public int? BytesSent { get; init; }
 
     /// <summary>
-    /// Info bytes rcvd since link creation (Optional)
+    /// Info bytes received since link creation (Optional)
+    /// Does not include AX25 headers or resends.
     /// </summary>
     [JsonPropertyName("bytesRcvd")]
     public int? BytesReceived { get; init; }
 
     /// <summary>
-    /// Ave TX bytes/sec since last status (Optional)
+    /// Average TX bytes/sec since last status report (Optional)
+    /// Does not include AX25 headers or resent data.
     /// </summary>
     [JsonPropertyName("bpsTxMean")]
     public int? BpsTxMean { get; init; }
 
     /// <summary>
-    /// Ave RX bytes/sec since last status (Optional)
+    /// Average RX bytes/sec since last status report (Optional)
+    /// Does not include AX25 headers or resent data.
     /// </summary>
     [JsonPropertyName("bpsRxMean")]
     public int? BpsRxMean { get; init; }
 
     /// <summary>
-    /// Max TX queue length since last status (Optional)
+    /// Maximum queue length since last status report (Optional)
+    /// Short-term measure, as opposed to frmsQdPeak which is over lifetime.
     /// </summary>
     [JsonPropertyName("frmQMax")]
-    public int? FrmQMax { get; init; }
+    public int? FrameQueueMax { get; init; }
 
     /// <summary>
-    /// Average Round Trip Time in millisecs (Optional)
+    /// Average Round Trip Time in milliseconds (Optional)
+    /// Running average - variations over time may indicate bottlenecks.
     /// </summary>
     [JsonPropertyName("l2rttMs")]
     public int? L2RttMs { get; init; }

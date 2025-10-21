@@ -5,6 +5,8 @@ namespace node_api.Validators;
 
 public class LinkDisconnectionEventValidator : AbstractValidator<LinkDisconnectionEvent>
 {
+    private static readonly string[] ValidDirections = ["incoming", "outgoing"];
+
     public LinkDisconnectionEventValidator()
     {
         RuleFor(x => x.DatagramType)
@@ -25,15 +27,15 @@ public class LinkDisconnectionEventValidator : AbstractValidator<LinkDisconnecti
 
         RuleFor(x => x.Id)
             .GreaterThan(0)
-            .WithMessage("Link ID must be greater than 0");
+            .WithMessage("Id must be greater than 0");
 
         RuleFor(x => x.Direction)
-            .Must(d => d == "incoming" || d == "outgoing")
-            .WithMessage("Direction must be 'incoming' or 'outgoing'");
+            .Must(d => ValidDirections.Contains(d.ToLower()))
+            .WithMessage($"Direction must be one of: {string.Join(", ", ValidDirections)}");
 
         RuleFor(x => x.Port)
             .NotEmpty()
-            .WithMessage("Port identifier is required");
+            .WithMessage("Port is required");
 
         RuleFor(x => x.Remote)
             .NotEmpty()
@@ -63,26 +65,19 @@ public class LinkDisconnectionEventValidator : AbstractValidator<LinkDisconnecti
             .GreaterThanOrEqualTo(0)
             .WithMessage("FramesQueued cannot be negative");
 
-        // Optional fields validation
-        When(x => x.FramesQueuedPeak.HasValue, () =>
-        {
-            RuleFor(x => x.FramesQueuedPeak!.Value)
-                .GreaterThanOrEqualTo(0)
-                .WithMessage("FramesQueuedPeak cannot be negative");
-        });
+        RuleFor(x => x.FramesQueuedPeak)
+            .GreaterThanOrEqualTo(0)
+            .When(x => x.FramesQueuedPeak.HasValue)
+            .WithMessage("FramesQueuedPeak cannot be negative");
 
-        When(x => x.BytesSent.HasValue, () =>
-        {
-            RuleFor(x => x.BytesSent!.Value)
-                .GreaterThanOrEqualTo(0)
-                .WithMessage("BytesSent cannot be negative");
-        });
+        RuleFor(x => x.BytesSent)
+            .GreaterThanOrEqualTo(0)
+            .When(x => x.BytesSent.HasValue)
+            .WithMessage("BytesSent cannot be negative");
 
-        When(x => x.BytesReceived.HasValue, () =>
-        {
-            RuleFor(x => x.BytesReceived!.Value)
-                .GreaterThanOrEqualTo(0)
-                .WithMessage("BytesReceived cannot be negative");
-        });
+        RuleFor(x => x.BytesReceived)
+            .GreaterThanOrEqualTo(0)
+            .When(x => x.BytesReceived.HasValue)
+            .WithMessage("BytesReceived cannot be negative");
     }
 }

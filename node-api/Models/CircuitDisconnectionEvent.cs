@@ -51,44 +51,44 @@ public record CircuitDisconnectionEvent : UdpNodeInfoJsonDatagram
     public required string Local { get; init; }
 
     /// <summary>
-    /// Segments sent since circuit creation
+    /// Segments sent since circuit creation (Required)
     /// </summary>
     [JsonPropertyName("segsSent")]
-    public required int SegsSent { get; init; }
+    public required int SegmentsSent { get; init; }
 
     /// <summary>
-    /// Segments rcvd since circuit creation
+    /// Segments received since circuit creation (Required)
     /// </summary>
     [JsonPropertyName("segsRcvd")]
-    public required int SegsRcvd { get; init; }
+    public required int SegmentsReceived { get; init; }
 
     /// <summary>
-    /// Segments re-sent since cct creation
+    /// Segments resent since circuit creation (Required)
     /// </summary>
     [JsonPropertyName("segsResent")]
-    public required int SegsResent { get; init; }
+    public required int SegmentsResent { get; init; }
 
     /// <summary>
-    /// Current TX queue length
+    /// Current TX queue length (Required)
     /// </summary>
     [JsonPropertyName("segsQueued")]
-    public required int SegsQueued { get; init; }
+    public required int SegmentsQueued { get; init; }
+
+    /// <summary>
+    /// Total bytes sent since circuit creation (Optional)
+    /// </summary>
+    [JsonPropertyName("bytesSent")]
+    public int? BytesSent { get; init; }
+
+    /// <summary>
+    /// Total bytes received since circuit creation (Optional)
+    /// </summary>
+    [JsonPropertyName("bytesRcvd")]
+    public int? BytesReceived { get; init; }
 
     /// <summary>
     /// Reason for disconnect (Optional)
     /// </summary>
     [JsonPropertyName("reason")]
     public string? Reason { get; init; }
-
-    /// <summary>
-    /// Number of info bytes received and queued for the consumer (Optional)
-    /// </summary>
-    [JsonPropertyName("bytesRcvd")]
-    public int? BytesReceived { get; init; }
-
-    /// <summary>
-    /// Number of info bytes transferred and acknowledged by the other end (Optional)
-    /// </summary>
-    [JsonPropertyName("bytesSent")]
-    public int? BytesSent { get; init; }
 }

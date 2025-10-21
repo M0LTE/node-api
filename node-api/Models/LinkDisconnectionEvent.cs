@@ -3,7 +3,7 @@
 namespace node_api.Models;
 
 /// <summary>
-/// 3.5. Link Disconnection Event
+/// 3.2.3. Link Disconnection Event
 /// This report is sent when an AX25 connection is destroyed.
 /// For the "direction" field, "incoming" indicates that the disconnection was initiated from the remote end,
 /// and "outgoing" means that it was initiated from the local end.
@@ -73,7 +73,7 @@ public record LinkDisconnectionEvent : UdpNodeInfoJsonDatagram
     public required int FramesReceived { get; init; }
 
     /// <summary>
-    /// Total frames re-sent (Required)
+    /// Total frames resent (Required)
     /// </summary>
     [JsonPropertyName("frmsResent")]
     public required int FramesResent { get; init; }
@@ -85,14 +85,20 @@ public record LinkDisconnectionEvent : UdpNodeInfoJsonDatagram
     public required int FramesQueued { get; init; }
 
     /// <summary>
-    /// Peak TX queue length (frames) (Optional)
+    /// Peak TX queue length (frames) over lifetime of connection (Optional)
     /// </summary>
     [JsonPropertyName("frmsQdPeak")]
     public int? FramesQueuedPeak { get; init; }
 
+    /// <summary>
+    /// Total bytes sent since link creation (Optional)
+    /// </summary>
     [JsonPropertyName("bytesSent")]
     public int? BytesSent { get; init; }
 
+    /// <summary>
+    /// Total bytes received since link creation (Optional)
+    /// </summary>
     [JsonPropertyName("bytesRcvd")]
     public int? BytesReceived { get; init; }
 

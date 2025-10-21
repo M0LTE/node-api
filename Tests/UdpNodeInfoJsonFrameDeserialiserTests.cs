@@ -1423,10 +1423,10 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         evt.Service.Should().Be(0);
         evt.Remote.Should().Be("G8PZT@G8PZT:1ba8");
         evt.Local.Should().Be("G8PZT-4:0001");
-        evt.SegsRcvd.Should().Be(20);
-        evt.SegsSent.Should().Be(6);
-        evt.SegsResent.Should().Be(0);
-        evt.SegsQueued.Should().Be(0);
+        evt.SegmentsReceived.Should().Be(20);
+        evt.SegmentsSent.Should().Be(6);
+        evt.SegmentsResent.Should().Be(0);
+        evt.SegmentsQueued.Should().Be(0);
         evt.BytesReceived.Should().Be(14372);
         evt.BytesSent.Should().Be(6259);
 
@@ -1470,10 +1470,10 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         evt.Service.Should().Be(0);
         evt.Remote.Should().Be("G8PZT@G8PZT:14c0");
         evt.Local.Should().Be("G8PZT-4:0001");
-        evt.SegsSent.Should().Be(5);
-        evt.SegsRcvd.Should().Be(27);
-        evt.SegsResent.Should().Be(0);
-        evt.SegsQueued.Should().Be(0);
+        evt.SegmentsSent.Should().Be(5);
+        evt.SegmentsReceived.Should().Be(27);
+        evt.SegmentsResent.Should().Be(0);
+        evt.SegmentsQueued.Should().Be(0);
         evt.BytesReceived.Should().Be(14214);
         evt.BytesSent.Should().Be(6266);
         evt.Reason.Should().Be("rcvd DREQ");

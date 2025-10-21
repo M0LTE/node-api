@@ -20,10 +20,10 @@ public class CircuitStatusValidatorTests
             Direction = "incoming",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0
         };
 
         var result = _validator.TestValidate(model);
@@ -43,10 +43,10 @@ public class CircuitStatusValidatorTests
             Direction = "incoming",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0
         };
 
         var result = _validator.TestValidate(model);
@@ -66,10 +66,10 @@ public class CircuitStatusValidatorTests
             Direction = "incoming",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0
         };
 
         var result = _validator.TestValidate(model);
@@ -89,10 +89,10 @@ public class CircuitStatusValidatorTests
             Direction = "sideways",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0
         };
 
         var result = _validator.TestValidate(model);
@@ -114,10 +114,10 @@ public class CircuitStatusValidatorTests
             Direction = direction,
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0
         };
 
         var result = _validator.TestValidate(model);
@@ -136,10 +136,10 @@ public class CircuitStatusValidatorTests
             Direction = "incoming",
             Remote = "",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0
         };
 
         var result = _validator.TestValidate(model);
@@ -159,10 +159,10 @@ public class CircuitStatusValidatorTests
             Direction = "incoming",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0
         };
 
         var result = _validator.TestValidate(model);
@@ -173,7 +173,7 @@ public class CircuitStatusValidatorTests
     [Theory]
     [InlineData(-1)]
     [InlineData(-100)]
-    public void Should_Have_Error_When_SegsSent_Is_Negative(int segsSent)
+    public void Should_Have_Error_When_SegmentsSent_Is_Negative(int segmentsSent)
     {
         var model = new CircuitStatus
         {
@@ -184,21 +184,21 @@ public class CircuitStatusValidatorTests
             Direction = "incoming",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = segsSent,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0
+            SegmentsSent = segmentsSent,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0
         };
 
         var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(x => x.SegsSent)
-            .WithErrorMessage("SegsSent cannot be negative");
+        result.ShouldHaveValidationErrorFor(x => x.SegmentsSent)
+            .WithErrorMessage("SegmentsSent cannot be negative");
     }
 
     [Theory]
     [InlineData(-1)]
     [InlineData(-100)]
-    public void Should_Have_Error_When_SegsRcvd_Is_Negative(int segsRcvd)
+    public void Should_Have_Error_When_SegmentsReceived_Is_Negative(int segmentsReceived)
     {
         var model = new CircuitStatus
         {
@@ -209,21 +209,21 @@ public class CircuitStatusValidatorTests
             Direction = "incoming",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = segsRcvd,
-            SegsResent = 0,
-            SegsQueued = 0
+            SegmentsSent = 5,
+            SegmentsReceived = segmentsReceived,
+            SegmentsResent = 0,
+            SegmentsQueued = 0
         };
 
         var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(x => x.SegsRcvd)
-            .WithErrorMessage("SegsRcvd cannot be negative");
+        result.ShouldHaveValidationErrorFor(x => x.SegmentsReceived)
+            .WithErrorMessage("SegmentsReceived cannot be negative");
     }
 
     [Theory]
     [InlineData(-1)]
     [InlineData(-100)]
-    public void Should_Have_Error_When_SegsResent_Is_Negative(int segsResent)
+    public void Should_Have_Error_When_SegmentsResent_Is_Negative(int segmentsResent)
     {
         var model = new CircuitStatus
         {
@@ -234,21 +234,21 @@ public class CircuitStatusValidatorTests
             Direction = "incoming",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = segsResent,
-            SegsQueued = 0
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = segmentsResent,
+            SegmentsQueued = 0
         };
 
         var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(x => x.SegsResent)
-            .WithErrorMessage("SegsResent cannot be negative");
+        result.ShouldHaveValidationErrorFor(x => x.SegmentsResent)
+            .WithErrorMessage("SegmentsResent cannot be negative");
     }
 
     [Theory]
     [InlineData(-1)]
     [InlineData(-100)]
-    public void Should_Have_Error_When_SegsQueued_Is_Negative(int segsQueued)
+    public void Should_Have_Error_When_SegmentsQueued_Is_Negative(int segmentsQueued)
     {
         var model = new CircuitStatus
         {
@@ -259,15 +259,15 @@ public class CircuitStatusValidatorTests
             Direction = "incoming",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = segsQueued
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = segmentsQueued
         };
 
         var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(x => x.SegsQueued)
-            .WithErrorMessage("SegsQueued cannot be negative");
+        result.ShouldHaveValidationErrorFor(x => x.SegmentsQueued)
+            .WithErrorMessage("SegmentsQueued cannot be negative");
     }
 
     [Fact]
@@ -282,17 +282,17 @@ public class CircuitStatusValidatorTests
             Direction = "incoming",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 0,
-            SegsRcvd = 0,
-            SegsResent = 0,
-            SegsQueued = 0
+            SegmentsSent = 0,
+            SegmentsReceived = 0,
+            SegmentsResent = 0,
+            SegmentsQueued = 0
         };
 
         var result = _validator.TestValidate(model);
-        result.ShouldNotHaveValidationErrorFor(x => x.SegsSent);
-        result.ShouldNotHaveValidationErrorFor(x => x.SegsRcvd);
-        result.ShouldNotHaveValidationErrorFor(x => x.SegsResent);
-        result.ShouldNotHaveValidationErrorFor(x => x.SegsQueued);
+        result.ShouldNotHaveValidationErrorFor(x => x.SegmentsSent);
+        result.ShouldNotHaveValidationErrorFor(x => x.SegmentsReceived);
+        result.ShouldNotHaveValidationErrorFor(x => x.SegmentsResent);
+        result.ShouldNotHaveValidationErrorFor(x => x.SegmentsQueued);
     }
 
     [Fact]
@@ -308,10 +308,10 @@ public class CircuitStatusValidatorTests
             Service = null,
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0
         };
 
         var result = _validator.TestValidate(model);
@@ -331,10 +331,10 @@ public class CircuitStatusValidatorTests
             Service = 0,
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0
         };
 
         var result = _validator.TestValidate(model);
@@ -353,10 +353,10 @@ public class CircuitStatusValidatorTests
             Direction = "incoming",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0
         };
 
         var result = _validator.TestValidate(model);
@@ -377,10 +377,10 @@ public class CircuitStatusValidatorTests
             Service = 0,
             Remote = "G8PZT@G8PZT:1ba8",
             Local = "G8PZT-4:0001",
-            SegsRcvd = 20,
-            SegsSent = 6,
-            SegsResent = 0,
-            SegsQueued = 0
+            SegmentsReceived = 20,
+            SegmentsSent = 6,
+            SegmentsResent = 0,
+            SegmentsQueued = 0
         };
 
         var result = _validator.TestValidate(model);
@@ -399,10 +399,10 @@ public class CircuitStatusValidatorTests
             Direction = "incoming",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0,
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0,
             BytesReceived = null,
             BytesSent = null
         };
@@ -424,10 +424,10 @@ public class CircuitStatusValidatorTests
             Direction = "incoming",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0,
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0,
             BytesReceived = 1024,
             BytesSent = 2048
         };
@@ -448,10 +448,10 @@ public class CircuitStatusValidatorTests
             Direction = "incoming",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0,
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0,
             BytesReceived = -1
         };
 
@@ -472,10 +472,10 @@ public class CircuitStatusValidatorTests
             Direction = "incoming",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0,
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0,
             BytesSent = -1
         };
 
@@ -501,10 +501,10 @@ public class CircuitStatusValidatorTests
             Direction = "incoming",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0,
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0,
             BytesReceived = bytes
         };
 
@@ -529,10 +529,10 @@ public class CircuitStatusValidatorTests
             Direction = "incoming",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0,
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0,
             BytesSent = bytes
         };
 
@@ -554,10 +554,10 @@ public class CircuitStatusValidatorTests
             Direction = "incoming",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0
         };
 
         var result = _validator.TestValidate(model);
@@ -576,10 +576,10 @@ public class CircuitStatusValidatorTests
             Direction = "incoming",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0
         };
 
         var result = _validator.TestValidate(model);
@@ -602,10 +602,10 @@ public class CircuitStatusValidatorTests
             Direction = "incoming",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0
         };
 
         var result = _validator.TestValidate(model);
@@ -627,10 +627,10 @@ public class CircuitStatusValidatorTests
             Direction = "incoming",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0
         };
 
         var result = _validator.TestValidate(model);
@@ -651,10 +651,10 @@ public class CircuitStatusValidatorTests
             Direction = "incoming",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0
         };
 
         var result = _validator.TestValidate(model);
@@ -675,10 +675,10 @@ public class CircuitStatusValidatorTests
             Direction = "incoming",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0
         };
 
         var result = _validator.TestValidate(model);
@@ -700,10 +700,10 @@ public class CircuitStatusValidatorTests
             Direction = "incoming",
             Remote = "G8PZT@G8PZT:14c0",
             Local = "G8PZT-4:0001",
-            SegsSent = 5,
-            SegsRcvd = 27,
-            SegsResent = 0,
-            SegsQueued = 0
+            SegmentsSent = 5,
+            SegmentsReceived = 27,
+            SegmentsResent = 0,
+            SegmentsQueued = 0
         };
 
         var result = _validator.TestValidate(model);
