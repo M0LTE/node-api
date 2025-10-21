@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Serialization;
+using node_api.Converters;
 
 namespace node_api.Models;
 
@@ -423,6 +424,7 @@ public record L2Trace : UdpNodeInfoJsonDatagram
         /// Unix timestamp in seconds
         /// </summary>
         [JsonPropertyName("timestamp")]
+        [JsonConverter(typeof(FlexibleTimestampConverter))]
         public long? Timestamp { get; init; }
     }
 
