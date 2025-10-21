@@ -46,7 +46,7 @@ public record L2Trace : UdpNodeInfoJsonDatagram
     /// <summary>
     /// Frame type mnemonic, e.g. "I", "RR", "UI", "SABME", "C", "D", "DM", "UA", "FRMR", "RNR", "REJ", "?" (Required)
     /// </summary>
-    [JsonPropertyName("l2type")]
+    [JsonPropertyName("l2Type")]
     public required string L2Type { get; init; }
 
     /// <summary>
