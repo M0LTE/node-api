@@ -23,7 +23,8 @@ public class CircuitStatusValidator : AbstractValidator<CircuitStatus>
 
         RuleFor(x => x.Node)
             .NotEmpty()
-            .WithMessage("Node callsign is required");
+            .WithMessage("Node callsign is required")
+            .MustBeValidCallsign();
 
         RuleFor(x => x.Id)
             .GreaterThan(0)

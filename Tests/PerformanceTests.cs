@@ -19,10 +19,10 @@ public class PerformanceTests
         var traces = Enumerable.Range(1, 1000).Select(i => new L2Trace
         {
             DatagramType = "L2Trace",
-            ReportFrom = $"NODE{i}",
+            ReportFrom = $"N{i}",  // Max 5 characters: N + up to 4 digits
             Port = "1",
-            Source = $"SRC{i}",
-            Destination = $"DST{i}",
+            Source = $"SRC{i % 1000}",  // Max 6 characters
+            Destination = $"DST{i % 1000}",  // Max 6 characters
             Control = i % 256,
             L2Type = "UI",
             CommandResponse = "C"
@@ -48,8 +48,8 @@ public class PerformanceTests
         var events = Enumerable.Range(1, 1000).Select(i => new NodeUpEvent
         {
             DatagramType = "NodeUpEvent",
-            NodeCall = $"NODE{i}",
-            NodeAlias = $"NOD{i}",
+            NodeCall = $"N{i}",  // Max 5 characters: N + up to 4 digits
+            NodeAlias = $"NOD{i % 1000}",  // Max 6 characters
             Locator = "IO82VJ",
             Software = "test",
             Version = "1.0"
@@ -106,7 +106,7 @@ public class PerformanceTests
         var validator = new L2TraceValidator();
         var nodes = Enumerable.Range(1, 500).Select(i => new L2Trace.Node
         {
-            Callsign = $"NODE{i}",
+            Callsign = $"N{i % 10000}",  // Max 5 characters: N + up to 4 digits
             Hops = i % 32,
             OneWayTripTimeIn10msIncrements = i * 10,
             Alias = $"NOD{i}",
@@ -297,7 +297,7 @@ public class PerformanceTests
             var model = new L2Trace
             {
                 DatagramType = "L2Trace",
-                ReportFrom = $"NODE{i}",
+                ReportFrom = $"N{i % 10000}",  // Max 5 characters: N + up to 4 digits
                 Port = "1",
                 Source = "SRC",
                 Destination = "DST",
@@ -334,17 +334,17 @@ public class PerformanceTests
         var traces = Enumerable.Range(1, 100).Select(i => new L2Trace
         {
             DatagramType = "L2Trace",
-            ReportFrom = $"NODE{i}",
+            ReportFrom = $"N{i}",  // Max 4 characters: N + up to 3 digits
             Port = "1",
-            Source = $"SRC{i}",
-            Destination = $"DST{i}",
+            Source = $"SRC{i}",  // Max 6 characters
+            Destination = $"DST{i}",  // Max 6 characters
             Control = 32,
             L2Type = "I",
             CommandResponse = "C",
             ProtocolName = "NET/ROM",
             L3Type = "NetRom",
-            L3Source = $"SRC{i}",
-            L3Destination = $"DST{i}",
+            L3Source = $"SRC{i}",  // Max 6 characters
+            L3Destination = $"DST{i}",  // Max 6 characters
             TimeToLive = 25,
             L4Type = "INFO",
             ToCircuit = i,

@@ -21,7 +21,8 @@ public class LinkUpEventValidator : AbstractValidator<LinkUpEvent>
 
         RuleFor(x => x.Node)
             .NotEmpty()
-            .WithMessage("Node callsign is required");
+            .WithMessage("Node callsign is required")
+            .MustBeValidCallsign();
 
         RuleFor(x => x.Id)
             .GreaterThan(0)
@@ -37,10 +38,12 @@ public class LinkUpEventValidator : AbstractValidator<LinkUpEvent>
 
         RuleFor(x => x.Remote)
             .NotEmpty()
-            .WithMessage("Remote callsign is required");
+            .WithMessage("Remote callsign is required")
+            .MustBeValidCallsign();
 
         RuleFor(x => x.Local)
             .NotEmpty()
-            .WithMessage("Local callsign is required");
+            .WithMessage("Local callsign is required")
+            .MustBeValidCallsign();
     }
 }

@@ -12,7 +12,7 @@ public class EdgeCaseTests
     #region Unicode and Special Character Tests
 
     [Fact]
-    public void Should_Handle_Unicode_Callsigns()
+    public void Should_Reject_Unicode_Callsigns()
     {
         var validator = new L2TraceValidator();
         var model = new L2Trace
@@ -20,7 +20,7 @@ public class EdgeCaseTests
             DatagramType = "L2Trace",
             ReportFrom = "G8PZT-1",
             Port = "1",
-            Source = "Tëst-1", // Unicode character
+            Source = "Tëst-1", // Unicode character - not valid in AX.25
             Destination = "Dëst",
             Control = 3,
             L2Type = "UI",
@@ -28,8 +28,9 @@ public class EdgeCaseTests
         };
 
         var result = validator.TestValidate(model);
-        // Should accept unicode in callsigns
-        result.ShouldNotHaveValidationErrorFor(x => x.Source);
+        // AX.25 callsigns only support A-Z and 0-9, not Unicode
+        result.ShouldHaveValidationErrorFor(x => x.Source);
+        result.ShouldHaveValidationErrorFor(x => x.Destination);
     }
 
     [Fact]
@@ -416,10 +417,10 @@ public class EdgeCaseTests
     {
         var validator = new L2TraceValidator();
         
-        // Create 100 nodes
+        // Create 100 nodes with valid callsigns (max 6 characters)
         var nodes = Enumerable.Range(1, 100).Select(i => new L2Trace.Node
         {
-            Callsign = $"NODE{i}",
+            Callsign = $"N{i}",  // Max 4 characters: N + up to 3 digits (N1, N10, N100)
             Hops = i % 32,
             OneWayTripTimeIn10msIncrements = i * 10
         }).ToArray();
@@ -529,13 +530,13 @@ public class EdgeCaseTests
     }
 
     [Fact]
-    public void Should_Accept_Strings_With_Internal_Whitespace()
+    public void Should_Reject_Strings_With_Internal_Whitespace()
     {
         var validator = new LinkDisconnectionEventValidator();
         var model = new LinkDisconnectionEvent
         {
             DatagramType = "LinkDownEvent",
-            Node = "TEST NODE", // Space in middle
+            Node = "TEST NODE", // Space in middle - not valid in AX.25 callsigns
             Id = 1,
             Direction = "incoming",
             Port = "1",
@@ -549,7 +550,8 @@ public class EdgeCaseTests
         };
 
         var result = validator.TestValidate(model);
-        result.ShouldNotHaveValidationErrorFor(x => x.Node);
+        // AX.25 callsigns cannot contain spaces or special characters
+        result.ShouldHaveValidationErrorFor(x => x.Node);
     }
 
     #endregion

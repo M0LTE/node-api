@@ -21,7 +21,8 @@ public class NodeDownEventValidator : AbstractValidator<NodeDownEvent>
 
         RuleFor(x => x.NodeCall)
             .NotEmpty()
-            .WithMessage("NodeCall is required");
+            .WithMessage("NodeCall is required")
+            .MustBeValidCallsign();
 
         RuleFor(x => x.NodeAlias)
             .NotEmpty()

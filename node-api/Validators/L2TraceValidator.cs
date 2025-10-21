@@ -22,7 +22,8 @@ public class L2TraceValidator : AbstractValidator<L2Trace>
 
         RuleFor(x => x.ReportFrom)
             .NotEmpty()
-            .WithMessage("Reporter's callsign is required");
+            .WithMessage("Reporter's callsign is required")
+            .MustBeValidCallsign();
 
         // TimeUnixSeconds validation - should be a valid Unix timestamp
         RuleFor(x => x.TimeUnixSeconds)
@@ -39,11 +40,13 @@ public class L2TraceValidator : AbstractValidator<L2Trace>
 
         RuleFor(x => x.Source)
             .NotEmpty()
-            .WithMessage("Source callsign is required");
+            .WithMessage("Source callsign is required")
+            .MustBeValidCallsign();
 
         RuleFor(x => x.Destination)
             .NotEmpty()
-            .WithMessage("Destination callsign is required");
+            .WithMessage("Destination callsign is required")
+            .MustBeValidCallsign();
 
         RuleFor(x => x.Control)
             .GreaterThanOrEqualTo(0)
@@ -102,11 +105,13 @@ public class L2TraceValidator : AbstractValidator<L2Trace>
         {
             RuleFor(x => x.L3Source)
                 .NotEmpty()
-                .WithMessage("L3Source is required when L3Type is 'NetRom'");
+                .WithMessage("L3Source is required when L3Type is 'NetRom'")
+                .MustBeValidCallsign();
 
             RuleFor(x => x.L3Destination)
                 .NotEmpty()
-                .WithMessage("L3Destination is required when L3Type is 'NetRom'");
+                .WithMessage("L3Destination is required when L3Type is 'NetRom'")
+                .MustBeValidCallsign();
 
             RuleFor(x => x.TimeToLive)
                 .NotNull()
@@ -129,11 +134,13 @@ public class L2TraceValidator : AbstractValidator<L2Trace>
 
                 RuleFor(x => x.OriginatingUserCallsign)
                     .NotEmpty()
-                    .WithMessage("OriginatingUserCallsign is required for CONN REQ/CONN REQX");
+                    .WithMessage("OriginatingUserCallsign is required for CONN REQ/CONN REQX")
+                    .MustBeValidCallsign();
 
                 RuleFor(x => x.OriginatingNodeCallsign)
                     .NotEmpty()
-                    .WithMessage("OriginatingNodeCallsign is required for CONN REQ/CONN REQX");
+                    .WithMessage("OriginatingNodeCallsign is required for CONN REQ/CONN REQX")
+                    .MustBeValidCallsign();
 
                 RuleFor(x => x.ProposedWindow)
                     .NotNull()
@@ -235,7 +242,8 @@ public class DigipeaterValidator : AbstractValidator<L2Trace.Digipeater>
     {
         RuleFor(x => x.Callsign)
             .NotEmpty()
-            .WithMessage("Digipeater callsign is required");
+            .WithMessage("Digipeater callsign is required")
+            .MustBeValidCallsign();
     }
 }
 
@@ -245,7 +253,8 @@ public class NetRomNodeValidator : AbstractValidator<L2Trace.Node>
     {
         RuleFor(x => x.Callsign)
             .NotEmpty()
-            .WithMessage("Node callsign is required");
+            .WithMessage("Node callsign is required")
+            .MustBeValidCallsign();
 
         RuleFor(x => x.Alias)
             .NotEmpty()
@@ -253,7 +262,8 @@ public class NetRomNodeValidator : AbstractValidator<L2Trace.Node>
 
         RuleFor(x => x.Via)
             .NotEmpty()
-            .WithMessage("Via is required for NETROM routing");
+            .WithMessage("Via is required for NETROM routing")
+            .MustBeValidCallsign();
 
         RuleFor(x => x.Quality)
             .NotNull()
@@ -269,7 +279,8 @@ public class Inp3NodeValidator : AbstractValidator<L2Trace.Node>
     {
         RuleFor(x => x.Callsign)
             .NotEmpty()
-            .WithMessage("Node callsign is required");
+            .WithMessage("Node callsign is required")
+            .MustBeValidCallsign();
 
         RuleFor(x => x.Hops)
             .NotNull()

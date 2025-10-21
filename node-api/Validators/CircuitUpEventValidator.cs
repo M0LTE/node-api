@@ -21,7 +21,8 @@ public class CircuitUpEventValidator : AbstractValidator<CircuitUpEvent>
 
         RuleFor(x => x.Node)
             .NotEmpty()
-            .WithMessage("Node callsign is required");
+            .WithMessage("Node callsign is required")
+            .MustBeValidCallsign();
 
         RuleFor(x => x.Id)
             .GreaterThan(0)
