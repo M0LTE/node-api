@@ -8,7 +8,7 @@ public class L2TraceValidator : AbstractValidator<L2Trace>
     private static readonly string[] ValidL2Types = ["SABME", "C", "D", "DM", "UA", "UI", "I", "FRMR", "RR", "RNR", "REJ", "?", "XID", "TEST", "SREJ"];
     private static readonly string[] ValidCommandResponses = ["C", "R", "V1"];
     private static readonly string[] ValidPollFinal = ["P", "F"];
-    private static readonly string[] ValidProtocolNames = ["SEG", "DATA", "NET/ROM", "IP", "ARP", "?"];
+    private static readonly string[] ValidProtocolNames = ["SEG", "DATA", "NET/ROM", "IP", "ARP", "FLEXNET", "?"];
     private static readonly string[] ValidL3Types = ["NetRom", "Routing info", "Routing poll", "Unknown"];
     private static readonly string[] ValidL4Types = ["NRR Request", "NRR Reply", "CONN REQ", "CONN REQX", "CONN ACK", "CONN NAK", "DISC REQ", "DISC ACK", "INFO", "INFO ACK", "RSET", "PROT EXT", "unknown"];
     private static readonly string[] ValidRoutingTypes = ["NODES", "INP3"];

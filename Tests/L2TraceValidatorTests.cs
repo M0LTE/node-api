@@ -541,6 +541,7 @@ public class L2TraceValidatorTests
     [InlineData("NET/ROM")]
     [InlineData("IP")]
     [InlineData("ARP")]
+    [InlineData("FLEXNET")]
     [InlineData("?")]
     public void Should_Accept_Valid_ProtocolNames(string protocol)
     {

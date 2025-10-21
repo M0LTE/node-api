@@ -95,7 +95,7 @@ public record L2Trace : UdpNodeInfoJsonDatagram
     public int? ProtocolId { get; init; }
 
     /// <summary>
-    /// Next layer protocol in words: "SEG", "DATA", "NET/ROM", "IP", "ARP", "?" (Optional)
+    /// Next layer protocol in words: "SEG", "DATA", "NET/ROM", "IP", "ARP", "FLEXNET", "?" (Optional)
     /// </summary>
     [JsonPropertyName("ptcl")]
     public string? ProtocolName { get; init; }
