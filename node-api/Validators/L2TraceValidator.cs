@@ -27,8 +27,10 @@ public class L2TraceValidator : AbstractValidator<L2Trace>
         // TimeUnixSeconds validation - should be a valid Unix timestamp
         RuleFor(x => x.TimeUnixSeconds)
             .GreaterThanOrEqualTo(0)
+            .When(x => x.TimeUnixSeconds.HasValue)
             .WithMessage("TimeUnixSeconds cannot be negative")
             .LessThanOrEqualTo(DateTimeOffset.MaxValue.ToUnixTimeSeconds())
+            .When(x => x.TimeUnixSeconds.HasValue)
             .WithMessage("TimeUnixSeconds exceeds maximum valid Unix timestamp");
 
         RuleFor(x => x.Port)

@@ -11,10 +11,10 @@ namespace node_api.Models;
 public record LinkDisconnectionEvent : UdpNodeInfoJsonDatagram
 {
     /// <summary>
-    /// Timestamp (secs since 1/1/70) (Required)
+    /// Timestamp (secs since 1/1/70) (Optional)
     /// </summary>
     [JsonPropertyName("time")]
-    public required long TimeUnixSeconds { get; init; }
+    public long? TimeUnixSeconds { get; init; }
 
     /// <summary>
     /// Callsign of reporting node (Required)
