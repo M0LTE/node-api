@@ -11,6 +11,12 @@ namespace node_api.Models;
 public record LinkDisconnectionEvent : UdpNodeInfoJsonDatagram
 {
     /// <summary>
+    /// Timestamp (secs since 1/1/70) (Required)
+    /// </summary>
+    [JsonPropertyName("time")]
+    public required long TimeUnixSeconds { get; init; }
+
+    /// <summary>
     /// Callsign of reporting node (Required)
     /// </summary>
     [JsonPropertyName("node")]
@@ -49,6 +55,12 @@ public record LinkDisconnectionEvent : UdpNodeInfoJsonDatagram
     public required string Local { get; init; }
 
     /// <summary>
+    /// Link uptime in seconds (Required)
+    /// </summary>
+    [JsonPropertyName("upForSecs")]
+    public required int UpForSecs { get; init; }
+
+    /// <summary>
     /// Total frames sent since link creation (Required)
     /// </summary>
     [JsonPropertyName("frmsSent")]
@@ -73,14 +85,20 @@ public record LinkDisconnectionEvent : UdpNodeInfoJsonDatagram
     public required int FramesQueued { get; init; }
 
     /// <summary>
-    /// Reason for disconnect, e.g. "Retried out" (Optional)
+    /// Peak TX queue length (frames) (Optional)
     /// </summary>
-    [JsonPropertyName("reason")]
-    public string? Reason { get; init; }
+    [JsonPropertyName("frmsQdPeak")]
+    public int? FramesQueuedPeak { get; init; }
 
     [JsonPropertyName("bytesSent")]
     public int? BytesSent { get; init; }
 
     [JsonPropertyName("bytesRcvd")]
     public int? BytesReceived { get; init; }
+
+    /// <summary>
+    /// Reason for disconnect, e.g. "Retried out" (Optional)
+    /// </summary>
+    [JsonPropertyName("reason")]
+    public string? Reason { get; init; }
 }

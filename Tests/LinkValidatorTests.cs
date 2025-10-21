@@ -362,16 +362,458 @@ public class LinkDisconnectionEventValidatorTests
         var model = new LinkDisconnectionEvent
         {
             DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = 1761053424,
             Node = "G8PZT-1",
             Id = 3,
             Direction = "outgoing",
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 78,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
             FramesQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void Should_Validate_Spec_Example_LinkDownEvent()
+    {
+        // Example from specification section 3.4.6
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = 1761053424,
+            Node = "G8PZT-1",
+            Direction = "outgoing",
+            Id = 2,
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = 78,
+            FramesSent = 3,
+            FramesReceived = 6,
+            FramesResent = 0,
+            FramesQueued = 0,
+            FramesQueuedPeak = 1,
+            BytesSent = 15,
+            BytesReceived = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    #region TimeUnixSeconds Validation Tests
+
+    [Fact]
+    public void Should_Accept_Zero_For_TimeUnixSeconds()
+    {
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = 0,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = "outgoing",
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = 78,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_TimeUnixSeconds()
+    {
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = -1,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = "outgoing",
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = 78,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.TimeUnixSeconds)
+            .WithErrorMessage("TimeUnixSeconds cannot be negative");
+    }
+
+    [Theory]
+    [InlineData(-100)]
+    [InlineData(-1000)]
+    [InlineData(-999999999)]
+    public void Should_Reject_Various_Negative_TimeUnixSeconds(long timestamp)
+    {
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = timestamp,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = "outgoing",
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = 78,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.TimeUnixSeconds)
+            .WithErrorMessage("TimeUnixSeconds cannot be negative");
+    }
+
+    [Theory]
+    [InlineData(1609459200)]  // 2021-01-01 00:00:00 UTC
+    [InlineData(1640995200)]  // 2022-01-01 00:00:00 UTC
+    [InlineData(1761053424)]  // From spec example
+    public void Should_Accept_Valid_Recent_TimeUnixSeconds(long timestamp)
+    {
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = timestamp,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = "outgoing",
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = 78,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Accept_Current_Timestamp()
+    {
+        var currentTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = currentTimestamp,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = "outgoing",
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = 78,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Accept_Maximum_Valid_Unix_Timestamp()
+    {
+        var maxTimestamp = DateTimeOffset.MaxValue.ToUnixTimeSeconds();
+        
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = maxTimestamp,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = "outgoing",
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = 78,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Reject_TimeUnixSeconds_Exceeding_Maximum()
+    {
+        var maxTimestamp = DateTimeOffset.MaxValue.ToUnixTimeSeconds();
+        var exceedingTimestamp = maxTimestamp + 1;
+        
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = exceedingTimestamp,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = "outgoing",
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = 78,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.TimeUnixSeconds)
+            .WithErrorMessage("TimeUnixSeconds exceeds maximum valid Unix timestamp");
+    }
+
+    #endregion
+
+    #region UpForSecs Validation Tests
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(78)]
+    [InlineData(300)]
+    [InlineData(86400)]
+    public void Should_Accept_Valid_UpForSecs(int uptime)
+    {
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = 1761053424,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = "outgoing",
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = uptime,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.UpForSecs);
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_UpForSecs()
+    {
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = 1761053424,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = "outgoing",
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = -1,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.UpForSecs)
+            .WithErrorMessage("UpForSecs cannot be negative");
+    }
+
+    #endregion
+
+    #region Optional Fields Validation Tests
+
+    [Fact]
+    public void Should_Accept_Valid_Optional_Fields()
+    {
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = 1761053424,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = "outgoing",
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = 78,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0,
+            FramesQueuedPeak = 10,
+            BytesSent = 5000,
+            BytesReceived = 3000,
+            Reason = "Retried out"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void Should_Accept_Null_Optional_Fields()
+    {
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = 1761053424,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = "outgoing",
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = 78,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0,
+            FramesQueuedPeak = null,
+            BytesSent = null,
+            BytesReceived = null,
+            Reason = null
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_FramesQueuedPeak()
+    {
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = 1761053424,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = "outgoing",
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = 78,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0,
+            FramesQueuedPeak = -1
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor("FramesQueuedPeak.Value")
+            .WithErrorMessage("FramesQueuedPeak cannot be negative");
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_BytesSent()
+    {
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = 1761053424,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = "outgoing",
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = 78,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0,
+            BytesSent = -1
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor("BytesSent.Value")
+            .WithErrorMessage("BytesSent cannot be negative");
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_BytesReceived()
+    {
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = 1761053424,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = "outgoing",
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = 78,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0,
+            BytesReceived = -1
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor("BytesReceived.Value")
+            .WithErrorMessage("BytesReceived cannot be negative");
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(100)]
+    [InlineData(1000)]
+    public void Should_Accept_Valid_Zero_And_Positive_Optional_Values(int value)
+    {
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = 1761053424,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = "outgoing",
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = 78,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0,
+            FramesQueuedPeak = value,
+            BytesSent = value,
+            BytesReceived = value
         };
 
         var result = _validator.TestValidate(model);
@@ -384,12 +826,14 @@ public class LinkDisconnectionEventValidatorTests
         var model = new LinkDisconnectionEvent
         {
             DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = 1761053424,
             Node = "G8PZT-1",
             Id = 3,
             Direction = "outgoing",
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 78,
             FramesSent = 100,
             FramesReceived = 50,
             FramesResent = 5,
@@ -402,6 +846,168 @@ public class LinkDisconnectionEventValidatorTests
     }
 
     [Theory]
+    [InlineData("Retried out")]
+    [InlineData("User disconnected")]
+    [InlineData("Connection timeout")]
+    [InlineData("")]
+    public void Should_Accept_Any_Reason_String(string reason)
+    {
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = 1761053424,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = "outgoing",
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = 78,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0,
+            Reason = reason
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    #endregion
+
+    #region Required Fields Validation Tests
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Should_Reject_Empty_Node(string node)
+    {
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = 1761053424,
+            Node = node,
+            Id = 3,
+            Direction = "outgoing",
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = 78,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.Node);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void Should_Reject_Invalid_Id(int id)
+    {
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = 1761053424,
+            Node = "G8PZT-1",
+            Id = id,
+            Direction = "outgoing",
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = 78,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.Id);
+    }
+
+    [Theory]
+    [InlineData("incoming")]
+    [InlineData("outgoing")]
+    public void Should_Accept_Valid_Directions(string direction)
+    {
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = 1761053424,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = direction,
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = 78,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.Direction);
+    }
+
+    [Theory]
+    [InlineData("up")]
+    [InlineData("down")]
+    [InlineData("")]
+    public void Should_Reject_Invalid_Directions(string direction)
+    {
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = 1761053424,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = direction,
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = 78,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.Direction);
+    }
+
+    [Fact]
+    public void Should_Reject_Wrong_DatagramType()
+    {
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "WrongType",
+            TimeUnixSeconds = 1761053424,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = "outgoing",
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = 78,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.DatagramType);
+    }
+
+    [Theory]
     [InlineData(-1)]
     [InlineData(-100)]
     public void Should_Reject_Negative_Frame_Counts(int count)
@@ -409,12 +1015,14 @@ public class LinkDisconnectionEventValidatorTests
         var model = new LinkDisconnectionEvent
         {
             DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = 1761053424,
             Node = "G8PZT-1",
             Id = 3,
             Direction = "outgoing",
             Port = "2",
             Remote = "KIDDER-1",
             Local = "G8PZT-11",
+            UpForSecs = 78,
             FramesSent = count,
             FramesReceived = 50,
             FramesResent = 5,
@@ -424,6 +1032,113 @@ public class LinkDisconnectionEventValidatorTests
         var result = _validator.TestValidate(model);
         result.ShouldHaveValidationErrorFor(x => x.FramesSent);
     }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(100)]
+    public void Should_Accept_Valid_Frame_Counts(int count)
+    {
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = 1761053424,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = "outgoing",
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = 78,
+            FramesSent = count,
+            FramesReceived = count,
+            FramesResent = count,
+            FramesQueued = count
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Should_Reject_Empty_Port(string port)
+    {
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = 1761053424,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = "outgoing",
+            Port = port,
+            Remote = "KIDDER-1",
+            Local = "G8PZT-11",
+            UpForSecs = 78,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.Port);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Should_Reject_Empty_Remote(string remote)
+    {
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = 1761053424,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = "outgoing",
+            Port = "2",
+            Remote = remote,
+            Local = "G8PZT-11",
+            UpForSecs = 78,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.Remote);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Should_Reject_Empty_Local(string local)
+    {
+        var model = new LinkDisconnectionEvent
+        {
+            DatagramType = "LinkDownEvent",
+            TimeUnixSeconds = 1761053424,
+            Node = "G8PZT-1",
+            Id = 3,
+            Direction = "outgoing",
+            Port = "2",
+            Remote = "KIDDER-1",
+            Local = local,
+            UpForSecs = 78,
+            FramesSent = 100,
+            FramesReceived = 50,
+            FramesResent = 5,
+            FramesQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.Local);
+    }
+
+    #endregion
 }
 
 public class LinkStatusValidatorTests

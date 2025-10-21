@@ -11,6 +11,12 @@ public class LinkDisconnectionEventValidator : AbstractValidator<LinkDisconnecti
             .Equal("LinkDownEvent")
             .WithMessage("DatagramType must be 'LinkDownEvent'");
 
+        RuleFor(x => x.TimeUnixSeconds)
+            .GreaterThanOrEqualTo(0)
+            .WithMessage("TimeUnixSeconds cannot be negative")
+            .LessThanOrEqualTo(DateTimeOffset.MaxValue.ToUnixTimeSeconds())
+            .WithMessage("TimeUnixSeconds exceeds maximum valid Unix timestamp");
+
         RuleFor(x => x.Node)
             .NotEmpty()
             .WithMessage("Node callsign is required");
@@ -35,6 +41,10 @@ public class LinkDisconnectionEventValidator : AbstractValidator<LinkDisconnecti
             .NotEmpty()
             .WithMessage("Local callsign is required");
 
+        RuleFor(x => x.UpForSecs)
+            .GreaterThanOrEqualTo(0)
+            .WithMessage("UpForSecs cannot be negative");
+
         RuleFor(x => x.FramesSent)
             .GreaterThanOrEqualTo(0)
             .WithMessage("FramesSent cannot be negative");
@@ -50,5 +60,27 @@ public class LinkDisconnectionEventValidator : AbstractValidator<LinkDisconnecti
         RuleFor(x => x.FramesQueued)
             .GreaterThanOrEqualTo(0)
             .WithMessage("FramesQueued cannot be negative");
+
+        // Optional fields validation
+        When(x => x.FramesQueuedPeak.HasValue, () =>
+        {
+            RuleFor(x => x.FramesQueuedPeak!.Value)
+                .GreaterThanOrEqualTo(0)
+                .WithMessage("FramesQueuedPeak cannot be negative");
+        });
+
+        When(x => x.BytesSent.HasValue, () =>
+        {
+            RuleFor(x => x.BytesSent!.Value)
+                .GreaterThanOrEqualTo(0)
+                .WithMessage("BytesSent cannot be negative");
+        });
+
+        When(x => x.BytesReceived.HasValue, () =>
+        {
+            RuleFor(x => x.BytesReceived!.Value)
+                .GreaterThanOrEqualTo(0)
+                .WithMessage("BytesReceived cannot be negative");
+        });
     }
 }

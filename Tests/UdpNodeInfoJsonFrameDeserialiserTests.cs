@@ -1364,20 +1364,25 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
     [Fact]
     public void Should_Deserialize_Spec_Example_Outgoing_AX25_Disconnection_Event()
     {
-        // Example from specification section 3.10 (note: spec example is incomplete, missing required fields)
+        // Example from specification section 3.4.6
         var json = """
         {
         "@type": "LinkDownEvent",
+        "time": 1761053424,
         "node": "G8PZT-1",
-        "id": 3,
+        "id": 2,
         "direction": "outgoing",
         "port": "2",
         "remote": "KIDDER-1",
         "local": "G8PZT-11",
-        "frmsSent": 0,
-        "frmsRcvd": 0,
+        "upForSecs": 78,
+        "frmsSent": 3,
+        "frmsRcvd": 6,
         "frmsResent": 0,
-        "frmsQueued": 0
+        "frmsQueued": 0,
+        "frmsQdPeak": 1,
+        "bytesSent": 15,
+        "bytesRcvd": 0
         }
         """;
         //
@@ -1387,16 +1392,21 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
 
         // Assert
         evt.DatagramType.Should().Be("LinkDownEvent");
+        evt.TimeUnixSeconds.Should().Be(1761053424);
         evt.Node.Should().Be("G8PZT-1");
-        evt.Id.Should().Be(3);
+        evt.Id.Should().Be(2);
         evt.Direction.Should().Be("outgoing");
         evt.Port.Should().Be("2");
         evt.Remote.Should().Be("KIDDER-1");
         evt.Local.Should().Be("G8PZT-11");
-        evt.FramesSent.Should().Be(0);
-        evt.FramesReceived.Should().Be(0);
+        evt.UpForSecs.Should().Be(78);
+        evt.FramesSent.Should().Be(3);
+        evt.FramesReceived.Should().Be(6);
         evt.FramesResent.Should().Be(0);
         evt.FramesQueued.Should().Be(0);
+        evt.FramesQueuedPeak.Should().Be(1);
+        evt.BytesSent.Should().Be(15);
+        evt.BytesReceived.Should().Be(0);
         evt.Reason.Should().BeNull();
 
         parsed.Should().BeTrue();
@@ -1409,12 +1419,14 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var json = """
         {
         "@type": "LinkDownEvent",
+        "time": 1761053424,
         "node": "G8PZT-1",
         "id": 7,
         "direction": "incoming",
         "port": "4",
         "remote": "M0ABC",
         "local": "G8PZT-1",
+        "upForSecs": 120,
         "frmsSent": 100,
         "frmsRcvd": 95,
         "frmsResent": 3,
@@ -1429,12 +1441,14 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
 
         // Assert
         evt.DatagramType.Should().Be("LinkDownEvent");
+        evt.TimeUnixSeconds.Should().Be(1761053424);
         evt.Node.Should().Be("G8PZT-1");
         evt.Id.Should().Be(7);
         evt.Direction.Should().Be("incoming");
         evt.Port.Should().Be("4");
         evt.Remote.Should().Be("M0ABC");
         evt.Local.Should().Be("G8PZT-1");
+        evt.UpForSecs.Should().Be(120);
         evt.FramesSent.Should().Be(100);
         evt.FramesReceived.Should().Be(95);
         evt.FramesResent.Should().Be(3);

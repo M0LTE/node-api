@@ -222,12 +222,14 @@ public class DatagramValidationServiceTests
             new LinkDisconnectionEvent
             {
                 DatagramType = "LinkDownEvent",
+                TimeUnixSeconds = 1761053424,
                 Node = "G8PZT-1",
                 Id = 3,
                 Direction = "outgoing",
                 Port = "2",
                 Remote = "KIDDER-1",
                 Local = "G8PZT-11",
+                UpForSecs = 78,
                 FramesSent = 100,
                 FramesReceived = 50,
                 FramesResent = 5,
