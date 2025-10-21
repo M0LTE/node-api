@@ -153,6 +153,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         {
         "@type": "L2Trace",
         "reportFrom": "G9XXX",
+        "time": 1759688220,
         "port": "1",
         "srce": "G8PZT-1",
         "dest": "ID",
@@ -172,6 +173,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
 
         // Assert
         frame.DatagramType.Should().Be("L2Trace");
+        frame.ReportFrom.Should().Be("G9XXX");
+        frame.TimeUnixSeconds.Should().Be(1759688220);
         frame.Port.Should().Be("1");
         frame.Source.Should().Be("G8PZT-1");
         frame.Destination.Should().Be("ID");
@@ -194,6 +197,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         {
         "@type": "L2Trace",
         "reportFrom": "G9XXX",
+        "time": 1759688220,
         "port": "8",
         "srce": "G8PZT-1",
         "dest": "G8PZT-14",
@@ -211,6 +215,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
 
         // Assert
         frame.DatagramType.Should().Be("L2Trace");
+        frame.ReportFrom.Should().Be("G9XXX");
+        frame.TimeUnixSeconds.Should().Be(1759688220);
         frame.Port.Should().Be("8");
         frame.Source.Should().Be("G8PZT-1");
         frame.Destination.Should().Be("G8PZT-14");
@@ -231,6 +237,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         {
         "@type": "L2Trace",
         "reportFrom": "G9XXX",
+        "time": 1759688220,
         "port": "8",
         "srce": "G8PZT-14",
         "dest": "G8PZT-1",
@@ -248,6 +255,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
 
         // Assert
         frame.DatagramType.Should().Be("L2Trace");
+        frame.ReportFrom.Should().Be("G9XXX");
+        frame.TimeUnixSeconds.Should().Be(1759688220);
         frame.Port.Should().Be("8");
         frame.Source.Should().Be("G8PZT-14");
         frame.Destination.Should().Be("G8PZT-1");
@@ -268,6 +277,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         {
         "@type": "L2Trace",
         "reportFrom": "G9XXX",
+        "time": 1759688220,
         "port": "2",
         "srce": "G8PZT-11",
         "dest": "KIDDER-1",
@@ -289,6 +299,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
 
         // Assert
         frame.DatagramType.Should().Be("L2Trace");
+        frame.ReportFrom.Should().Be("G9XXX");
+        frame.TimeUnixSeconds.Should().Be(1759688220);
         frame.Port.Should().Be("2");
         frame.Source.Should().Be("G8PZT-11");
         frame.Destination.Should().Be("KIDDER-1");
@@ -313,6 +325,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         {
         "@type": "L2Trace",
         "reportFrom": "G9XXX",
+        "time": 1759688220,
         "port": "2",
         "srce": "G8PZT-1",
         "dest": "G8PZT",
@@ -330,6 +343,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
 
         // Assert
         frame.DatagramType.Should().Be("L2Trace");
+        frame.ReportFrom.Should().Be("G9XXX");
+        frame.TimeUnixSeconds.Should().Be(1759688220);
         frame.Port.Should().Be("2");
         frame.Source.Should().Be("G8PZT-1");
         frame.Destination.Should().Be("G8PZT");
@@ -350,6 +365,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         {
         "@type": "L2Trace",
         "reportFrom": "G9XXX",
+        "time": 1759688220,
         "port": "2",
         "srce": "G8PZT-1",
         "dest": "QST",
@@ -369,6 +385,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
 
         // Assert
         frame.DatagramType.Should().Be("L2Trace");
+        frame.ReportFrom.Should().Be("G9XXX");
+        frame.TimeUnixSeconds.Should().Be(1759688220);
         frame.Port.Should().Be("2");
         frame.Source.Should().Be("G8PZT-1");
         frame.Destination.Should().Be("QST");
@@ -395,6 +413,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         {
         "@type": "L2Trace",
         "reportFrom": "G9XXX",
+        "time": 1759688220,
         "port": "2",
         "srce": "G8PZT-1",
         "dest": "G8PZT",
@@ -425,6 +444,8 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
 
         // Assert L2 fields
         frame.DatagramType.Should().Be("L2Trace");
+        frame.ReportFrom.Should().Be("G9XXX");
+        frame.TimeUnixSeconds.Should().Be(1759688220);
         frame.Port.Should().Be("2");
         frame.Source.Should().Be("G8PZT-1");
         frame.Destination.Should().Be("G8PZT");
@@ -811,9 +832,9 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
     #region Additional Test Cases
 
     [Fact]
-    public void Should_Deserialize_NetRom_Routing_Info_Example()
+    public void Should_Deserialize_Spec_Example_NODES_Routing_Info()
     {
-        // Test NetRom routing info frame
+        // Example showing NODES routing info (NetRom routing broadcast)
         var json = """
         {
         "@type": "L2Trace",
@@ -828,20 +849,20 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         "pid": 207,
         "ptcl": "NET/ROM",
         "l3type": "Routing info",
-        "type": "NETROM",
-        "fromAlias": "G8PZT-NODE",
+        "type": "NODES",
+        "fromAlias": "G8PZT",
         "nodes": [
             {
-            "call": "G8PZT-2",
-            "alias": "NODE2",
-            "via": "G8PZT-3",
+            "call": "GB7BDH",
+            "alias": "BDH",
+            "via": "G8PZT-2",
             "qual": 200
             },
             {
-            "call": "G8PZT-4", 
-            "alias": "NODE4",
-            "via": "G8PZT-5",
-            "qual": 150
+            "call": "GB7DXC",
+            "alias": "DXCLUS",
+            "via": "G8PZT-3",
+            "qual": 180
             }
         ],
         "modulo": 8
@@ -855,6 +876,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
 
         // Assert L2 fields
         frame.DatagramType.Should().Be("L2Trace");
+        frame.ReportFrom.Should().Be("G9XXX");
         frame.Port.Should().Be("1");
         frame.Source.Should().Be("G8PZT-1");
         frame.Destination.Should().Be("NODES");
@@ -868,22 +890,22 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
 
         // Assert routing info fields
         frame.L3Type.Should().Be("Routing info");
-        frame.Type.Should().Be("NETROM");
-        frame.FromAlias.Should().Be("G8PZT-NODE");
+        frame.Type.Should().Be("NODES");
+        frame.FromAlias.Should().Be("G8PZT");
         frame.Nodes.Should().NotBeNull();
         frame.Nodes.Should().HaveCount(2);
 
         // First node
-        frame.Nodes![0].Callsign.Should().Be("G8PZT-2");
-        frame.Nodes[0].Alias.Should().Be("NODE2");
-        frame.Nodes[0].Via.Should().Be("G8PZT-3");
+        frame.Nodes![0].Callsign.Should().Be("GB7BDH");
+        frame.Nodes[0].Alias.Should().Be("BDH");
+        frame.Nodes[0].Via.Should().Be("G8PZT-2");
         frame.Nodes[0].Quality.Should().Be(200);
         
         // Second node
-        frame.Nodes[1].Callsign.Should().Be("G8PZT-4");
-        frame.Nodes[1].Alias.Should().Be("NODE4");
-        frame.Nodes[1].Via.Should().Be("G8PZT-5");
-        frame.Nodes[1].Quality.Should().Be(150);
+        frame.Nodes[1].Callsign.Should().Be("GB7DXC");
+        frame.Nodes[1].Alias.Should().Be("DXCLUS");
+        frame.Nodes[1].Via.Should().Be("G8PZT-3");
+        frame.Nodes[1].Quality.Should().Be(180);
 
         parsed.Should().BeTrue();
     }
@@ -1332,236 +1354,253 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
     }
 
     [Fact]
-    public void Should_Deserialize_Incoming_AX25_Connection_Event()
+    public void Should_Deserialize_Spec_Example_Circuit_Up_Event()
     {
-        // Test incoming link connection
+        // Example from specification section 3.4.7
         var json = """
         {
-        "@type": "LinkUpEvent",
+        "@type": "CircuitUpEvent",
+        "time": 1759688220,
+        "node": "G8PZT",
+        "id": 1,
+        "direction": "incoming",
+        "service": 0,
+        "remote": "G8PZT@G8PZT:14c0",
+        "local": "G8PZT-4:0001"
+        }
+        """;
+
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var evt = datagramUntyped.Should().BeOfType<CircuitUpEvent>().Subject;
+
+        // Assert
+        evt.DatagramType.Should().Be("CircuitUpEvent");
+        evt.TimeUnixSeconds.Should().Be(1759688220);
+        evt.Node.Should().Be("G8PZT");
+        evt.Id.Should().Be(1);
+        evt.Direction.Should().Be("incoming");
+        evt.Service.Should().Be(0);
+        evt.Remote.Should().Be("G8PZT@G8PZT:14c0");
+        evt.Local.Should().Be("G8PZT-4:0001");
+
+        parsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Should_Deserialize_Spec_Example_Circuit_Status_Report()
+    {
+        // Example from specification section 3.4.8
+        var json = """
+        {
+        "@type": "CircuitStatus",
         "time": 1759688220,
         "node": "G8PZT-1",
-        "id": 5,
         "direction": "incoming",
-        "port": "3",
-        "remote": "M0LTE",
-        "local": "G8PZT-1"
+        "id": 1,
+        "service": 0,
+        "remote": "G8PZT@G8PZT:1ba8",
+        "local": "G8PZT-4:0001",
+        "segsRcvd": 20,
+        "segsSent": 6,
+        "segsResent": 0,
+        "segsQueued": 0,
+        "bytesRcvd": 14372,
+        "bytesSent": 6259
         }
         """;
         //
         // Act
         var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
-        var evt = datagramUntyped.Should().BeOfType<LinkUpEvent>().Subject;
+        var evt = datagramUntyped.Should().BeOfType<CircuitStatus>().Subject;
 
         // Assert
-        evt.DatagramType.Should().Be("LinkUpEvent");
+        evt.DatagramType.Should().Be("CircuitStatus");
         evt.TimeUnixSeconds.Should().Be(1759688220);
         evt.Node.Should().Be("G8PZT-1");
-        evt.Id.Should().Be(5);
         evt.Direction.Should().Be("incoming");
-        evt.Port.Should().Be("3");
-        evt.Remote.Should().Be("M0LTE");
-        evt.Local.Should().Be("G8PZT-1");
-
-        parsed.Should().BeTrue();
-    }
-
-    [Fact]
-    public void Should_Deserialize_Spec_Example_Outgoing_AX25_Disconnection_Event()
-    {
-        // Example from specification section 3.4.6
-        var json = """
-        {
-        "@type": "LinkDownEvent",
-        "time": 1761053424,
-        "node": "G8PZT-1",
-        "id": 2,
-        "direction": "outgoing",
-        "port": "2",
-        "remote": "KIDDER-1",
-        "local": "G8PZT-11",
-        "upForSecs": 78,
-        "frmsSent": 3,
-        "frmsRcvd": 6,
-        "frmsResent": 0,
-        "frmsQueued": 0,
-        "frmsQdPeak": 1,
-        "bytesSent": 15,
-        "bytesRcvd": 0
-        }
-        """;
-        //
-        // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
-        var evt = datagramUntyped.Should().BeOfType<LinkDisconnectionEvent>().Subject;
-
-        // Assert
-        evt.DatagramType.Should().Be("LinkDownEvent");
-        evt.TimeUnixSeconds.Should().Be(1761053424);
-        evt.Node.Should().Be("G8PZT-1");
-        evt.Id.Should().Be(2);
-        evt.Direction.Should().Be("outgoing");
-        evt.Port.Should().Be("2");
-        evt.Remote.Should().Be("KIDDER-1");
-        evt.Local.Should().Be("G8PZT-11");
-        evt.UpForSecs.Should().Be(78);
-        evt.FramesSent.Should().Be(3);
-        evt.FramesReceived.Should().Be(6);
-        evt.FramesResent.Should().Be(0);
-        evt.FramesQueued.Should().Be(0);
-        evt.FramesQueuedPeak.Should().Be(1);
-        evt.BytesSent.Should().Be(15);
-        evt.BytesReceived.Should().Be(0);
-        evt.Reason.Should().BeNull();
-
-        parsed.Should().BeTrue();
-    }
-
-    [Fact]
-    public void Should_Deserialize_Link_Disconnection_Event_With_Reason()
-    {
-        // Test LinkDisconnectionEvent with optional reason field
-        var json = """
-        {
-        "@type": "LinkDownEvent",
-        "time": 1761053424,
-        "node": "G8PZT-1",
-        "id": 7,
-        "direction": "incoming",
-        "port": "4",
-        "remote": "M0ABC",
-        "local": "G8PZT-1",
-        "upForSecs": 120,
-        "frmsSent": 100,
-        "frmsRcvd": 95,
-        "frmsResent": 3,
-        "frmsQueued": 1,
-        "reason": "Retried out"
-        }
-        """;
-        //
-        // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
-        var evt = datagramUntyped.Should().BeOfType<LinkDisconnectionEvent>().Subject;
-
-        // Assert
-        evt.DatagramType.Should().Be("LinkDownEvent");
-        evt.TimeUnixSeconds.Should().Be(1761053424);
-        evt.Node.Should().Be("G8PZT-1");
-        evt.Id.Should().Be(7);
-        evt.Direction.Should().Be("incoming");
-        evt.Port.Should().Be("4");
-        evt.Remote.Should().Be("M0ABC");
-        evt.Local.Should().Be("G8PZT-1");
-        evt.UpForSecs.Should().Be(120);
-        evt.FramesSent.Should().Be(100);
-        evt.FramesReceived.Should().Be(95);
-        evt.FramesResent.Should().Be(3);
-        evt.FramesQueued.Should().Be(1);
-        evt.Reason.Should().Be("Retried out");
-
-        parsed.Should().BeTrue();
-    }
-
-    [Fact]
-    public void Should_Deserialize_Link_Status_Report()
-    {
-        // Based on specification section 3.4.5
-        var json = """
-        {
-        "@type": "LinkStatus",
-        "time": 1761053619,
-        "node": "G8PZT-1",
-        "id": 3,
-        "direction": "outgoing",
-        "port": "2",
-        "remote": "KIDDER-1",
-        "local": "G8PZT-11",
-        "upForSecs": 300,
-        "frmsSent": 150,
-        "frmsRcvd": 142,
-        "frmsResent": 5,
-        "frmsQueued": 2
-        }
-        """;
-        //
-        // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
-        var evt = datagramUntyped.Should().BeOfType<LinkStatus>().Subject;
-
-        // Assert
-        evt.DatagramType.Should().Be("LinkStatus");
-        evt.TimeUnixSeconds.Should().Be(1761053619);
-        evt.Node.Should().Be("G8PZT-1");
-        evt.Id.Should().Be(3);
-        evt.Direction.Should().Be("outgoing");
-        evt.Port.Should().Be("2");
-        evt.Remote.Should().Be("KIDDER-1");
-        evt.Local.Should().Be("G8PZT-11");
-        evt.UpForSecs.Should().Be(300);
-        evt.FramesSent.Should().Be(150);
-        evt.FramesReceived.Should().Be(142);
-        evt.FramesResent.Should().Be(5);
-        evt.FramesQueued.Should().Be(2);
-
-        parsed.Should().BeTrue();
-    }
-
-    [Fact]
-    public void Should_Deserialize_Link_Status_Report_With_Optional_Fields()
-    {
-        // Test with all optional fields from specification section 3.4.5
-        var json = """
-        {
-        "@type": "LinkStatus",
-        "time": 1761053619,
-        "node": "G8PZT-1",
-        "direction": "outgoing",
-        "id": 1,
-        "port": "2",
-        "remote": "G8PZT",
-        "local": "G8PZT-1",
-        "upForSecs": 300,
-        "frmsSent": 4,
-        "frmsRcvd": 9,
-        "frmsResent": 0,
-        "frmsQueued": 0,
-        "frmsQdPeak": 1,
-        "bytesRcvd": 1354,
-        "bytesSent": 402,
-        "bpsTxMean": 1,
-        "bpsRxMean": 4,
-        "frmQMax": 1,
-        "l2rttMs": 379
-        }
-        """;
-        //
-        // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
-        var evt = datagramUntyped.Should().BeOfType<LinkStatus>().Subject;
-
-        // Assert all required fields
-        evt.DatagramType.Should().Be("LinkStatus");
-        evt.TimeUnixSeconds.Should().Be(1761053619);
-        evt.Node.Should().Be("G8PZT-1");
-        evt.Direction.Should().Be("outgoing");
         evt.Id.Should().Be(1);
-        evt.Port.Should().Be("2");
-        evt.Remote.Should().Be("G8PZT");
-        evt.Local.Should().Be("G8PZT-1");
-        evt.UpForSecs.Should().Be(300);
-        evt.FramesSent.Should().Be(4);
-        evt.FramesReceived.Should().Be(9);
-        evt.FramesResent.Should().Be(0);
-        evt.FramesQueued.Should().Be(0);
-        
-        // Assert all optional fields
-        evt.FramesQueuedPeak.Should().Be(1);
-        evt.BytesReceived.Should().Be(1354);
-        evt.BytesSent.Should().Be(402);
-        evt.BpsTxMean.Should().Be(1);
-        evt.BpsRxMean.Should().Be(4);
-        evt.FrmQMax.Should().Be(1);
-        evt.L2RttMs.Should().Be(379);
+        evt.Service.Should().Be(0);
+        evt.Remote.Should().Be("G8PZT@G8PZT:1ba8");
+        evt.Local.Should().Be("G8PZT-4:0001");
+        evt.SegsRcvd.Should().Be(20);
+        evt.SegsSent.Should().Be(6);
+        evt.SegsResent.Should().Be(0);
+        evt.SegsQueued.Should().Be(0);
+        evt.BytesReceived.Should().Be(14372);
+        evt.BytesSent.Should().Be(6259);
+
+        parsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Should_Deserialize_Spec_Example_Circuit_Down_Event()
+    {
+        // Example from specification section 3.4.9
+        var json = """
+        {
+        "@type": "CircuitDownEvent",
+        "time": 1759688220,
+        "node": "G8PZT",
+        "id": 1,
+        "direction": "incoming",
+        "service": 0,
+        "remote": "G8PZT@G8PZT:14c0",
+        "local": "G8PZT-4:0001",
+        "segsSent": 5,
+        "segsRcvd": 27,
+        "segsResent": 0,
+        "segsQueued": 0,
+        "bytesRcvd": 14214,
+        "bytesSent": 6266,
+        "reason": "rcvd DREQ"
+        }
+        """;
+        //
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var evt = datagramUntyped.Should().BeOfType<CircuitDisconnectionEvent>().Subject;
+
+        // Assert
+        evt.DatagramType.Should().Be("CircuitDownEvent");
+        evt.TimeUnixSeconds.Should().Be(1759688220);
+        evt.Node.Should().Be("G8PZT");
+        evt.Id.Should().Be(1);
+        evt.Direction.Should().Be("incoming");
+        evt.Service.Should().Be(0);
+        evt.Remote.Should().Be("G8PZT@G8PZT:14c0");
+        evt.Local.Should().Be("G8PZT-4:0001");
+        evt.SegsSent.Should().Be(5);
+        evt.SegsRcvd.Should().Be(27);
+        evt.SegsResent.Should().Be(0);
+        evt.SegsQueued.Should().Be(0);
+        evt.BytesReceived.Should().Be(14214);
+        evt.BytesSent.Should().Be(6266);
+        evt.Reason.Should().Be("rcvd DREQ");
+
+        parsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Should_Deserialize_Spec_Example_Node_Up_Event_With_Timestamp()
+    {
+        // Example from specification section 3.4.1 with time field
+        var json = """
+        {
+        "@type": "NodeUpEvent",
+        "time": 1760976724,
+        "nodeCall": "G8PZT-1",
+        "nodeAlias": "XRLN64",
+        "locator": "IO70KD",
+        "latitude": 50.145832,
+        "longitude": -5.125000,
+        "software": "XrLin",
+        "version": "504j"
+        }
+        """;
+
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var evt = datagramUntyped.Should().BeOfType<NodeUpEvent>().Subject;
+
+        // Assert
+        evt.DatagramType.Should().Be("NodeUpEvent");
+        evt.TimeUnixSeconds.Should().Be(1760976724);
+        evt.NodeCall.Should().Be("G8PZT-1");
+        evt.NodeAlias.Should().Be("XRLN64");
+        evt.Locator.Should().Be("IO70KD");
+        evt.Latitude.Should().Be(50.145832m);
+        evt.Longitude.Should().Be(-5.125000m);
+        evt.Software.Should().Be("XrLin");
+        evt.Version.Should().Be("504j");
+
+        parsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Should_Deserialize_Spec_Example_Node_Status_Report_With_All_Fields()
+    {
+        // Example from specification section 3.4.2
+        var json = """
+        {
+        "@type": "NodeStatus",
+        "time": 1760977573,
+        "nodeCall": "G8PZT-1",
+        "nodeAlias": "XRLN64",
+        "locator": "IO70KD",
+        "latitude": 50.145832,
+        "longitude": -5.125000,
+        "software": "XrLin",
+        "version": "504l",
+        "UptimeSecs": 14350,
+        "linksIn": 0,
+        "linksOut": 2,
+        "cctsIn": 4,
+        "cctsOut": 5,
+        "l3Relayed": 0
+        }
+        """;
+
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var evt = datagramUntyped.Should().BeOfType<NodeStatusReportEvent>().Subject;
+
+        // Assert
+        evt.DatagramType.Should().Be("NodeStatus");
+        evt.TimeUnixSeconds.Should().Be(1760977573);
+        evt.NodeCall.Should().Be("G8PZT-1");
+        evt.NodeAlias.Should().Be("XRLN64");
+        evt.Locator.Should().Be("IO70KD");
+        evt.Latitude.Should().Be(50.145832m);
+        evt.Longitude.Should().Be(-5.125000m);
+        evt.Software.Should().Be("XrLin");
+        evt.Version.Should().Be("504l");
+        evt.UptimeSecs.Should().Be(14350);
+        evt.LinksIn.Should().Be(0);
+        evt.LinksOut.Should().Be(2);
+        evt.CircuitsIn.Should().Be(4);
+        evt.CircuitsOut.Should().Be(5);
+        evt.L3Relayed.Should().Be(0);
+
+        parsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Should_Deserialize_Spec_Example_Node_Down_Event_With_All_Fields()
+    {
+        // Example from specification section 3.4.3
+        var json = """
+        {
+        "@type": "NodeDownEvent",
+        "time": 1759682231,
+        "nodeCall": "G8PZT-1",
+        "nodeAlias": "XRLN64",
+        "UptimeSecs": 14420,
+        "reason": "Shutdown",
+        "linksIn": 0,
+        "linksOut": 2,
+        "cctsIn": 4,
+        "cctsOut": 5,
+        "l3Relayed": 0
+        }
+        """;
+        //
+        // Act
+        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var evt = datagramUntyped.Should().BeOfType<NodeDownEvent>().Subject;
+
+        // Assert
+        evt.DatagramType.Should().Be("NodeDownEvent");
+        evt.TimeUnixSeconds.Should().Be(1759682231);
+        evt.NodeCall.Should().Be("G8PZT-1");
+        evt.NodeAlias.Should().Be("XRLN64");
+        evt.UptimeSecs.Should().Be(14420);
+        evt.Reason.Should().Be("Shutdown");
+        evt.LinksIn.Should().Be(0);
+        evt.LinksOut.Should().Be(2);
+        evt.CircuitsIn.Should().Be(4);
+        evt.CircuitsOut.Should().Be(5);
+        evt.L3Relayed.Should().Be(0);
 
         parsed.Should().BeTrue();
     }
