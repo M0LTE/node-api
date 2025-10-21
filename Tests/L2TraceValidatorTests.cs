@@ -1147,7 +1147,7 @@ public class L2TraceValidatorTests
             CommandResponse = "C",
             ProtocolName = "NET/ROM",
             L3Type = "Routing info",
-            Type = "NETROM",
+            Type = "NODES",  // Changed from "NETROM" to "NODES" per spec v0.7
             // Missing FromAlias
             Nodes =
             [
@@ -1180,7 +1180,7 @@ public class L2TraceValidatorTests
             CommandResponse = "C",
             ProtocolName = "NET/ROM",
             L3Type = "Routing info",
-            Type = "NETROM",
+            Type = "NODES",  // Changed from "NETROM" to "NODES" per spec v0.7
             FromAlias = "SENDER",
             Nodes =
             [
