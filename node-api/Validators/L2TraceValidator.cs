@@ -20,7 +20,7 @@ public class L2TraceValidator : AbstractValidator<L2Trace>
             .Equal("L2Trace")
             .WithMessage("DatagramType must be 'L2Trace'");
 
-        RuleFor(x => x.FromCallsign)
+        RuleFor(x => x.ReportFrom)
             .NotEmpty()
             .WithMessage("Reporter's callsign is required");
 

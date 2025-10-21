@@ -30,7 +30,7 @@ public class DatagramValidationServiceTests
         var datagram = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             Port = "1",
             Source = "G8PZT-1",
             Destination = "ID",
@@ -163,7 +163,7 @@ public class DatagramValidationServiceTests
             new L2Trace
             {
                 DatagramType = "L2Trace",
-                FromCallsign = "G9XXX",
+                ReportFrom = "G9XXX",
                 Port = "1",
                 Source = "G8PZT-1",
                 Destination = "ID",

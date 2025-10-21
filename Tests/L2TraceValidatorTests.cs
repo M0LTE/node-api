@@ -16,7 +16,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000, // Valid timestamp: 2024-10-21 12:00:00 UTC
             Port = "1",
             Source = "G8PZT-1",
@@ -40,7 +40,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "WrongType",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
@@ -63,7 +63,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = callsign,
+            ReportFrom = callsign,
             TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
@@ -75,7 +75,7 @@ public class L2TraceValidatorTests
         };
 
         var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(x => x.FromCallsign);
+        result.ShouldHaveValidationErrorFor(x => x.ReportFrom);
     }
 
     [Theory]
@@ -86,7 +86,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = port,
             Source = "G8PZT-1",
@@ -107,7 +107,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
@@ -133,7 +133,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = 0,
             Port = "1",
             Source = "G8PZT-1",
@@ -154,7 +154,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = -1,
             Port = "1",
             Source = "G8PZT-1",
@@ -179,7 +179,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = timestamp,
             Port = "1",
             Source = "G8PZT-1",
@@ -207,7 +207,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = timestamp,
             Port = "1",
             Source = "G8PZT-1",
@@ -230,7 +230,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = currentTimestamp,
             Port = "1",
             Source = "G8PZT-1",
@@ -253,7 +253,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = maxTimestamp,
             Port = "1",
             Source = "G8PZT-1",
@@ -277,7 +277,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = exceedingTimestamp,
             Port = "1",
             Source = "G8PZT-1",
@@ -300,7 +300,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = 315532800,
             Port = "1",
             Source = "G8PZT-1",
@@ -324,7 +324,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = futureTimestamp,
             Port = "1",
             Source = "G8PZT-1",
@@ -345,7 +345,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
@@ -390,7 +390,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
@@ -411,7 +411,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
@@ -438,7 +438,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
@@ -463,7 +463,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
@@ -492,7 +492,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
@@ -516,7 +516,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
@@ -547,7 +547,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
@@ -569,7 +569,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
@@ -595,7 +595,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
@@ -617,7 +617,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
@@ -639,7 +639,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
@@ -665,7 +665,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
@@ -691,7 +691,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
@@ -720,7 +720,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT",
             Destination = "G8PZT-1",
@@ -746,7 +746,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT",
             Destination = "G8PZT-1",
@@ -768,7 +768,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT-1",
             Destination = "G8PZT",
@@ -796,7 +796,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT-1",
             Destination = "G8PZT",
@@ -830,7 +830,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT-1",
             Destination = "G8PZT",
@@ -859,7 +859,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT-1",
             Destination = "G8PZT",
@@ -894,7 +894,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT",
             Destination = "G8PZT-1",
@@ -929,7 +929,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT",
             Destination = "G8PZT-1",
@@ -960,7 +960,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT",
             Destination = "G8PZT-1",
@@ -994,7 +994,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT",
             Destination = "G8PZT-1",
@@ -1020,7 +1020,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT",
             Destination = "G8PZT-1",
@@ -1054,7 +1054,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT",
             Destination = "G8PZT-1",
@@ -1088,7 +1088,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT",
             Destination = "G8PZT-1",
@@ -1121,7 +1121,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT",
             Destination = "G8PZT-1",
@@ -1154,7 +1154,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT",
             Destination = "G8PZT-1",
@@ -1190,7 +1190,7 @@ public class L2TraceValidatorTests
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
-            FromCallsign = "G9XXX",
+            ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT",
             Destination = "G8PZT-1",
