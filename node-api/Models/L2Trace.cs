@@ -420,10 +420,10 @@ public record L2Trace : UdpNodeInfoJsonDatagram
 
         /// <summary>
         /// Timestamp indicating when the data was last updated by the destination node (Optional - INP3 routing)
-        /// e.g. "2025-10-07T03:41:24Z"
+        /// Unix timestamp in seconds
         /// </summary>
         [JsonPropertyName("timestamp")]
-        public DateTimeOffset? Timestamp { get; init; }
+        public long? Timestamp { get; init; }
     }
 
     /// <summary>

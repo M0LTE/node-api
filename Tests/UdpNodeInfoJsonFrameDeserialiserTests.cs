@@ -744,7 +744,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
            "isNode": false,
            "isXRCHAT": true,
            "isRTCHAT": true,
-           "timestamp": "2025-10-07T03:43:04Z"
+           "timestamp": 1759861384
            }
         ],
         "port": "1",
@@ -801,7 +801,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         secondNode.IsNode.Should().Be(false);
         secondNode.IsXrchat.Should().Be(true);
         secondNode.IsRtchat.Should().Be(true);
-        secondNode.Timestamp.Should().Be(DateTimeOffset.Parse("2025-10-07T03:43:04Z"));
+        secondNode.Timestamp.Should().Be(1759861384);  // Unix timestamp for 2025-10-07T03:43:04Z
 
         parsed.Should().BeTrue();
     }

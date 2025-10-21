@@ -298,5 +298,14 @@ public class Inp3NodeValidator : AbstractValidator<L2Trace.Node>
             .InclusiveBetween(-180, 180)
             .When(x => x.Longitude.HasValue)
             .WithMessage("Longitude must be between -180 and 180");
+
+        // Add validation for Timestamp field
+        RuleFor(x => x.Timestamp)
+            .GreaterThanOrEqualTo(0)
+            .When(x => x.Timestamp.HasValue)
+            .WithMessage("Timestamp cannot be negative")
+            .LessThanOrEqualTo(DateTimeOffset.MaxValue.ToUnixTimeSeconds())
+            .When(x => x.Timestamp.HasValue)
+            .WithMessage("Timestamp exceeds maximum valid Unix timestamp");
     }
 }

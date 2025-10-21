@@ -1328,5 +1328,168 @@ public class L2TraceValidatorTests
         var result = _validator.TestValidate(model);
         result.ShouldNotHaveAnyValidationErrors();
     }
+
+    [Fact]
+    public void Should_Accept_Valid_Timestamp_In_INP3_Node()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            Port = "2",
+            Source = "G8PZT",
+            Destination = "G8PZT-1",
+            Control = 3,
+            L2Type = "UI",
+            CommandResponse = "C",
+            ProtocolName = "NET/ROM",
+            L3Type = "Routing info",
+            Type = "INP3",
+            Nodes =
+            [
+                new L2Trace.Node
+                {
+                    Callsign = "GB7JD-8",
+                    Hops = 2,
+                    OneWayTripTimeIn10msIncrements = 2,
+                    Timestamp = 1759861384  // Valid Unix timestamp
+                }
+            ]
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void Should_Accept_Null_Timestamp_In_INP3_Node()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            Port = "2",
+            Source = "G8PZT",
+            Destination = "G8PZT-1",
+            Control = 3,
+            L2Type = "UI",
+            CommandResponse = "C",
+            ProtocolName = "NET/ROM",
+            L3Type = "Routing info",
+            Type = "INP3",
+            Nodes =
+            [
+                new L2Trace.Node
+                {
+                    Callsign = "GB7JD-8",
+                    Hops = 2,
+                    OneWayTripTimeIn10msIncrements = 2,
+                    Timestamp = null
+                }
+            ]
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_Timestamp_In_INP3_Node()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            Port = "2",
+            Source = "G8PZT",
+            Destination = "G8PZT-1",
+            Control = 3,
+            L2Type = "UI",
+            CommandResponse = "C",
+            ProtocolName = "NET/ROM",
+            L3Type = "Routing info",
+            Type = "INP3",
+            Nodes =
+            [
+                new L2Trace.Node
+                {
+                    Callsign = "GB7JD-8",
+                    Hops = 2,
+                    OneWayTripTimeIn10msIncrements = 2,
+                    Timestamp = -1  // Invalid negative timestamp
+                }
+            ]
+        };
+
+        var result = _validator.TestValidate(model);
+        Assert.False(result.IsValid);
+    }
+
+    [Fact]
+    public void Should_Accept_Zero_Timestamp_In_INP3_Node()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            Port = "2",
+            Source = "G8PZT",
+            Destination = "G8PZT-1",
+            Control = 3,
+            L2Type = "UI",
+            CommandResponse = "C",
+            ProtocolName = "NET/ROM",
+            L3Type = "Routing info",
+            Type = "INP3",
+            Nodes =
+            [
+                new L2Trace.Node
+                {
+                    Callsign = "GB7JD-8",
+                    Hops = 2,
+                    OneWayTripTimeIn10msIncrements = 2,
+                    Timestamp = 0  // Unix epoch
+                }
+            ]
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void Should_Reject_Timestamp_Exceeding_Maximum_In_INP3_Node()
+    {
+        var maxTimestamp = DateTimeOffset.MaxValue.ToUnixTimeSeconds();
+        var exceedingTimestamp = maxTimestamp + 1;
+
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            Port = "2",
+            Source = "G8PZT",
+            Destination = "G8PZT-1",
+            Control = 3,
+            L2Type = "UI",
+            CommandResponse = "C",
+            ProtocolName = "NET/ROM",
+            L3Type = "Routing info",
+            Type = "INP3",
+            Nodes =
+            [
+                new L2Trace.Node
+                {
+                    Callsign = "GB7JD-8",
+                    Hops = 2,
+                    OneWayTripTimeIn10msIncrements = 2,
+                    Timestamp = exceedingTimestamp
+                }
+            ]
+        };
+
+        var result = _validator.TestValidate(model);
+        Assert.False(result.IsValid);
+    }
     #endregion
 }
