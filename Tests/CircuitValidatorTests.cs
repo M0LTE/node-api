@@ -14,6 +14,7 @@ public class CircuitUpEventValidatorTests
         var model = new CircuitUpEvent
         {
             DatagramType = "CircuitUpEvent",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT",
             Id = 1,
             Direction = "incoming",
@@ -32,6 +33,7 @@ public class CircuitUpEventValidatorTests
         var model = new CircuitUpEvent
         {
             DatagramType = "CircuitUpEvent",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT",
             Id = 1,
             Direction = "incoming",
@@ -52,6 +54,7 @@ public class CircuitUpEventValidatorTests
         var model = new CircuitUpEvent
         {
             DatagramType = "CircuitUpEvent",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT",
             Id = 1,
             Direction = direction,
@@ -69,6 +72,7 @@ public class CircuitUpEventValidatorTests
         var model = new CircuitUpEvent
         {
             DatagramType = "CircuitUpEvent",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT",
             Id = 1,
             Direction = "sideways",
@@ -86,6 +90,7 @@ public class CircuitUpEventValidatorTests
         var model = new CircuitUpEvent
         {
             DatagramType = "CircuitUpEvent",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT",
             Id = 1,
             Direction = "incoming",
@@ -103,6 +108,7 @@ public class CircuitUpEventValidatorTests
         var model = new CircuitUpEvent
         {
             DatagramType = "CircuitUpEvent",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT",
             Id = 1,
             Direction = "incoming",
@@ -113,6 +119,172 @@ public class CircuitUpEventValidatorTests
         var result = _validator.TestValidate(model);
         result.ShouldHaveValidationErrorFor(x => x.Local);
     }
+
+    #region TimeUnixSeconds Validation Tests
+
+    [Fact]
+    public void Should_Accept_Zero_For_TimeUnixSeconds()
+    {
+        var model = new CircuitUpEvent
+        {
+            DatagramType = "CircuitUpEvent",
+            TimeUnixSeconds = 0,
+            Node = "G8PZT",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_TimeUnixSeconds()
+    {
+        var model = new CircuitUpEvent
+        {
+            DatagramType = "CircuitUpEvent",
+            TimeUnixSeconds = -1,
+            Node = "G8PZT",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.TimeUnixSeconds)
+            .WithErrorMessage("TimeUnixSeconds cannot be negative");
+    }
+
+    [Theory]
+    [InlineData(-100)]
+    [InlineData(-1000)]
+    [InlineData(-999999999)]
+    public void Should_Reject_Various_Negative_TimeUnixSeconds(long timestamp)
+    {
+        var model = new CircuitUpEvent
+        {
+            DatagramType = "CircuitUpEvent",
+            TimeUnixSeconds = timestamp,
+            Node = "G8PZT",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.TimeUnixSeconds)
+            .WithErrorMessage("TimeUnixSeconds cannot be negative");
+    }
+
+    [Theory]
+    [InlineData(1609459200)]  // 2021-01-01 00:00:00 UTC
+    [InlineData(1640995200)]  // 2022-01-01 00:00:00 UTC
+    [InlineData(1759688220)]  // From spec examples
+    public void Should_Accept_Valid_Recent_TimeUnixSeconds(long timestamp)
+    {
+        var model = new CircuitUpEvent
+        {
+            DatagramType = "CircuitUpEvent",
+            TimeUnixSeconds = timestamp,
+            Node = "G8PZT",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Accept_Current_Timestamp()
+    {
+        var currentTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        
+        var model = new CircuitUpEvent
+        {
+            DatagramType = "CircuitUpEvent",
+            TimeUnixSeconds = currentTimestamp,
+            Node = "G8PZT",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Accept_Maximum_Valid_Unix_Timestamp()
+    {
+        var maxTimestamp = DateTimeOffset.MaxValue.ToUnixTimeSeconds();
+        
+        var model = new CircuitUpEvent
+        {
+            DatagramType = "CircuitUpEvent",
+            TimeUnixSeconds = maxTimestamp,
+            Node = "G8PZT",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Reject_TimeUnixSeconds_Exceeding_Maximum()
+    {
+        var maxTimestamp = DateTimeOffset.MaxValue.ToUnixTimeSeconds();
+        var exceedingTimestamp = maxTimestamp + 1;
+        
+        var model = new CircuitUpEvent
+        {
+            DatagramType = "CircuitUpEvent",
+            TimeUnixSeconds = exceedingTimestamp,
+            Node = "G8PZT",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.TimeUnixSeconds)
+            .WithErrorMessage("TimeUnixSeconds exceeds maximum valid Unix timestamp");
+    }
+
+    [Fact]
+    public void Should_Validate_Spec_Example()
+    {
+        // Example from specification section 3.4.7
+        var model = new CircuitUpEvent
+        {
+            DatagramType = "CircuitUpEvent",
+            TimeUnixSeconds = 1759688220,
+            Node = "G8PZT",
+            Id = 1,
+            Direction = "incoming",
+            Service = 0,
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    #endregion
 }
 
 public class CircuitDisconnectionEventValidatorTests
@@ -125,6 +297,7 @@ public class CircuitDisconnectionEventValidatorTests
         var model = new CircuitDisconnectionEvent
         {
             DatagramType = "CircuitDownEvent",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT",
             Id = 1,
             Direction = "incoming",
@@ -148,6 +321,7 @@ public class CircuitDisconnectionEventValidatorTests
         var model = new CircuitDisconnectionEvent
         {
             DatagramType = "CircuitDownEvent",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT",
             Id = 1,
             Direction = "incoming",
@@ -171,6 +345,7 @@ public class CircuitDisconnectionEventValidatorTests
         var model = new CircuitDisconnectionEvent
         {
             DatagramType = "CircuitDownEvent",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT",
             Id = 1,
             Direction = "incoming",
@@ -192,6 +367,7 @@ public class CircuitDisconnectionEventValidatorTests
         var model = new CircuitDisconnectionEvent
         {
             DatagramType = "CircuitDownEvent",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT",
             Id = 1,
             Direction = "incoming",
@@ -215,6 +391,7 @@ public class CircuitDisconnectionEventValidatorTests
         var model = new CircuitDisconnectionEvent
         {
             DatagramType = "CircuitDownEvent",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT",
             Id = 1,
             Direction = "incoming",
@@ -239,6 +416,7 @@ public class CircuitDisconnectionEventValidatorTests
         var model = new CircuitDisconnectionEvent
         {
             DatagramType = "CircuitDownEvent",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT",
             Id = 1,
             Direction = "incoming",
@@ -262,6 +440,7 @@ public class CircuitDisconnectionEventValidatorTests
         var model = new CircuitDisconnectionEvent
         {
             DatagramType = "CircuitDownEvent",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT",
             Id = 1,
             Direction = "incoming",
@@ -285,6 +464,7 @@ public class CircuitDisconnectionEventValidatorTests
         var model = new CircuitDisconnectionEvent
         {
             DatagramType = "CircuitDownEvent",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT",
             Id = 1,
             Direction = "incoming",
@@ -313,6 +493,7 @@ public class CircuitDisconnectionEventValidatorTests
         var model = new CircuitDisconnectionEvent
         {
             DatagramType = "CircuitDownEvent",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT",
             Id = 1,
             Direction = "incoming",
@@ -340,6 +521,7 @@ public class CircuitDisconnectionEventValidatorTests
         var model = new CircuitDisconnectionEvent
         {
             DatagramType = "CircuitDownEvent",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT",
             Id = 1,
             Direction = "incoming",
@@ -362,6 +544,7 @@ public class CircuitDisconnectionEventValidatorTests
         var model = new CircuitDisconnectionEvent
         {
             DatagramType = "CircuitDownEvent",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT",
             Id = 1,
             Direction = "incoming",
@@ -386,6 +569,7 @@ public class CircuitDisconnectionEventValidatorTests
         var model = new CircuitDisconnectionEvent
         {
             DatagramType = "CircuitDownEvent",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT",
             Id = 1,
             Direction = "incoming",
@@ -404,4 +588,177 @@ public class CircuitDisconnectionEventValidatorTests
         var result = _validator.TestValidate(model);
         result.ShouldNotHaveAnyValidationErrors();
     }
+
+    #region TimeUnixSeconds Validation Tests
+
+    [Fact]
+    public void Should_Accept_Zero_For_TimeUnixSeconds()
+    {
+        var model = new CircuitDisconnectionEvent
+        {
+            DatagramType = "CircuitDownEvent",
+            TimeUnixSeconds = 0,
+            Node = "G8PZT",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001",
+            SegsSent = 5,
+            SegsRcvd = 27,
+            SegsResent = 0,
+            SegsQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_TimeUnixSeconds()
+    {
+        var model = new CircuitDisconnectionEvent
+        {
+            DatagramType = "CircuitDownEvent",
+            TimeUnixSeconds = -1,
+            Node = "G8PZT",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001",
+            SegsSent = 5,
+            SegsRcvd = 27,
+            SegsResent = 0,
+            SegsQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.TimeUnixSeconds)
+            .WithErrorMessage("TimeUnixSeconds cannot be negative");
+    }
+
+    [Theory]
+    [InlineData(-100)]
+    [InlineData(-1000)]
+    [InlineData(-999999999)]
+    public void Should_Reject_Various_Negative_TimeUnixSeconds(long timestamp)
+    {
+        var model = new CircuitDisconnectionEvent
+        {
+            DatagramType = "CircuitDownEvent",
+            TimeUnixSeconds = timestamp,
+            Node = "G8PZT",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001",
+            SegsSent = 5,
+            SegsRcvd = 27,
+            SegsResent = 0,
+            SegsQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.TimeUnixSeconds)
+            .WithErrorMessage("TimeUnixSeconds cannot be negative");
+    }
+
+    [Theory]
+    [InlineData(1609459200)]  // 2021-01-01 00:00:00 UTC
+    [InlineData(1759688220)]  // From spec examples
+    public void Should_Accept_Valid_Recent_TimeUnixSeconds(long timestamp)
+    {
+        var model = new CircuitDisconnectionEvent
+        {
+            DatagramType = "CircuitDownEvent",
+            TimeUnixSeconds = timestamp,
+            Node = "G8PZT",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001",
+            SegsSent = 5,
+            SegsRcvd = 27,
+            SegsResent = 0,
+            SegsQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Accept_Current_Timestamp()
+    {
+        var currentTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        
+        var model = new CircuitDisconnectionEvent
+        {
+            DatagramType = "CircuitDownEvent",
+            TimeUnixSeconds = currentTimestamp,
+            Node = "G8PZT",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001",
+            SegsSent = 5,
+            SegsRcvd = 27,
+            SegsResent = 0,
+            SegsQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Accept_Maximum_Valid_Unix_Timestamp()
+    {
+        var maxTimestamp = DateTimeOffset.MaxValue.ToUnixTimeSeconds();
+        
+        var model = new CircuitDisconnectionEvent
+        {
+            DatagramType = "CircuitDownEvent",
+            TimeUnixSeconds = maxTimestamp,
+            Node = "G8PZT",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001",
+            SegsSent = 5,
+            SegsRcvd = 27,
+            SegsResent = 0,
+            SegsQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Reject_TimeUnixSeconds_Exceeding_Maximum()
+    {
+        var maxTimestamp = DateTimeOffset.MaxValue.ToUnixTimeSeconds();
+        var exceedingTimestamp = maxTimestamp + 1;
+        
+        var model = new CircuitDisconnectionEvent
+        {
+            DatagramType = "CircuitDownEvent",
+            TimeUnixSeconds = exceedingTimestamp,
+            Node = "G8PZT",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001",
+            SegsSent = 5,
+            SegsRcvd = 27,
+            SegsResent = 0,
+            SegsQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.TimeUnixSeconds)
+            .WithErrorMessage("TimeUnixSeconds exceeds maximum valid Unix timestamp");
+    }
+
+    #endregion
 }

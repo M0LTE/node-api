@@ -14,6 +14,7 @@ public class CircuitStatusValidatorTests
         var model = new CircuitStatus
         {
             DatagramType = "WrongType",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT-1",
             Id = 1,
             Direction = "incoming",
@@ -36,6 +37,7 @@ public class CircuitStatusValidatorTests
         var model = new CircuitStatus
         {
             DatagramType = "CircuitStatus",
+            TimeUnixSeconds = 1759688220,
             Node = "",
             Id = 1,
             Direction = "incoming",
@@ -58,6 +60,7 @@ public class CircuitStatusValidatorTests
         var model = new CircuitStatus
         {
             DatagramType = "CircuitStatus",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT-1",
             Id = 0,
             Direction = "incoming",
@@ -80,6 +83,7 @@ public class CircuitStatusValidatorTests
         var model = new CircuitStatus
         {
             DatagramType = "CircuitStatus",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT-1",
             Id = 1,
             Direction = "sideways",
@@ -104,6 +108,7 @@ public class CircuitStatusValidatorTests
         var model = new CircuitStatus
         {
             DatagramType = "CircuitStatus",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT-1",
             Id = 1,
             Direction = direction,
@@ -125,6 +130,7 @@ public class CircuitStatusValidatorTests
         var model = new CircuitStatus
         {
             DatagramType = "CircuitStatus",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT-1",
             Id = 1,
             Direction = "incoming",
@@ -147,6 +153,7 @@ public class CircuitStatusValidatorTests
         var model = new CircuitStatus
         {
             DatagramType = "CircuitStatus",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT-1",
             Id = 1,
             Direction = "incoming",
@@ -171,6 +178,7 @@ public class CircuitStatusValidatorTests
         var model = new CircuitStatus
         {
             DatagramType = "CircuitStatus",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT-1",
             Id = 1,
             Direction = "incoming",
@@ -195,6 +203,7 @@ public class CircuitStatusValidatorTests
         var model = new CircuitStatus
         {
             DatagramType = "CircuitStatus",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT-1",
             Id = 1,
             Direction = "incoming",
@@ -219,6 +228,7 @@ public class CircuitStatusValidatorTests
         var model = new CircuitStatus
         {
             DatagramType = "CircuitStatus",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT-1",
             Id = 1,
             Direction = "incoming",
@@ -243,6 +253,7 @@ public class CircuitStatusValidatorTests
         var model = new CircuitStatus
         {
             DatagramType = "CircuitStatus",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT-1",
             Id = 1,
             Direction = "incoming",
@@ -265,6 +276,7 @@ public class CircuitStatusValidatorTests
         var model = new CircuitStatus
         {
             DatagramType = "CircuitStatus",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT-1",
             Id = 1,
             Direction = "incoming",
@@ -289,6 +301,7 @@ public class CircuitStatusValidatorTests
         var model = new CircuitStatus
         {
             DatagramType = "CircuitStatus",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT-1",
             Id = 1,
             Direction = "incoming",
@@ -311,6 +324,7 @@ public class CircuitStatusValidatorTests
         var model = new CircuitStatus
         {
             DatagramType = "CircuitStatus",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT-1",
             Id = 1,
             Direction = "incoming",
@@ -333,6 +347,7 @@ public class CircuitStatusValidatorTests
         var model = new CircuitStatus
         {
             DatagramType = "CircuitStatus",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT-1",
             Id = 1,
             Direction = "incoming",
@@ -351,10 +366,11 @@ public class CircuitStatusValidatorTests
     [Fact]
     public void Should_Validate_Example_From_Spec()
     {
-        // Example from section 3.9 of the spec
+        // Example from section 3.4.8 of the spec
         var model = new CircuitStatus
         {
             DatagramType = "CircuitStatus",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT-1",
             Direction = "incoming",
             Id = 1,
@@ -377,6 +393,7 @@ public class CircuitStatusValidatorTests
         var model = new CircuitStatus
         {
             DatagramType = "CircuitStatus",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT-1",
             Id = 1,
             Direction = "incoming",
@@ -401,6 +418,7 @@ public class CircuitStatusValidatorTests
         var model = new CircuitStatus
         {
             DatagramType = "CircuitStatus",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT-1",
             Id = 1,
             Direction = "incoming",
@@ -424,6 +442,7 @@ public class CircuitStatusValidatorTests
         var model = new CircuitStatus
         {
             DatagramType = "CircuitStatus",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT-1",
             Id = 1,
             Direction = "incoming",
@@ -447,6 +466,7 @@ public class CircuitStatusValidatorTests
         var model = new CircuitStatus
         {
             DatagramType = "CircuitStatus",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT-1",
             Id = 1,
             Direction = "incoming",
@@ -475,6 +495,7 @@ public class CircuitStatusValidatorTests
         var model = new CircuitStatus
         {
             DatagramType = "CircuitStatus",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT-1",
             Id = 1,
             Direction = "incoming",
@@ -502,6 +523,7 @@ public class CircuitStatusValidatorTests
         var model = new CircuitStatus
         {
             DatagramType = "CircuitStatus",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT-1",
             Id = 1,
             Direction = "incoming",
@@ -517,4 +539,177 @@ public class CircuitStatusValidatorTests
         var result = _validator.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(x => x.BytesSent);
     }
+
+    #region TimeUnixSeconds Validation Tests
+
+    [Fact]
+    public void Should_Accept_Zero_For_TimeUnixSeconds()
+    {
+        var model = new CircuitStatus
+        {
+            DatagramType = "CircuitStatus",
+            TimeUnixSeconds = 0,
+            Node = "G8PZT-1",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001",
+            SegsSent = 5,
+            SegsRcvd = 27,
+            SegsResent = 0,
+            SegsQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Reject_Negative_TimeUnixSeconds()
+    {
+        var model = new CircuitStatus
+        {
+            DatagramType = "CircuitStatus",
+            TimeUnixSeconds = -1,
+            Node = "G8PZT-1",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001",
+            SegsSent = 5,
+            SegsRcvd = 27,
+            SegsResent = 0,
+            SegsQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.TimeUnixSeconds)
+            .WithErrorMessage("TimeUnixSeconds cannot be negative");
+    }
+
+    [Theory]
+    [InlineData(-100)]
+    [InlineData(-1000)]
+    [InlineData(-999999999)]
+    public void Should_Reject_Various_Negative_TimeUnixSeconds(long timestamp)
+    {
+        var model = new CircuitStatus
+        {
+            DatagramType = "CircuitStatus",
+            TimeUnixSeconds = timestamp,
+            Node = "G8PZT-1",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001",
+            SegsSent = 5,
+            SegsRcvd = 27,
+            SegsResent = 0,
+            SegsQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.TimeUnixSeconds)
+            .WithErrorMessage("TimeUnixSeconds cannot be negative");
+    }
+
+    [Theory]
+    [InlineData(1609459200)]  // 2021-01-01 00:00:00 UTC
+    [InlineData(1759688220)]  // From spec examples
+    public void Should_Accept_Valid_Recent_TimeUnixSeconds(long timestamp)
+    {
+        var model = new CircuitStatus
+        {
+            DatagramType = "CircuitStatus",
+            TimeUnixSeconds = timestamp,
+            Node = "G8PZT-1",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001",
+            SegsSent = 5,
+            SegsRcvd = 27,
+            SegsResent = 0,
+            SegsQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Accept_Current_Timestamp()
+    {
+        var currentTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        
+        var model = new CircuitStatus
+        {
+            DatagramType = "CircuitStatus",
+            TimeUnixSeconds = currentTimestamp,
+            Node = "G8PZT-1",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001",
+            SegsSent = 5,
+            SegsRcvd = 27,
+            SegsResent = 0,
+            SegsQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Accept_Maximum_Valid_Unix_Timestamp()
+    {
+        var maxTimestamp = DateTimeOffset.MaxValue.ToUnixTimeSeconds();
+        
+        var model = new CircuitStatus
+        {
+            DatagramType = "CircuitStatus",
+            TimeUnixSeconds = maxTimestamp,
+            Node = "G8PZT-1",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001",
+            SegsSent = 5,
+            SegsRcvd = 27,
+            SegsResent = 0,
+            SegsQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeUnixSeconds);
+    }
+
+    [Fact]
+    public void Should_Reject_TimeUnixSeconds_Exceeding_Maximum()
+    {
+        var maxTimestamp = DateTimeOffset.MaxValue.ToUnixTimeSeconds();
+        var exceedingTimestamp = maxTimestamp + 1;
+        
+        var model = new CircuitStatus
+        {
+            DatagramType = "CircuitStatus",
+            TimeUnixSeconds = exceedingTimestamp,
+            Node = "G8PZT-1",
+            Id = 1,
+            Direction = "incoming",
+            Remote = "G8PZT@G8PZT:14c0",
+            Local = "G8PZT-4:0001",
+            SegsSent = 5,
+            SegsRcvd = 27,
+            SegsResent = 0,
+            SegsQueued = 0
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.TimeUnixSeconds)
+            .WithErrorMessage("TimeUnixSeconds exceeds maximum valid Unix timestamp");
+    }
+
+    #endregion
 }

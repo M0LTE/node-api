@@ -50,6 +50,7 @@ public class DatagramValidationServiceTests
         var datagram = new CircuitStatus
         {
             DatagramType = "CircuitStatus",
+            TimeUnixSeconds = 1759688220,
             Node = "G8PZT-1",
             Id = 1,
             Direction = "incoming",
@@ -107,6 +108,7 @@ public class DatagramValidationServiceTests
         var datagram = new CircuitStatus
         {
             DatagramType = "CircuitStatus",
+            TimeUnixSeconds = 1759688220,
             Node = "",  // Invalid
             Id = 0,     // Invalid
             Direction = "sideways",  // Invalid
@@ -176,6 +178,7 @@ public class DatagramValidationServiceTests
             new CircuitStatus
             {
                 DatagramType = "CircuitStatus",
+                TimeUnixSeconds = 1759688220,
                 Node = "G8PZT-1",
                 Id = 1,
                 Direction = "incoming",
@@ -189,6 +192,7 @@ public class DatagramValidationServiceTests
             new CircuitUpEvent
             {
                 DatagramType = "CircuitUpEvent",
+                TimeUnixSeconds = 1759688220,
                 Node = "G8PZT",
                 Id = 1,
                 Direction = "incoming",
@@ -198,6 +202,7 @@ public class DatagramValidationServiceTests
             new CircuitDisconnectionEvent
             {
                 DatagramType = "CircuitDownEvent",
+                TimeUnixSeconds = 1759688220,
                 Node = "G8PZT",
                 Id = 1,
                 Direction = "incoming",
