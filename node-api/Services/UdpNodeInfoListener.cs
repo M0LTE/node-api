@@ -4,6 +4,7 @@ using MQTTnet.Extensions.ManagedClient;
 using MQTTnet.Formatter;
 using node_api.Models;
 using node_api.Validators;
+using node_api.Utilities;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -148,11 +149,19 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
                 }
                 else
                 {
+                    // Map C# property names to JSON property names for validation errors
+                    var datagramType = frame.GetType();
+                    var mappedErrors = validationResult.Errors.Select(e => new
+                    {
+                        property = JsonPropertyNameMapper.GetJsonPropertyName(datagramType, e.PropertyName),
+                        error = e.ErrorMessage
+                    }).ToList();
+
                     _logger.LogWarning(
                         "Received invalid datagram from {Endpoint}. Type: {Type}. Errors: {Errors}, Datagram: {Datagram}",
                         result.RemoteEndPoint,
                         frame!.DatagramType,
-                        string.Join("; ", validationResult.Errors.Select(e => $"{e.PropertyName}: {e.ErrorMessage}")),
+                        string.Join("; ", mappedErrors.Select(e => $"{e.property}: {e.error}")),
                         Convert.ToBase64String(result.Buffer)
                     );
 
@@ -163,11 +172,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
                         {
                             datagram = json,
                             type = frame.DatagramType,
-                            errors = validationResult.Errors.Select(e => new
-                            {
-                                property = e.PropertyName,
-                                error = e.ErrorMessage
-                            })
+                            errors = mappedErrors
                         }))
                         .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
                         .Build();

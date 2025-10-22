@@ -433,6 +433,101 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
             e.PropertyName.Contains("Direction", StringComparison.Ordinal));
     }
 
+    [Fact]
+    public async Task Should_Return_JSON_Property_Names_In_Validation_Errors()
+    {
+        // Arrange - Invalid L2Trace with various errors
+        var json = """
+        {
+            "@type": "L2Trace",
+            "reportFrom": "",
+            "port": "",
+            "srce": "",
+            "dest": "",
+            "ctrl": 3,
+            "l2Type": "UI",
+            "cr": "C"
+        }
+        """;
+        // Act
+        var response = await _client.PostAsync("/api/diagnostics/validate",
+            new StringContent(json, Encoding.UTF8, "application/json"));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<DiagnosticsController.ValidationResponse>();
+        result.Should().NotBeNull();
+        result!.IsValid.Should().BeFalse();
+        result.ValidationErrors.Should().NotBeNull();
+
+        // Verify JSON property names are used, not C# property names
+        var propertyNames = result.ValidationErrors!.Select(e => e.PropertyName).ToList();
+
+        // Should use JSON names like "reportFrom", "port", "srce", "dest"
+        // NOT C# names like "ReportFrom", "Port", "Source", "Destination"
+        propertyNames.Should().Contain("reportFrom");
+        propertyNames.Should().Contain("port");
+        propertyNames.Should().Contain("srce");
+        propertyNames.Should().Contain("dest");
+
+        // Should NOT contain C# property names
+        propertyNames.Should().NotContain("ReportFrom");
+        propertyNames.Should().NotContain("Port");
+        propertyNames.Should().NotContain("Source");
+        propertyNames.Should().NotContain("Destination");
+    }
+
+    [Fact]
+    public async Task Should_Return_JSON_Property_Names_For_CircuitStatus_Errors()
+    {
+        // Arrange - Invalid CircuitStatus with errors
+        var json = """
+        {
+            "@type": "CircuitStatus",
+            "node": "",
+            "id": 0,
+            "direction": "invalid",
+            "remote": "",
+            "local": "",
+            "segsSent": -1,
+            "segsRcvd": -1,
+            "segsResent": 0,
+            "segsQueued": 0
+        }
+        """;
+
+        // Act
+        var response = await _client.PostAsync("/api/diagnostics/validate",
+            new StringContent(json, Encoding.UTF8, "application/json"));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<DiagnosticsController.ValidationResponse>();
+        result.Should().NotBeNull();
+        result!.IsValid.Should().BeFalse();
+        result.ValidationErrors.Should().NotBeNull();
+
+        var propertyNames = result.ValidationErrors!.Select(e => e.PropertyName).ToList();
+
+        // Should use JSON names like "segsSent", "segsRcvd"
+        // NOT C# names like "SegmentsSent", "SegmentsReceived"
+        if (propertyNames.Any(p => p.Contains("Sent", StringComparison.Ordinal)))
+        {
+            propertyNames.Where(p => p.Contains("Sent", StringComparison.Ordinal))
+                .Should().Contain("segsSent");
+            propertyNames.Should().NotContain("SegmentsSent");
+        }
+
+        if (propertyNames.Any(p => p.Contains("Rcvd", StringComparison.OrdinalIgnoreCase) || 
+                                    p.Contains("Received", StringComparison.OrdinalIgnoreCase)))
+        {
+            propertyNames.Where(p => p.Contains("Rcvd", StringComparison.OrdinalIgnoreCase) || 
+                                       p.Contains("Received", StringComparison.OrdinalIgnoreCase))
+                .Should().Contain("segsRcvd");
+            propertyNames.Should().NotContain("SegmentsReceived");
+        }
+    }
+
     #endregion
 
     #region Content-Type Tests

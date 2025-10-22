@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using node_api.Validators;
 using node_api.Constants;
+using node_api.Utilities;
 using System.Text.Json;
 
 namespace node_api.Controllers;
@@ -83,6 +84,9 @@ public class DiagnosticsController : ControllerBase
                 }
                 else
                 {
+                    // Map C# property names to JSON property names
+                    var datagramType = datagram.GetType();
+                    
                     return Ok(new ValidationResponse
                     {
                         IsValid = false,
@@ -90,7 +94,7 @@ public class DiagnosticsController : ControllerBase
                         DatagramType = datagram.DatagramType,
                         ValidationErrors = validationResult.Errors.Select(e => new ValidationError
                         {
-                            PropertyName = e.PropertyName,
+                            PropertyName = JsonPropertyNameMapper.GetJsonPropertyName(datagramType, e.PropertyName),
                             ErrorMessage = e.ErrorMessage,
                             AttemptedValue = e.AttemptedValue?.ToString()
                         }).ToList(),
@@ -239,7 +243,7 @@ public class DiagnosticsController : ControllerBase
     public class ValidationError
     {
         /// <summary>
-        /// The property that failed validation
+        /// The property that failed validation (JSON property name)
         /// </summary>
         public required string PropertyName { get; set; }
 
