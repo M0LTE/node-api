@@ -1,4 +1,5 @@
 ﻿using node_api.Models;
+using node_api.Constants;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -31,16 +32,16 @@ public static class UdpNodeInfoJsonDatagramDeserialiser
         {
             frame = typeString switch
             {
-                "L2Trace" => JsonSerializer.Deserialize<L2Trace>(json, options),
-                "NodeUpEvent" => JsonSerializer.Deserialize<NodeUpEvent>(json, options),
-                "NodeDownEvent" => JsonSerializer.Deserialize<NodeDownEvent>(json, options),
-                "NodeStatus" => JsonSerializer.Deserialize<NodeStatusReportEvent>(json, options),
-                "LinkUpEvent" => JsonSerializer.Deserialize<LinkUpEvent>(json, options),
-                "LinkDownEvent" => JsonSerializer.Deserialize<LinkDisconnectionEvent>(json, options),
-                "LinkStatus" => JsonSerializer.Deserialize<LinkStatus>(json, options),
-                "CircuitUpEvent" => JsonSerializer.Deserialize<CircuitUpEvent>(json, options),
-                "CircuitDownEvent" => JsonSerializer.Deserialize<CircuitDisconnectionEvent>(json, options),
-                "CircuitStatus" => JsonSerializer.Deserialize<CircuitStatus>(json, options),
+                DatagramTypes.L2Trace => JsonSerializer.Deserialize<L2Trace>(json, options),
+                DatagramTypes.NodeUpEvent => JsonSerializer.Deserialize<NodeUpEvent>(json, options),
+                DatagramTypes.NodeDownEvent => JsonSerializer.Deserialize<NodeDownEvent>(json, options),
+                DatagramTypes.NodeStatus => JsonSerializer.Deserialize<NodeStatusReportEvent>(json, options),
+                DatagramTypes.LinkUpEvent => JsonSerializer.Deserialize<LinkUpEvent>(json, options),
+                DatagramTypes.LinkDownEvent => JsonSerializer.Deserialize<LinkDisconnectionEvent>(json, options),
+                DatagramTypes.LinkStatus => JsonSerializer.Deserialize<LinkStatus>(json, options),
+                DatagramTypes.CircuitUpEvent => JsonSerializer.Deserialize<CircuitUpEvent>(json, options),
+                DatagramTypes.CircuitDownEvent => JsonSerializer.Deserialize<CircuitDisconnectionEvent>(json, options),
+                DatagramTypes.CircuitStatus => JsonSerializer.Deserialize<CircuitStatus>(json, options),
                 _ => null
             };
             jsonException = null;

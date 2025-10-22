@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using node_api.Validators;
+using node_api.Constants;
 using System.Text.Json;
 
 namespace node_api.Controllers;
@@ -140,19 +141,7 @@ public class DiagnosticsController : ControllerBase
                             : "Missing or invalid @type property",
                         DatagramType = typeString,
                         ReceivedJson = json,
-                        SupportedTypes = new[]
-                        {
-                            "L2Trace",
-                            "NodeUpEvent",
-                            "NodeDownEvent",
-                            "NodeStatus",
-                            "LinkUpEvent",
-                            "LinkDownEvent",
-                            "LinkStatus",
-                            "CircuitUpEvent",
-                            "CircuitDownEvent",
-                            "CircuitStatus"
-                        }
+                        SupportedTypes = DatagramTypes.All
                     });
                 }
             }
