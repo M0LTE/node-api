@@ -1,0 +1,114 @@
+# Example GitHub Actions workflow for running smoke tests
+# This can be used in CI/CD pipelines to verify deployed instances
+
+name: Smoke Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to test'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+          - local
+      service-url:
+        description: 'Service URL (optional override)'
+        required: false
+        type: string
+      udp-host:
+        description: 'UDP Host (optional override)'
+        required: false
+        type: string
+
+jobs:
+  smoke-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+    
+    - name: Configure test settings
+      working-directory: SmokeTests
+      run: |
+        # Use input overrides or default based on environment
+        SERVICE_URL="${{ inputs.service-url }}"
+        UDP_HOST="${{ inputs.udp-host }}"
+        
+        if [ -z "$SERVICE_URL" ]; then
+          case "${{ inputs.environment }}" in
+            production)
+              SERVICE_URL="https://node-api.packet.oarc.uk"
+              UDP_HOST="node-api.packet.oarc.uk"
+              ;;
+            staging)
+              SERVICE_URL="https://staging.node-api.packet.oarc.uk"
+              UDP_HOST="staging.node-api.packet.oarc.uk"
+              ;;
+            local)
+              SERVICE_URL="http://localhost:5000"
+              UDP_HOST="localhost"
+              ;;
+          esac
+        fi
+        
+        if [ -z "$UDP_HOST" ]; then
+          UDP_HOST="${SERVICE_URL#http://}"
+          UDP_HOST="${UDP_HOST#https://}"
+          UDP_HOST="${UDP_HOST%%:*}"
+        fi
+        
+        cat > appsettings.json << EOF
+        {
+          "SmokeTestSettings": {
+            "BaseUrl": "$SERVICE_URL",
+            "UdpHost": "$UDP_HOST",
+            "UdpPort": 13579,
+            "MqttHost": "node-api.packet.oarc.uk",
+            "MqttPort": 1883,
+            "TestTimeoutSeconds": 30
+          }
+        }
+        EOF
+        
+        echo "Test configuration:"
+        cat appsettings.json
+    
+    - name: Restore dependencies
+      working-directory: SmokeTests
+      run: dotnet restore
+    
+    - name: Build smoke tests
+      working-directory: SmokeTests
+      run: dotnet build --no-restore --configuration Release
+    
+    - name: Run smoke tests
+      working-directory: SmokeTests
+      run: dotnet test --no-build --configuration Release --logger "trx;LogFileName=test-results.trx" --logger "console;verbosity=detailed"
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: smoke-test-results-${{ inputs.environment }}
+        path: SmokeTests/TestResults/*.trx
+    
+    - name: Report test results
+      if: always()
+      run: |
+        if [ ${{ job.status }} == 'success' ]; then
+          echo "? All smoke tests passed for ${{ inputs.environment }} environment"
+        else
+          echo "? Some smoke tests failed for ${{ inputs.environment }} environment"
+          exit 1
+        fi
