@@ -227,4 +227,159 @@ public class JsonPropertyNameMapperTests
         var result3 = JsonPropertyNameMapper.GetJsonPropertyName(typeof(L2Trace), "OriginatingNodeCallsign");
         Assert.Equal("srcNode", result3);
     }
+
+    #region TransformErrorMessage Tests
+
+    [Fact]
+    public void TransformErrorMessage_Should_Replace_CSharp_Property_Names_With_JSON_Names()
+    {
+        // Arrange
+        var errorMessage = "OriginatingUserCallsign is required for CONN REQ/CONN REQX";
+        var type = typeof(L2Trace);
+
+        // Act
+        var result = JsonPropertyNameMapper.TransformErrorMessage(type, errorMessage);
+
+        // Assert
+        Assert.Equal("srcUser is required for CONN REQ/CONN REQX", result);
+    }
+
+    [Fact]
+    public void TransformErrorMessage_Should_Replace_Multiple_Property_Names()
+    {
+        // Arrange
+        var errorMessage = "OriginatingUserCallsign and OriginatingNodeCallsign are required";
+        var type = typeof(L2Trace);
+
+        // Act
+        var result = JsonPropertyNameMapper.TransformErrorMessage(type, errorMessage);
+
+        // Assert
+        Assert.Equal("srcUser and srcNode are required", result);
+    }
+
+    [Fact]
+    public void TransformErrorMessage_Should_Handle_FromCircuit_And_ToCircuit()
+    {
+        // Arrange
+        var errorMessage = "FromCircuit is required for CONN REQ";
+        var type = typeof(L2Trace);
+
+        // Act
+        var result = JsonPropertyNameMapper.TransformErrorMessage(type, errorMessage);
+
+        // Assert
+        Assert.Equal("fromCct is required for CONN REQ", result);
+    }
+
+    [Fact]
+    public void TransformErrorMessage_Should_Handle_Sequence_Numbers()
+    {
+        // Arrange
+        var errorMessage = "TransmitSequenceNumber and ReceiveSequenceNumber are required";
+        var type = typeof(L2Trace);
+
+        // Act
+        var result = JsonPropertyNameMapper.TransformErrorMessage(type, errorMessage);
+
+        // Assert
+        Assert.Equal("txSeq and rxSeq are required", result);
+    }
+
+    [Fact]
+    public void TransformErrorMessage_Should_Handle_Window_Properties()
+    {
+        // Arrange
+        var errorMessage = "ProposedWindow and AcceptableWindow are required";
+        var type = typeof(L2Trace);
+
+        // Act
+        var result = JsonPropertyNameMapper.TransformErrorMessage(type, errorMessage);
+
+        // Assert
+        Assert.Equal("window and accWin are required", result);
+    }
+
+    [Fact]
+    public void TransformErrorMessage_Should_Handle_NetRomXServiceNumber()
+    {
+        // Arrange
+        var errorMessage = "NetRomXServiceNumber is required for CONN REQX";
+        var type = typeof(L2Trace);
+
+        // Act
+        var result = JsonPropertyNameMapper.TransformErrorMessage(type, errorMessage);
+
+        // Assert
+        Assert.Equal("service is required for CONN REQX", result);
+    }
+
+    [Fact]
+    public void TransformErrorMessage_Should_Handle_L2Trace_Basic_Properties()
+    {
+        // Arrange
+        var errorMessage = "Source and Destination callsigns are required";
+        var type = typeof(L2Trace);
+
+        // Act
+        var result = JsonPropertyNameMapper.TransformErrorMessage(type, errorMessage);
+
+        // Assert
+        Assert.Equal("srce and dest callsigns are required", result);
+    }
+
+    [Fact]
+    public void TransformErrorMessage_Should_Handle_CircuitStatus_Properties()
+    {
+        // Arrange
+        var errorMessage = "SegmentsSent and SegmentsReceived cannot be negative";
+        var type = typeof(CircuitStatus);
+
+        // Act
+        var result = JsonPropertyNameMapper.TransformErrorMessage(type, errorMessage);
+
+        // Assert
+        Assert.Equal("segsSent and segsRcvd cannot be negative", result);
+    }
+
+    [Fact]
+    public void TransformErrorMessage_Should_Handle_LinkStatus_Properties()
+    {
+        // Arrange
+        var errorMessage = "FramesSent and FramesReceived cannot be negative";
+        var type = typeof(LinkStatus);
+
+        // Act
+        var result = JsonPropertyNameMapper.TransformErrorMessage(type, errorMessage);
+
+        // Assert
+        Assert.Equal("frmsSent and frmsRcvd cannot be negative", result);
+    }
+
+    [Fact]
+    public void TransformErrorMessage_Should_Return_Original_For_Null_Or_Empty()
+    {
+        // Arrange
+        var type = typeof(L2Trace);
+
+        // Act & Assert
+        Assert.Equal("", JsonPropertyNameMapper.TransformErrorMessage(type, ""));
+        Assert.Null(JsonPropertyNameMapper.TransformErrorMessage(type, null!));
+    }
+
+    [Fact]
+    public void TransformErrorMessage_Should_Use_Word_Boundaries()
+    {
+        // Arrange - "Window" in "ProposedWindow" should be replaced, but "window" as a standalone word should be preserved
+        var errorMessage = "ProposedWindow defines the window size";
+        var type = typeof(L2Trace);
+
+        // Act
+        var result = JsonPropertyNameMapper.TransformErrorMessage(type, errorMessage);
+
+        // Assert
+        Assert.Contains("window defines the window size", result);
+    }
+
+    #endregion
 }

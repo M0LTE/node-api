@@ -95,7 +95,7 @@ public class DiagnosticsController : ControllerBase
                         ValidationErrors = validationResult.Errors.Select(e => new ValidationError
                         {
                             PropertyName = JsonPropertyNameMapper.GetJsonPropertyName(datagramType, e.PropertyName),
-                            ErrorMessage = e.ErrorMessage,
+                            ErrorMessage = JsonPropertyNameMapper.TransformErrorMessage(datagramType, e.ErrorMessage),
                             AttemptedValue = e.AttemptedValue?.ToString()
                         }).ToList(),
                         ReceivedJson = json

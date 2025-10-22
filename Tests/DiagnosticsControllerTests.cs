@@ -528,6 +528,58 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         }
     }
 
+    [Fact]
+    public async Task Should_Use_JSON_Property_Names_In_NetRom_Validation_Error_Messages()
+    {
+        // Arrange - Invalid NetRom CONN REQ with missing srcUser and srcNode
+        var json = """
+        {
+            "@type": "L2Trace",
+            "reportFrom": "G9XXX",
+            "port": "2",
+            "srce": "G8PZT-1",
+            "dest": "G8PZT",
+            "ctrl": 232,
+            "l2Type": "I",
+            "cr": "C",
+            "ptcl": "NET/ROM",
+            "l3type": "NetRom",
+            "l3src": "G8PZT-1",
+            "l3dst": "G8PZT",
+            "ttl": 25,
+            "l4type": "CONN REQ",
+            "fromCct": 4,
+            "window": 4
+        }
+        """;
+
+        // Act
+        var response = await _client.PostAsync("/api/diagnostics/validate",
+            new StringContent(json, Encoding.UTF8, "application/json"));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<DiagnosticsController.ValidationResponse>();
+        result.Should().NotBeNull();
+        result!.IsValid.Should().BeFalse();
+        result.ValidationErrors.Should().NotBeNull();
+
+        // Find errors related to srcUser and srcNode
+        var errors = result.ValidationErrors!.ToList();
+        
+        // Should have errors mentioning srcUser and srcNode
+        errors.Should().Contain(e => e.ErrorMessage.Contains("srcUser", StringComparison.OrdinalIgnoreCase));
+        errors.Should().Contain(e => e.ErrorMessage.Contains("srcNode", StringComparison.OrdinalIgnoreCase));
+        
+        // Should NOT mention the C# property names
+        errors.Should().NotContain(e => e.ErrorMessage.Contains("OriginatingUserCallsign", StringComparison.Ordinal));
+        errors.Should().NotContain(e => e.ErrorMessage.Contains("OriginatingNodeCallsign", StringComparison.Ordinal));
+        
+        // The property names in the errors should be JSON property names
+        errors.Where(e => e.PropertyName.Contains("src", StringComparison.OrdinalIgnoreCase))
+            .Should().Contain(e => e.PropertyName == "srcUser" || e.PropertyName == "srcNode");
+    }
+
     #endregion
 
     #region Content-Type Tests

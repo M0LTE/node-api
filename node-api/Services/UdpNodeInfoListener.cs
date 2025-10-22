@@ -154,7 +154,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
                     var mappedErrors = validationResult.Errors.Select(e => new
                     {
                         property = JsonPropertyNameMapper.GetJsonPropertyName(datagramType, e.PropertyName),
-                        error = e.ErrorMessage
+                        error = JsonPropertyNameMapper.TransformErrorMessage(datagramType, e.ErrorMessage)
                     }).ToList();
 
                     _logger.LogWarning(
