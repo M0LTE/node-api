@@ -392,11 +392,13 @@
                 const staleClass = isActive ? '' : 'stale';
                 
                 return `
-                    <div class="node-badge ${staleClass}">
-                        <div class="node-callsign">${callsign}</div>
-                        <div class="node-message-count">${messageCount.toLocaleString()} messages</div>
-                        <div class="node-last-seen">${formatLastSeen(lastSeen)}</div>
-                    </div>
+                    <a href="/node.html?callsign=${callsign}" style="text-decoration: none; color: inherit;">
+                        <div class="node-badge ${staleClass}">
+                            <div class="node-callsign">${callsign}</div>
+                            <div class="node-message-count">${messageCount.toLocaleString()} messages</div>
+                            <div class="node-last-seen">${formatLastSeen(lastSeen)}</div>
+                        </div>
+                    </a>
                 `;
             }).join('');
 

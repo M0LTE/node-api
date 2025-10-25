@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Node Details - Node API</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .container.compact {
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+            margin: 0 0 15px 0;
+        }
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #0066cc;
+            padding-bottom: 8px;
+            margin-top: 0;
+        }
+        p {
+            color: #666;
+            line-height: 1.6;
+            margin: 0 0 15px 0;
+        }
+        .links {
+            margin-top: 0;
+        }
+        .links a {
+            display: inline-block;
+            margin: 5px 10px 5px 0;
+            padding: 8px 16px;
+            background-color: #0066cc;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+            font-size: 14px;
+        }
+        .links a:hover {
+            background-color: #0052a3;
+        }
+        .mqtt-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            margin-left: 10px;
+        }
+        .mqtt-status.connected {
+            background-color: #4caf50;
+            color: white;
+        }
+        .mqtt-status.disconnected {
+            background-color: #f44336;
+            color: white;
+        }
+        .mqtt-status.connecting {
+            background-color: #ff9800;
+            color: white;
+        }
+        .node-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .node-callsign {
+            font-size: 48px;
+            font-weight: bold;
+            color: #0066cc;
+            font-family: 'Courier New', monospace;
+        }
+        .node-alias {
+            font-size: 24px;
+            color: #666;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .status-online {
+            background-color: #4caf50;
+            color: white;
+        }
+        .status-offline {
+            background-color: #f44336;
+            color: white;
+        }
+        .status-unknown {
+            background-color: #999;
+            color: white;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .info-card {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 6px;
+            border-left: 4px solid #0066cc;
+        }
+        .info-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        .info-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+        .no-data {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+            font-style: italic;
+        }
+        .links-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .links-table th {
+            background-color: #0066cc;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        .links-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .links-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        .callsign {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+        .metric {
+            font-family: 'Courier New', monospace;
+            color: #555;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin: 0 auto;
+        }
+        .status-indicator.active {
+            background-color: #4caf50;
+        }
+        .status-indicator.disconnected {
+            background-color: #f44336;
+        }
+        .direction-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .direction-incoming {
+            background-color: #4caf50;
+            color: white;
+        }
+        .direction-outgoing {
+            background-color: #2196f3;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container compact">
+        <h1>
+            Node Details
+            <span id="mqttStatus" class="mqtt-status connecting">Connecting...</span>
+        </h1>
+        <div class="links">
+            <a href="/">Home</a>
+            <a href="/links.html">Link Monitor</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="nodeHeader">
+            <div class="no-data">Loading node information...</div>
+        </div>
+        
+        <div id="nodeInfo" class="info-grid" style="display: none;">
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Links Involving This Node</h2>
+        <div id="linksContainer">
+            <div class="no-data">Waiting for link data...</div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/mqtt@5.3.4/dist/mqtt.min.js"></script>
+    <script>
+        // Get callsign from query string
+        const urlParams = new URLSearchParams(window.location.search);
+        const nodeCallsign = urlParams.get('callsign');
+
+        if (!nodeCallsign) {
+            document.getElementById('nodeHeader').innerHTML = '<div class="no-data">No callsign specified. Please provide a ?callsign= parameter.</div>';
+        } else {
+            document.title = `${nodeCallsign} - Node Details`;
+        }
+
+        // Node data tracker
+        class NodeData {
+            constructor(callsign) {
+                this.callsign = callsign;
+                this.alias = null;
+                this.locator = null;
+                this.latitude = null;
+                this.longitude = null;
+                this.software = null;
+                this.version = null;
+                this.uptimeSecs = null;
+                this.linksIn = null;
+                this.linksOut = null;
+                this.circuitsIn = null;
+                this.circuitsOut = null;
+                this.l3Relayed = null;
+                this.lastSeen = null;
+                this.status = 'unknown';
+                this.l2TraceCount = 0;
+                this.lastL2Trace = null;
+            }
+
+            updateFromNodeUp(data) {
+                this.alias = data.nodeAlias;
+                this.locator = data.locator;
+                this.latitude = data.latitude;
+                this.longitude = data.longitude;
+                this.software = data.software;
+                this.version = data.version;
+                this.status = 'online';
+                this.lastSeen = new Date();
+            }
+
+            updateFromNodeStatus(data) {
+                this.alias = data.nodeAlias;
+                this.locator = data.locator;
+                this.latitude = data.latitude;
+                this.longitude = data.longitude;
+                this.software = data.software;
+                this.version = data.version;
+                this.uptimeSecs = data.uptimeSecs;
+                this.linksIn = data.linksIn;
+                this.linksOut = data.linksOut;
+                this.circuitsIn = data.cctsIn;
+                this.circuitsOut = data.cctsOut;
+                this.l3Relayed = data.l3Relayed;
+                this.status = 'online';
+                this.lastSeen = new Date();
+            }
+
+            updateFromNodeDown(data) {
+                this.alias = data.nodeAlias;
+                this.status = 'offline';
+                this.lastSeen = new Date();
+            }
+
+            updateFromL2Trace(data) {
+                this.l2TraceCount++;
+                this.lastL2Trace = new Date();
+                this.lastSeen = new Date();
+                // If we're seeing traces, the node is probably online
+                if (this.status === 'unknown') {
+                    this.status = 'online';
+                }
+            }
+        }
+
+        // Link tracker (similar to links.html but filtered)
+        class LinkTracker {
+            constructor() {
+                this.links = new Map();
+            }
+
+            getCanonicalLinkKey(local, remote) {
+                const [endpoint1, endpoint2] = [local, remote].sort();
+                return `${endpoint1}<->${endpoint2}`;
+            }
+
+            handleLinkUp(data) {
+                const canonicalKey = this.getCanonicalLinkKey(data.local, data.remote);
+                
+                let link = this.links.get(canonicalKey);
+                if (!link) {
+                    link = {
+                        canonicalKey: canonicalKey,
+                        endpoint1: data.local < data.remote ? data.local : data.remote,
+                        endpoint2: data.local < data.remote ? data.remote : data.local,
+                        status: 'active',
+                        connectedAt: data.time ? new Date(data.time * 1000) : new Date(),
+                        lastUpdate: new Date(),
+                        endpoints: {}
+                    };
+                    this.links.set(canonicalKey, link);
+                }
+                
+                if (!link.endpoints[data.node]) {
+                    link.endpoints[data.node] = {
+                        node: data.node,
+                        id: data.id,
+                        direction: data.direction,
+                        port: data.port,
+                        local: data.local,
+                        remote: data.remote,
+                        lastUpdate: new Date()
+                    };
+                }
+                
+                if (!link.initiator) {
+                    link.initiator = data.direction === 'outgoing' ? data.local : data.remote;
+                }
+                
+                link.lastUpdate = new Date();
+            }
+
+            handleLinkStatus(data) {
+                const canonicalKey = this.getCanonicalLinkKey(data.local, data.remote);
+                let link = this.links.get(canonicalKey);
+                
+                if (!link) {
+                    const estimatedConnectedAt = data.time && data.upForSecs 
+                        ? new Date(data.time * 1000 - data.upForSecs * 1000)
+                        : new Date();
+                    
+                    link = {
+                        canonicalKey: canonicalKey,
+                        endpoint1: data.local < data.remote ? data.local : data.remote,
+                        endpoint2: data.local < data.remote ? data.remote : data.local,
+                        status: 'active',
+                        connectedAt: estimatedConnectedAt,
+                        lastUpdate: new Date(),
+                        endpoints: {}
+                    };
+                    this.links.set(canonicalKey, link);
+                }
+                
+                link.endpoints[data.node] = {
+                    node: data.node,
+                    id: data.id,
+                    direction: data.direction,
+                    port: data.port,
+                    local: data.local,
+                    remote: data.remote,
+                    lastUpdate: new Date(),
+                    upForSecs: data.upForSecs,
+                    framesSent: data.frmsSent,
+                    framesReceived: data.frmsRcvd,
+                    framesResent: data.frmsResent,
+                    framesQueued: data.frmsQueued,
+                    bpsTxMean: data.bpsTxMean,
+                    bpsRxMean: data.bpsRxMean,
+                    l2RttMs: data.l2rttMs
+                };
+                
+                if (!link.initiator) {
+                    link.initiator = data.direction === 'outgoing' ? data.local : data.remote;
+                }
+                
+                link.lastUpdate = new Date();
+                link.status = 'active';
+            }
+
+            handleLinkDown(data) {
+                const canonicalKey = this.getCanonicalLinkKey(data.local, data.remote);
+                let link = this.links.get(canonicalKey);
+                
+                if (link) {
+                    link.status = 'disconnected';
+                    link.disconnectedAt = new Date();
+                    
+                    if (link.endpoints[data.node]) {
+                        link.endpoints[data.node].upForSecs = data.upForSecs || link.endpoints[data.node].upForSecs;
+                        link.endpoints[data.node].framesSent = data.frmsSent;
+                        link.endpoints[data.node].framesReceived = data.frmsRcvd;
+                        link.endpoints[data.node].framesResent = data.frmsResent;
+                        link.endpoints[data.node].reason = data.reason;
+                        link.endpoints[data.node].lastUpdate = new Date();
+                    }
+                }
+            }
+
+            getLinksForNode(callsign) {
+                return Array.from(this.links.values())
+                    .filter(link => link.endpoint1 === callsign || link.endpoint2 === callsign)
+                    .sort((a, b) => {
+                        if (a.status === 'active' && b.status !== 'active') return -1;
+                        if (a.status !== 'active' && b.status === 'active') return 1;
+                        return b.lastUpdate - a.lastUpdate;
+                    });
+            }
+        }
+
+        const nodeData = nodeCallsign ? new NodeData(nodeCallsign) : null;
+        const linkTracker = new LinkTracker();
+        const mqttUrl = 'wss://node-api.packet.oarc.uk:443/mqtt/';
+        const statusElement = document.getElementById('mqttStatus');
+
+        // Connect to MQTT broker
+        const client = mqtt.connect(mqttUrl);
+
+        client.on('connect', () => {
+            console.log('Connected to MQTT broker');
+            statusElement.textContent = 'Connected';
+            statusElement.className = 'mqtt-status connected';
+            
+            client.subscribe('out/NodeUpEvent', (err) => {
+                if (err) console.error('Error subscribing:', err);
+            });
+            client.subscribe('out/NodeStatus', (err) => {
+                if (err) console.error('Error subscribing:', err);
+            });
+            client.subscribe('out/NodeDownEvent', (err) => {
+                if (err) console.error('Error subscribing:', err);
+            });
+            client.subscribe('out/L2Trace', (err) => {
+                if (err) console.error('Error subscribing:', err);
+            });
+            client.subscribe('out/LinkUpEvent', (err) => {
+                if (err) console.error('Error subscribing:', err);
+            });
+            client.subscribe('out/LinkStatus', (err) => {
+                if (err) console.error('Error subscribing:', err);
+            });
+            client.subscribe('out/LinkDownEvent', (err) => {
+                if (err) console.error('Error subscribing:', err);
+            });
+        });
+
+        client.on('message', (topic, message) => {
+            if (!nodeData) return;
+
+            try {
+                const data = JSON.parse(message.toString());
+                
+                if (topic === 'out/NodeUpEvent' && data.nodeCall === nodeCallsign) {
+                    nodeData.updateFromNodeUp(data);
+                } else if (topic === 'out/NodeStatus' && data.nodeCall === nodeCallsign) {
+                    nodeData.updateFromNodeStatus(data);
+                } else if (topic === 'out/NodeDownEvent' && data.nodeCall === nodeCallsign) {
+                    nodeData.updateFromNodeDown(data);
+                } else if (topic === 'out/L2Trace' && data.reportFrom === nodeCallsign) {
+                    nodeData.updateFromL2Trace(data);
+                } else if (topic === 'out/LinkUpEvent') {
+                    linkTracker.handleLinkUp(data);
+                } else if (topic === 'out/LinkStatus') {
+                    linkTracker.handleLinkStatus(data);
+                } else if (topic === 'out/LinkDownEvent') {
+                    linkTracker.handleLinkDown(data);
+                }
+            } catch (err) {
+                console.error('Error parsing message:', err);
+            }
+        });
+
+        client.on('error', (err) => {
+            console.error('MQTT connection error:', err);
+            statusElement.textContent = 'Error';
+            statusElement.className = 'mqtt-status disconnected';
+        });
+
+        client.on('offline', () => {
+            statusElement.textContent = 'Disconnected';
+            statusElement.className = 'mqtt-status disconnected';
+        });
+
+        client.on('reconnect', () => {
+            statusElement.textContent = 'Reconnecting...';
+            statusElement.className = 'mqtt-status connecting';
+        });
+
+        function formatDuration(seconds) {
+            if (!seconds) return '-';
+            const d = Math.floor(seconds / 86400);
+            const h = Math.floor((seconds % 86400) / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            
+            if (d > 0) return `${d}d ${h}h`;
+            if (h > 0) return `${h}h ${m}m`;
+            return `${m}m`;
+        }
+
+        function formatLastSeen(date) {
+            if (!date) return 'Never';
+            const seconds = Math.floor((Date.now() - date) / 1000);
+            if (seconds < 60) return 'Just now';
+            if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+            if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+            return `${Math.floor(seconds / 86400)}d ago`;
+        }
+
+        // Update UI every second
+        setInterval(() => {
+            if (!nodeData) return;
+
+            // Update node header
+            const statusClass = nodeData.status === 'online' ? 'status-online' : 
+                               nodeData.status === 'offline' ? 'status-offline' : 'status-unknown';
+            
+            document.getElementById('nodeHeader').innerHTML = `
+                <div class="node-header">
+                    <div>
+                        <div class="node-callsign">${nodeData.callsign}</div>
+                        ${nodeData.alias ? `<div class="node-alias">${nodeData.alias}</div>` : ''}
+                    </div>
+                    <div>
+                        <span class="status-badge ${statusClass}">${nodeData.status.toUpperCase()}</span>
+                    </div>
+                </div>
+            `;
+
+            // Update node info
+            const nodeInfoContainer = document.getElementById('nodeInfo');
+            if (nodeData.software || nodeData.locator || nodeData.lastSeen) {
+                nodeInfoContainer.style.display = 'grid';
+                nodeInfoContainer.innerHTML = `
+                    ${nodeData.software ? `
+                        <div class="info-card">
+                            <div class="info-label">Software</div>
+                            <div class="info-value">${nodeData.software} ${nodeData.version || ''}</div>
+                        </div>
+                    ` : ''}
+                    ${nodeData.locator ? `
+                        <div class="info-card">
+                            <div class="info-label">Location</div>
+                            <div class="info-value">${nodeData.locator}</div>
+                            ${nodeData.latitude && nodeData.longitude ? `
+                                <div style="font-size: 12px; color: #999; margin-top: 5px;">
+                                    ${nodeData.latitude.toFixed(4)}°, ${nodeData.longitude.toFixed(4)}°
+                                </div>
+                            ` : ''}
+                        </div>
+                    ` : ''}
+                    ${nodeData.uptimeSecs !== null ? `
+                        <div class="info-card">
+                            <div class="info-label">Uptime</div>
+                            <div class="info-value">${formatDuration(nodeData.uptimeSecs)}</div>
+                        </div>
+                    ` : ''}
+                    ${nodeData.lastSeen ? `
+                        <div class="info-card">
+                            <div class="info-label">Last Seen</div>
+                            <div class="info-value">${formatLastSeen(nodeData.lastSeen)}</div>
+                        </div>
+                    ` : ''}
+                    ${nodeData.linksIn !== null || nodeData.linksOut !== null ? `
+                        <div class="info-card">
+                            <div class="info-label">Links (In/Out)</div>
+                            <div class="info-value">${nodeData.linksIn || 0} / ${nodeData.linksOut || 0}</div>
+                        </div>
+                    ` : ''}
+                    ${nodeData.circuitsIn !== null || nodeData.circuitsOut !== null ? `
+                        <div class="info-card">
+                            <div class="info-label">Circuits (In/Out)</div>
+                            <div class="info-value">${nodeData.circuitsIn || 0} / ${nodeData.circuitsOut || 0}</div>
+                        </div>
+                    ` : ''}
+                    ${nodeData.l3Relayed !== null ? `
+                        <div class="info-card">
+                            <div class="info-label">L3 Relayed</div>
+                            <div class="info-value">${nodeData.l3Relayed.toLocaleString()}</div>
+                        </div>
+                    ` : ''}
+                    ${nodeData.l2TraceCount > 0 ? `
+                        <div class="info-card">
+                            <div class="info-label">L2 Traces</div>
+                            <div class="info-value">${nodeData.l2TraceCount.toLocaleString()}</div>
+                        </div>
+                    ` : ''}
+                `;
+            }
+
+            // Update links table
+            const links = linkTracker.getLinksForNode(nodeCallsign);
+            const linksContainer = document.getElementById('linksContainer');
+            
+            if (links.length === 0) return;
+
+            const html = `
+                <table class="links-table">
+                    <thead>
+                        <tr>
+                            <th title="Green=Active, Red=Disconnected">St</th>
+                            <th>Remote Node</th>
+                            <th>Initiator</th>
+                            <th>Up Time</th>
+                            <th>TX/RX<br><span style="font-weight: normal; font-size: 11px;">(frames)</span></th>
+                            <th>Resent<br><span style="font-weight: normal; font-size: 11px;">(frames)</span></th>
+                            <th>Queue<br><span style="font-weight: normal; font-size: 11px;">(frames)</span></th>
+                            <th>RTT<br><span style="font-weight: normal; font-size: 11px;">(ms)</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${links.map(link => {
+                            const remoteNode = link.endpoint1 === nodeCallsign ? link.endpoint2 : link.endpoint1;
+                            const localStats = link.endpoints[nodeCallsign];
+                            const statusClass = link.status === 'active' ? 'active' : 'disconnected';
+                            const statusTitle = link.status === 'active' ? 'Active' : 'Disconnected';
+                            
+                            let initiatorClass = 'direction-badge ';
+                            const initiator = link.initiator || '-';
+                            if (initiator === nodeCallsign) {
+                                initiatorClass += 'direction-outgoing';
+                            } else {
+                                initiatorClass += 'direction-incoming';
+                            }
+                            
+                            const uptime = Math.max(
+                                ...Object.values(link.endpoints).map(ep => ep.upForSecs || 0)
+                            );
+                            
+                            return `
+                                <tr>
+                                    <td title="${statusTitle}" style="text-align: center;"><span class="status-indicator ${statusClass}"></span></td>
+                                    <td class="callsign"><a href="/node.html?callsign=${remoteNode}" style="color: #0066cc; text-decoration: none;">${remoteNode}</a></td>
+                                    <td><span class="${initiatorClass}">${initiator}</span></td>
+                                    <td>${formatDuration(uptime)}</td>
+                                    <td class="metric">${localStats?.framesSent || '-'} / ${localStats?.framesReceived || '-'}</td>
+                                    <td class="metric">${localStats?.framesResent || '-'}</td>
+                                    <td class="metric">${localStats?.framesQueued || '-'}</td>
+                                    <td class="metric">${localStats?.l2RttMs ? localStats.l2RttMs + 'ms' : '-'}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            linksContainer.innerHTML = html;
+        }, 1000);
+    </script>
+</body>
+</html>

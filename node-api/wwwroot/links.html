@@ -525,8 +525,8 @@
                             return `
                                 <tr>
                                     <td title="${statusTitle}" style="text-align: center;"><span class="status-indicator ${statusClass}"></span></td>
-                                    <td class="callsign">${link.endpoint1}</td>
-                                    <td class="callsign">${link.endpoint2}</td>
+                                    <td class="callsign"><a href="/node.html?callsign=${link.endpoint1}" style="color: #0066cc; text-decoration: none;">${link.endpoint1}</a></td>
+                                    <td class="callsign"><a href="/node.html?callsign=${link.endpoint2}" style="color: #0066cc; text-decoration: none;">${link.endpoint2}</a></td>
                                     <td><span class="${initiatorClass}">${initiator}</span></td>
                                     <td>${formatDuration(uptime)}</td>
                                     <td class="metric">${e1ToE2}</td>
