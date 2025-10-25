@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Node API</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #0066cc;
+            padding-bottom: 8px;
+            margin-top: 0;
+        }
+        p {
+            color: #666;
+            line-height: 1.6;
+        }
+        .links {
+            margin-top: 30px;
+        }
+        .links a {
+            display: inline-block;
+            margin: 10px 10px 10px 0;
+            padding: 10px 20px;
+            background-color: #0066cc;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        .links a:hover {
+            background-color: #0052a3;
+        }
+        .mqtt-status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        .mqtt-status.connected {
+            background-color: #4caf50;
+            color: white;
+        }
+        .mqtt-status.disconnected {
+            background-color: #f44336;
+            color: white;
+        }
+        .mqtt-status.connecting {
+            background-color: #ff9800;
+            color: white;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .topic-card {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 6px;
+            border-left: 4px solid #0066cc;
+        }
+        .topic-card.in-topic {
+            border-left-color: #4caf50;
+        }
+        .topic-card.out-topic {
+            border-left-color: #2196f3;
+        }
+        .topic-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            word-break: break-all;
+        }
+        .topic-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0066cc;
+        }
+        .stat-value.high {
+            color: #4caf50;
+        }
+        .no-data {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+            font-style: italic;
+        }
+        .nodes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .node-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+        .node-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .node-callsign {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .node-last-seen {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        .node-message-count {
+            font-size: 14px;
+            opacity: 0.95;
+            margin-top: 3px;
+        }
+        .node-badge.stale {
+            background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+            opacity: 0.7;
+        }
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .summary-card {
+            background-color: #f0f4ff;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 150px;
+            flex: 1;
+        }
+        .summary-number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #0066cc;
+        }
+        .summary-label {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>
+            Welcome to Node API
+            <span id="mqttStatus" class="mqtt-status connecting">Connecting...</span>
+        </h1>
+        <p>This is the Node API service. The API is running and ready to accept requests.</p>
+        <div class="links">
+            <a href="/scalar">API Documentation</a>
+            <a href="/openapi/v1.json">OpenAPI Spec</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Real-time MQTT Statistics</h2>
+        <div id="statsContainer" class="stats-grid">
+            <div class="no-data">Waiting for MQTT data...</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Active Nodes</h2>
+        <div class="summary-stats">
+            <div class="summary-card">
+                <div class="summary-number" id="activeNodesCount">0</div>
+                <div class="summary-label">Active Nodes</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-number" id="totalNodesCount">0</div>
+                <div class="summary-label">Total Nodes Seen</div>
+            </div>
+        </div>
+        <div id="nodesContainer" class="nodes-grid">
+            <div class="no-data">Waiting for node data...</div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/mqtt@5.3.4/dist/mqtt.min.js"></script>
+    <script>
+        // Topic statistics tracker
+        class TopicStats {
+            constructor(topic) {
+                this.topic = topic;
+                this.messageCount = 0;
+                this.timestamps = [];
+                this.windowSize = 10000; // 10 second rolling window
+            }
+
+            addMessage() {
+                const now = Date.now();
+                this.messageCount++;
+                this.timestamps.push(now);
+                
+                // Remove timestamps outside the rolling window
+                const cutoff = now - this.windowSize;
+                this.timestamps = this.timestamps.filter(t => t > cutoff);
+            }
+
+            getMessagesPerSecond() {
+                if (this.timestamps.length === 0) return 0;
+                
+                const now = Date.now();
+                const cutoff = now - this.windowSize;
+                const recentMessages = this.timestamps.filter(t => t > cutoff).length;
+                
+                return (recentMessages / (this.windowSize / 1000)).toFixed(2);
+            }
+
+            getTotalMessages() {
+                return this.messageCount;
+            }
+        }
+
+        // Node tracker
+        class NodeTracker {
+            constructor() {
+                this.nodes = new Map();
+                this.activeThreshold = 60000; // 60 seconds
+            }
+
+            updateNode(callsign) {
+                const existing = this.nodes.get(callsign);
+                if (existing) {
+                    existing.lastSeen = Date.now();
+                    existing.messageCount++;
+                } else {
+                    this.nodes.set(callsign, {
+                        lastSeen: Date.now(),
+                        messageCount: 1
+                    });
+                }
+            }
+
+            getActiveNodes() {
+                const now = Date.now();
+                const cutoff = now - this.activeThreshold;
+                return Array.from(this.nodes.entries())
+                    .filter(([_, data]) => data.lastSeen > cutoff)
+                    .map(([callsign, data]) => ({ callsign, ...data }));
+            }
+
+            getAllNodes() {
+                return Array.from(this.nodes.entries())
+                    .map(([callsign, data]) => ({ callsign, ...data }))
+                    .sort((a, b) => b.messageCount - a.messageCount);
+            }
+
+            isActive(lastSeen) {
+                const now = Date.now();
+                return (now - lastSeen) < this.activeThreshold;
+            }
+        }
+
+        const topicStatsMap = new Map();
+        const nodeTracker = new NodeTracker();
+        const mqttUrl = 'wss://node-api.packet.oarc.uk:443/mqtt/';
+        const statusElement = document.getElementById('mqttStatus');
+        const statsContainer = document.getElementById('statsContainer');
+        const nodesContainer = document.getElementById('nodesContainer');
+        const activeNodesCount = document.getElementById('activeNodesCount');
+        const totalNodesCount = document.getElementById('totalNodesCount');
+
+        // Connect to MQTT broker
+        const client = mqtt.connect(mqttUrl);
+
+        client.on('connect', () => {
+            console.log('Connected to MQTT broker');
+            statusElement.textContent = 'Connected';
+            statusElement.className = 'mqtt-status connected';
+            
+            // Subscribe to all topics under in/# and out/#
+            client.subscribe('in/#', (err) => {
+                if (err) console.error('Error subscribing to in/#:', err);
+            });
+            client.subscribe('out/#', (err) => {
+                if (err) console.error('Error subscribing to out/#:', err);
+            });
+        });
+
+        client.on('message', (topic, message) => {
+            // Get or create stats for this topic
+            if (!topicStatsMap.has(topic)) {
+                topicStatsMap.set(topic, new TopicStats(topic));
+            }
+            
+            const stats = topicStatsMap.get(topic);
+            stats.addMessage();
+
+            // Parse L2Trace messages to extract node information
+            if (topic === 'out/L2Trace') {
+                try {
+                    const data = JSON.parse(message.toString());
+                    if (data.reportFrom) {
+                        nodeTracker.updateNode(data.reportFrom);
+                    }
+                } catch (err) {
+                    console.error('Error parsing L2Trace message:', err);
+                }
+            }
+        });
+
+        client.on('error', (err) => {
+            console.error('MQTT connection error:', err);
+            statusElement.textContent = 'Error';
+            statusElement.className = 'mqtt-status disconnected';
+        });
+
+        client.on('offline', () => {
+            statusElement.textContent = 'Disconnected';
+            statusElement.className = 'mqtt-status disconnected';
+        });
+
+        client.on('reconnect', () => {
+            statusElement.textContent = 'Reconnecting...';
+            statusElement.className = 'mqtt-status connecting';
+        });
+
+        function formatLastSeen(timestamp) {
+            const seconds = Math.floor((Date.now() - timestamp) / 1000);
+            if (seconds < 60) return `${seconds}s ago`;
+            if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+            if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+            return `${Math.floor(seconds / 86400)}d ago`;
+        }
+
+        // Update nodes UI every second
+        setInterval(() => {
+            const allNodes = nodeTracker.getAllNodes();
+            const activeNodes = nodeTracker.getActiveNodes();
+
+            activeNodesCount.textContent = activeNodes.length;
+            totalNodesCount.textContent = allNodes.length;
+
+            if (allNodes.length === 0) return;
+
+            const html = allNodes.map(({ callsign, lastSeen, messageCount }) => {
+                const isActive = nodeTracker.isActive(lastSeen);
+                const staleClass = isActive ? '' : 'stale';
+                
+                return `
+                    <div class="node-badge ${staleClass}">
+                        <div class="node-callsign">${callsign}</div>
+                        <div class="node-message-count">${messageCount.toLocaleString()} messages</div>
+                        <div class="node-last-seen">${formatLastSeen(lastSeen)}</div>
+                    </div>
+                `;
+            }).join('');
+
+            nodesContainer.innerHTML = html;
+        }, 1000);
+
+        // Update stats UI every 500ms
+        setInterval(() => {
+            if (topicStatsMap.size === 0) return;
+
+            // Sort topics: in/# first, then out/#
+            const sortedTopics = Array.from(topicStatsMap.entries()).sort((a, b) => {
+                const [topicA] = a;
+                const [topicB] = b;
+                
+                const aIsIn = topicA.startsWith('in/');
+                const bIsIn = topicB.startsWith('in/');
+                
+                if (aIsIn && !bIsIn) return -1;
+                if (!aIsIn && bIsIn) return 1;
+                return topicA.localeCompare(topicB);
+            });
+
+            const html = sortedTopics.map(([topic, stats]) => {
+                const mps = stats.getMessagesPerSecond();
+                const total = stats.getTotalMessages();
+                const isIn = topic.startsWith('in/');
+                const cardClass = isIn ? 'in-topic' : 'out-topic';
+                const valueClass = parseFloat(mps) > 1 ? 'high' : '';
+
+                return `
+                    <div class="topic-card ${cardClass}">
+                        <div class="topic-name">${topic}</div>
+                        <div class="topic-stats">
+                            <div class="stat-row">
+                                <span class="stat-label">Messages/sec:</span>
+                                <span class="stat-value ${valueClass}">${mps}</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Total:</span>
+                                <span class="stat-value">${total.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            statsContainer.innerHTML = html;
+        }, 500);
+    </script>
+</body>
+</html>

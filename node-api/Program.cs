@@ -70,9 +70,12 @@ app.UseForwardedHeaders(options);
 // Enable CORS middleware
 app.UseCors();
 
+// Enable static files and default files
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.MapOpenApi();
 app.MapScalarApiReference();
-app.MapGet("/", () => Results.Redirect("/scalar"));
 app.UseAuthorization();
 app.MapControllers();
 
