@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Link Monitor - Node API</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .container.compact {
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+            margin: 0 0 15px 0;
+        }
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #0066cc;
+            padding-bottom: 8px;
+            margin-top: 0;
+        }
+        p {
+            color: #666;
+            line-height: 1.6;
+            margin: 0 0 15px 0;
+        }
+        .links {
+            margin-top: 0;
+        }
+        .links a {
+            display: inline-block;
+            margin: 5px 10px 5px 0;
+            padding: 8px 16px;
+            background-color: #0066cc;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+            font-size: 14px;
+        }
+        .links a:hover {
+            background-color: #0052a3;
+        }
+        .mqtt-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            margin-left: 10px;
+        }
+        .mqtt-status.connected {
+            background-color: #4caf50;
+            color: white;
+        }
+        .mqtt-status.disconnected {
+            background-color: #f44336;
+            color: white;
+        }
+        .mqtt-status.connecting {
+            background-color: #ff9800;
+            color: white;
+        }
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .summary-card {
+            background-color: #f0f4ff;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 150px;
+            flex: 1;
+        }
+        .summary-number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #0066cc;
+        }
+        .summary-label {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .links-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .links-table th {
+            background-color: #0066cc;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        .links-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .links-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        .direction-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .direction-incoming {
+            background-color: #4caf50;
+            color: white;
+        }
+        .direction-outgoing {
+            background-color: #2196f3;
+            color: white;
+        }
+        .status-active {
+            color: #4caf50;
+            font-weight: bold;
+        }
+        .status-disconnected {
+            color: #999;
+        }
+        .callsign {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+        .no-data {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+            font-style: italic;
+        }
+        .metric {
+            font-family: 'Courier New', monospace;
+            color: #555;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin: 0 auto;
+        }
+        .status-indicator.active {
+            background-color: #4caf50;
+        }
+        .status-indicator.disconnected {
+            background-color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container compact">
+        <h1>
+            Link Monitor
+            <span id="mqttStatus" class="mqtt-status connecting">Connecting...</span>
+        </h1>
+        <p>Real-time monitoring of AX.25 link connections</p>
+        <div class="links">
+            <a href="/">Home</a>
+            <a href="/scalar">API Documentation</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Link Summary</h2>
+        <div class="summary-stats">
+            <div class="summary-card">
+                <div class="summary-number" id="activeLinksCount">0</div>
+                <div class="summary-label">Active Links</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-number" id="totalLinksCount">0</div>
+                <div class="summary-label">Total Links Seen</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-number" id="disconnectedCount">0</div>
+                <div class="summary-label">Disconnected</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Active Links</h2>
+        <div id="linksContainer">
+            <div class="no-data">Waiting for link data...</div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/mqtt@5.3.4/dist/mqtt.min.js"></script>
+    <script>
+        // Link tracker that maintains per-endpoint statistics
+        class LinkTracker {
+            constructor() {
+                this.links = new Map(); // Key: canonical link key (sorted endpoint pair)
+            }
+
+            // Create a canonical key that's the same regardless of which end reports
+            getCanonicalLinkKey(local, remote) {
+                // Sort alphabetically to ensure consistent key
+                const [endpoint1, endpoint2] = [local, remote].sort();
+                return `${endpoint1}<->${endpoint2}`;
+            }
+
+            handleLinkUp(data) {
+                const canonicalKey = this.getCanonicalLinkKey(data.local, data.remote);
+                
+                let link = this.links.get(canonicalKey);
+                
+                if (!link) {
+                    // Create new link entry
+                    link = {
+                        canonicalKey: canonicalKey,
+                        endpoint1: data.local < data.remote ? data.local : data.remote,
+                        endpoint2: data.local < data.remote ? data.remote : data.local,
+                        status: 'active',
+                        connectedAt: data.time ? new Date(data.time * 1000) : new Date(),
+                        lastUpdate: new Date(),
+                        endpoints: {} // Per-endpoint statistics
+                    };
+                    this.links.set(canonicalKey, link);
+                }
+                
+                // Initialize endpoint-specific data
+                if (!link.endpoints[data.node]) {
+                    link.endpoints[data.node] = {
+                        node: data.node,
+                        id: data.id,
+                        direction: data.direction,
+                        port: data.port,
+                        local: data.local,
+                        remote: data.remote,
+                        lastUpdate: new Date()
+                    };
+                }
+                
+                // Determine initiator from the first report
+                if (!link.initiator) {
+                    link.initiator = data.direction === 'outgoing' ? data.local : data.remote;
+                }
+                
+                link.lastUpdate = new Date();
+            }
+
+            handleLinkStatus(data) {
+                const canonicalKey = this.getCanonicalLinkKey(data.local, data.remote);
+                
+                let link = this.links.get(canonicalKey);
+                
+                if (!link) {
+                    // IMPORTANT: Link status without previous LinkUp event
+                    // This happens when the page loads after a link is already established
+                    const estimatedConnectedAt = data.time && data.upForSecs 
+                        ? new Date(data.time * 1000 - data.upForSecs * 1000)
+                        : new Date();
+                    
+                    link = {
+                        canonicalKey: canonicalKey,
+                        endpoint1: data.local < data.remote ? data.local : data.remote,
+                        endpoint2: data.local < data.remote ? data.remote : data.local,
+                        status: 'active',
+                        connectedAt: estimatedConnectedAt,
+                        lastUpdate: new Date(),
+                        endpoints: {},
+                        discoveredViaStatus: true
+                    };
+                    this.links.set(canonicalKey, link);
+                }
+                
+                // Update endpoint-specific statistics
+                link.endpoints[data.node] = {
+                    node: data.node,
+                    id: data.id,
+                    direction: data.direction,
+                    port: data.port,
+                    local: data.local,
+                    remote: data.remote,
+                    lastUpdate: new Date(),
+                    upForSecs: data.upForSecs,
+                    framesSent: data.frmsSent,
+                    framesReceived: data.frmsRcvd,
+                    framesResent: data.frmsResent,
+                    framesQueued: data.frmsQueued,
+                    framesQueuedPeak: data.frmsQdPeak,
+                    bytesSent: data.bytesSent,
+                    bytesReceived: data.bytesRcvd,
+                    bpsTxMean: data.bpsTxMean,
+                    bpsRxMean: data.bpsRxMean,
+                    l2RttMs: data.l2rttMs
+                };
+                
+                // Determine initiator if not already set
+                if (!link.initiator) {
+                    link.initiator = data.direction === 'outgoing' ? data.local : data.remote;
+                }
+                
+                link.lastUpdate = new Date();
+                link.status = 'active';
+            }
+
+            handleLinkDown(data) {
+                const canonicalKey = this.getCanonicalLinkKey(data.local, data.remote);
+                
+                let link = this.links.get(canonicalKey);
+                
+                if (link) {
+                    link.status = 'disconnected';
+                    link.disconnectedAt = new Date();
+                    
+                    // Update the endpoint that reported the disconnect
+                    if (link.endpoints[data.node]) {
+                        link.endpoints[data.node].upForSecs = data.upForSecs || link.endpoints[data.node].upForSecs;
+                        link.endpoints[data.node].framesSent = data.frmsSent;
+                        link.endpoints[data.node].framesReceived = data.frmsRcvd;
+                        link.endpoints[data.node].framesResent = data.frmsResent;
+                        link.endpoints[data.node].framesQueued = data.frmsQueued;
+                        link.endpoints[data.node].reason = data.reason;
+                        link.endpoints[data.node].lastUpdate = new Date();
+                    }
+                }
+            }
+
+            getActiveLinks() {
+                return Array.from(this.links.values())
+                    .filter(link => link.status === 'active')
+                    .sort((a, b) => b.lastUpdate - a.lastUpdate);
+            }
+
+            getAllLinks() {
+                return Array.from(this.links.values())
+                    .sort((a, b) => {
+                        // Primary sort: Active links first
+                        if (a.status === 'active' && b.status !== 'active') return -1;
+                        if (a.status !== 'active' && b.status === 'active') return 1;
+                        
+                        // Secondary sort: By canonical key (alphabetical, stable)
+                        return a.canonicalKey.localeCompare(b.canonicalKey);
+                    });
+            }
+
+            getStats() {
+                const all = Array.from(this.links.values());
+                return {
+                    active: all.filter(l => l.status === 'active').length,
+                    total: all.length,
+                    disconnected: all.filter(l => l.status === 'disconnected').length
+                };
+            }
+        }
+
+        const linkTracker = new LinkTracker();
+        const mqttUrl = 'wss://node-api.packet.oarc.uk:443/mqtt/';
+        const statusElement = document.getElementById('mqttStatus');
+        const linksContainer = document.getElementById('linksContainer');
+        const activeLinksCount = document.getElementById('activeLinksCount');
+        const totalLinksCount = document.getElementById('totalLinksCount');
+        const disconnectedCount = document.getElementById('disconnectedCount');
+
+        // Connect to MQTT broker
+        const client = mqtt.connect(mqttUrl);
+
+        client.on('connect', () => {
+            console.log('Connected to MQTT broker');
+            statusElement.textContent = 'Connected';
+            statusElement.className = 'mqtt-status connected';
+            
+            client.subscribe('out/LinkUpEvent', (err) => {
+                if (err) console.error('Error subscribing to out/LinkUpEvent:', err);
+            });
+            client.subscribe('out/LinkStatus', (err) => {
+                if (err) console.error('Error subscribing to out/LinkStatus:', err);
+            });
+            client.subscribe('out/LinkDownEvent', (err) => {
+                if (err) console.error('Error subscribing to out/LinkDownEvent:', err);
+            });
+        });
+
+        client.on('message', (topic, message) => {
+            try {
+                const data = JSON.parse(message.toString());
+                
+                if (topic === 'out/LinkUpEvent') {
+                    linkTracker.handleLinkUp(data);
+                } else if (topic === 'out/LinkStatus') {
+                    linkTracker.handleLinkStatus(data);
+                } else if (topic === 'out/LinkDownEvent') {
+                    linkTracker.handleLinkDown(data);
+                }
+            } catch (err) {
+                console.error('Error parsing message:', err);
+            }
+        });
+
+        client.on('error', (err) => {
+            console.error('MQTT connection error:', err);
+            statusElement.textContent = 'Error';
+            statusElement.className = 'mqtt-status disconnected';
+        });
+
+        client.on('offline', () => {
+            statusElement.textContent = 'Disconnected';
+            statusElement.className = 'mqtt-status disconnected';
+        });
+
+        client.on('reconnect', () => {
+            statusElement.textContent = 'Reconnecting...';
+            statusElement.className = 'mqtt-status connecting';
+        });
+
+        function formatDuration(seconds) {
+            if (!seconds) return '-';
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            
+            if (h > 0) return `${h}h ${m}m`;
+            if (m > 0) return `${m}m ${s}s`;
+            return `${s}s`;
+        }
+
+        function formatTime(date) {
+            if (!date) return '-';
+            return date.toLocaleTimeString();
+        }
+
+        // Update UI every second
+        setInterval(() => {
+            const stats = linkTracker.getStats();
+            activeLinksCount.textContent = stats.active;
+            totalLinksCount.textContent = stats.total;
+            disconnectedCount.textContent = stats.disconnected;
+
+            const allLinks = linkTracker.getAllLinks();
+            
+            if (allLinks.length === 0) return;
+
+            const html = `
+                <table class="links-table">
+                    <thead>
+                        <tr>
+                            <th title="Green=Active, Red=Disconnected">St</th>
+                            <th>Endpoint 1</th>
+                            <th>Endpoint 2</th>
+                            <th>Initiator</th>
+                            <th>Up Time</th>
+                            <th>E1&rarr;E2<br><span style="font-weight: normal; font-size: 11px;">(frames)</span></th>
+                            <th>E2&rarr;E1<br><span style="font-weight: normal; font-size: 11px;">(frames)</span></th>
+                            <th>E1&rarr;E2<br><span style="font-weight: normal; font-size: 11px;">(Bps avg)</span></th>
+                            <th>E2&rarr;E1<br><span style="font-weight: normal; font-size: 11px;">(Bps avg)</span></th>
+                            <th>E1 Resent<br><span style="font-weight: normal; font-size: 11px;">(frames)</span></th>
+                            <th>E2 Resent<br><span style="font-weight: normal; font-size: 11px;">(frames)</span></th>
+                            <th>E1 Queue<br><span style="font-weight: normal; font-size: 11px;">(frames)</span></th>
+                            <th>E2 Queue<br><span style="font-weight: normal; font-size: 11px;">(frames)</span></th>
+                            <th>RTT<br><span style="font-weight: normal; font-size: 11px;">(ms avg)</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${allLinks.map(link => {
+                            // Status indicator as CSS circle instead of emoji
+                            const statusClass = link.status === 'active' ? 'active' : 'disconnected';
+                            const statusTitle = link.status === 'active' ? 'Active' : 'Disconnected';
+                            
+                            // Get endpoint stats
+                            const ep1Stats = link.endpoints[link.endpoint1];
+                            const ep2Stats = link.endpoints[link.endpoint2];
+                            
+                            // Determine initiator
+                            let initiatorClass = 'direction-badge ';
+                            const initiator = link.initiator || '-';
+                            if (initiator === link.endpoint1) {
+                                initiatorClass += 'direction-outgoing';
+                            } else if (initiator === link.endpoint2) {
+                                initiatorClass += 'direction-incoming';
+                            }
+                            
+                            // Get uptime (prefer the longer uptime if both endpoints report)
+                            const uptime = Math.max(
+                                ep1Stats?.upForSecs || 0,
+                                ep2Stats?.upForSecs || 0
+                            );
+                            
+                            // E1?E2 frames: what E1 sent = what E2 received
+                            const e1ToE2 = ep2Stats?.framesReceived || ep1Stats?.framesSent || '-';
+                            
+                            // E2?E1 frames: what E2 sent = what E1 received
+                            const e2ToE1 = ep1Stats?.framesReceived || ep2Stats?.framesSent || '-';
+                            
+                            // Bytes per second E1?E2: E1's TX or E2's RX average
+                            const e1ToE2Bps = ep1Stats?.bpsTxMean || ep2Stats?.bpsRxMean || '-';
+                            
+                            // Bytes per second E2?E1: E2's TX or E1's RX average
+                            const e2ToE1Bps = ep2Stats?.bpsTxMean || ep1Stats?.bpsRxMean || '-';
+                            
+                            // RTT - average if both report, otherwise show whichever is available
+                            let rtt = '-';
+                            if (ep1Stats?.l2RttMs && ep2Stats?.l2RttMs) {
+                                rtt = Math.round((ep1Stats.l2RttMs + ep2Stats.l2RttMs) / 2) + 'ms';
+                            } else if (ep1Stats?.l2RttMs) {
+                                rtt = ep1Stats.l2RttMs + 'ms';
+                            } else if (ep2Stats?.l2RttMs) {
+                                rtt = ep2Stats.l2RttMs + 'ms';
+                            }
+                            
+                            return `
+                                <tr>
+                                    <td title="${statusTitle}" style="text-align: center;"><span class="status-indicator ${statusClass}"></span></td>
+                                    <td class="callsign">${link.endpoint1}</td>
+                                    <td class="callsign">${link.endpoint2}</td>
+                                    <td><span class="${initiatorClass}">${initiator}</span></td>
+                                    <td>${formatDuration(uptime)}</td>
+                                    <td class="metric">${e1ToE2}</td>
+                                    <td class="metric">${e2ToE1}</td>
+                                    <td class="metric">${e1ToE2Bps}</td>
+                                    <td class="metric">${e2ToE1Bps}</td>
+                                    <td class="metric">${ep1Stats?.framesResent || '-'}</td>
+                                    <td class="metric">${ep2Stats?.framesResent || '-'}</td>
+                                    <td class="metric">${ep1Stats?.framesQueued || '-'}</td>
+                                    <td class="metric">${ep2Stats?.framesQueued || '-'}</td>
+                                    <td class="metric">${rtt}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            linksContainer.innerHTML = html;
+        }, 1000);
+    </script>
+</body>
+</html>
