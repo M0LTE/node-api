@@ -8,7 +8,7 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             max-width: 1200px;
-            margin: 50px auto;
+            margin: 20px auto;
             padding: 20px;
             background-color: #f5f5f5;
         }
@@ -19,10 +19,14 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             margin-bottom: 20px;
         }
+        .container.compact {
+            padding: 20px;
+        }
         h1 {
             color: #333;
             border-bottom: 3px solid #0066cc;
             padding-bottom: 10px;
+            margin: 0 0 15px 0;
         }
         h2 {
             color: #333;
@@ -33,28 +37,30 @@
         p {
             color: #666;
             line-height: 1.6;
+            margin: 0 0 15px 0;
         }
         .links {
-            margin-top: 30px;
+            margin-top: 0;
         }
         .links a {
             display: inline-block;
-            margin: 10px 10px 10px 0;
-            padding: 10px 20px;
+            margin: 5px 10px 5px 0;
+            padding: 8px 16px;
             background-color: #0066cc;
             color: white;
             text-decoration: none;
             border-radius: 4px;
             transition: background-color 0.3s;
+            font-size: 14px;
         }
         .links a:hover {
             background-color: #0052a3;
         }
         .mqtt-status {
             display: inline-block;
-            padding: 5px 10px;
+            padding: 4px 8px;
             border-radius: 4px;
-            font-size: 14px;
+            font-size: 13px;
             margin-left: 10px;
         }
         .mqtt-status.connected {
@@ -186,12 +192,12 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container compact">
         <h1>
-            Welcome to Node API
+            Node API
             <span id="mqttStatus" class="mqtt-status connecting">Connecting...</span>
         </h1>
-        <p>This is the Node API service. The API is running and ready to accept requests.</p>
+        <p>Real-time monitoring of the Packet Network</p>
         <div class="links">
             <a href="/scalar">API Documentation</a>
             <a href="/openapi/v1.json">OpenAPI Spec</a>
