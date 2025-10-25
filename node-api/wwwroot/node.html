@@ -194,6 +194,52 @@
             background-color: #2196f3;
             color: white;
         }
+        .trace-window {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            padding: 15px;
+            border-radius: 6px;
+            height: 400px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .trace-line {
+            padding: 2px 0;
+            border-bottom: 1px solid #333;
+        }
+        .trace-line:last-child {
+            border-bottom: none;
+        }
+        .trace-timestamp {
+            color: #4ec9b0;
+        }
+        .trace-type {
+            color: #ce9178;
+        }
+        .trace-data {
+            color: #d4d4d4;
+        }
+        .download-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+        .download-button:hover {
+            background-color: #45a049;
+        }
+        .download-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -221,6 +267,17 @@
         <h2>Links Involving This Node</h2>
         <div id="linksContainer">
             <div class="no-data">Waiting for link data...</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Layer 2 Traces</h2>
+        <p>Real-time traces from this node (most recent first)</p>
+        <button id="downloadButton" class="download-button" onclick="downloadTraces()" disabled>
+            Download Traces as JSON Lines
+        </button>
+        <div id="traceWindow" class="trace-window">
+            <div style="color: #666; text-align: center; padding: 20px;">Waiting for traces...</div>
         </div>
     </div>
 
@@ -256,6 +313,8 @@
                 this.status = 'unknown';
                 this.l2TraceCount = 0;
                 this.lastL2Trace = null;
+                this.l2Traces = []; // Store all L2 traces
+                this.maxTraces = 500; // Limit to prevent memory issues
             }
 
             updateFromNodeUp(data) {
@@ -296,10 +355,27 @@
                 this.l2TraceCount++;
                 this.lastL2Trace = new Date();
                 this.lastSeen = new Date();
+                
+                // Add trace to the beginning of the array (most recent first)
+                this.l2Traces.unshift({
+                    timestamp: new Date(),
+                    data: data
+                });
+                
+                // Limit array size
+                if (this.l2Traces.length > this.maxTraces) {
+                    this.l2Traces.pop();
+                }
+                
                 // If we're seeing traces, the node is probably online
                 if (this.status === 'unknown') {
                     this.status = 'online';
                 }
+            }
+
+            getTracesAsJsonLines() {
+                // Return traces in JSON Lines format (one JSON object per line)
+                return this.l2Traces.map(trace => JSON.stringify(trace.data)).join('\n');
             }
         }
 
@@ -525,6 +601,32 @@
             return `${Math.floor(seconds / 86400)}d ago`;
         }
 
+        function formatTimestamp(date) {
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            const ms = String(date.getMilliseconds()).padStart(3, '0');
+            return `${hours}:${minutes}:${seconds}.${ms}`;
+        }
+
+        function downloadTraces() {
+            if (!nodeData || nodeData.l2Traces.length === 0) {
+                alert('No traces available to download');
+                return;
+            }
+
+            const jsonLines = nodeData.getTracesAsJsonLines();
+            const blob = new Blob([jsonLines], { type: 'application/x-ndjson' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${nodeCallsign}_l2traces_${new Date().toISOString().replace(/[:.]/g, '-')}.jsonl`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
         // Update UI every second
         setInterval(() => {
             if (!nodeData) return;
@@ -663,6 +765,92 @@
             `;
 
             linksContainer.innerHTML = html;
+        }, 1000);
+
+        // Update trace window every second
+        setInterval(() => {
+            if (!nodeData) return;
+
+            const traceWindow = document.getElementById('traceWindow');
+            const downloadButton = document.getElementById('downloadButton');
+
+            if (nodeData.l2Traces.length === 0) {
+                traceWindow.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">Waiting for traces...</div>';
+                downloadButton.disabled = true;
+            } else {
+                downloadButton.disabled = false;
+                
+                // Show last 100 traces in the window
+                const tracesToShow = nodeData.l2Traces.slice(0, 100);
+                
+                const html = tracesToShow.map(trace => {
+                    const time = formatTimestamp(trace.timestamp);
+                    const type = trace.data.l2type || trace.data.l2Type || 'UNKNOWN';
+                    const srce = trace.data.srce || '-';
+                    const dest = trace.data.dest || '-';
+                    const port = trace.data.port || '-';
+                    const cr = trace.data.cr || '';
+                    const pf = trace.data.pf || '';
+                    
+                    // Build additional info string
+                    let additionalInfo = [];
+                    
+                    // Add sequence numbers for I frames
+                    if (type === 'I' && (trace.data.tseq !== undefined || trace.data.rseq !== undefined)) {
+                        const tseq = trace.data.tseq !== undefined ? trace.data.tseq : '?';
+                        const rseq = trace.data.rseq !== undefined ? trace.data.rseq : '?';
+                        additionalInfo.push(`N(S)=${tseq} N(R)=${rseq}`);
+                    }
+                    
+                    // Add sequence for RR, RNR, REJ frames
+                    if ((type === 'RR' || type === 'RNR' || type === 'REJ') && trace.data.rseq !== undefined) {
+                        additionalInfo.push(`N(R)=${trace.data.rseq}`);
+                    }
+                    
+                    // Add PID and protocol for I/UI frames
+                    if (trace.data.pid !== undefined) {
+                        const pidHex = trace.data.pid.toString(16).toUpperCase().padStart(2, '0');
+                        additionalInfo.push(`PID=0x${pidHex}`);
+                        if (trace.data.ptcl) {
+                            additionalInfo.push(`${trace.data.ptcl}`);
+                        }
+                    }
+                    
+                    // Add info length for I/UI frames
+                    if (trace.data.ilen !== undefined && trace.data.ilen > 0) {
+                        additionalInfo.push(`len=${trace.data.ilen}`);
+                    }
+                    
+                    // Add L3 info for NET/ROM frames
+                    if (trace.data.l3type) {
+                        additionalInfo.push(`L3:${trace.data.l3type}`);
+                        if (trace.data.l4type) {
+                            additionalInfo.push(`L4:${trace.data.l4type}`);
+                        }
+                    }
+                    
+                    // Add digipeaters if present
+                    if (trace.data.digis && trace.data.digis.length > 0) {
+                        const digiStr = trace.data.digis.map(d => 
+                            d.call + (d.rptd ? '*' : '')
+                        ).join(',');
+                        additionalInfo.push(`via ${digiStr}`);
+                    }
+                    
+                    const infoStr = additionalInfo.length > 0 ? ' ' + additionalInfo.join(' ') : '';
+                    const crpf = (cr || pf) ? ` [${cr}${pf}]` : '';
+                    
+                    return `
+                        <div class="trace-line">
+                            <span class="trace-timestamp">[${time}]</span>
+                            <span class="trace-type">${type}${crpf}</span>
+                            <span class="trace-data">p${port} ${srce} &rarr; ${dest}${infoStr}</span>
+                        </div>
+                    `;
+                }).join('');
+                
+                traceWindow.innerHTML = html;
+            }
         }, 1000);
     </script>
 </body>
