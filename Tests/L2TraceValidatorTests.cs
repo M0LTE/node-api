@@ -1329,4 +1329,175 @@ public class L2TraceValidatorTests
     }
 
     #endregion
+
+    #region IsRF Validation
+
+    [Fact]
+    public void Should_Accept_Null_IsRF()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            CommandResponse = "C",
+            IsRF = null
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.IsRF);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Should_Accept_Valid_IsRF_Values(bool isRF)
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            CommandResponse = "C",
+            IsRF = isRF
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.IsRF);
+    }
+
+    [Fact]
+    public void Should_Deserialize_IsRF_True_From_JSON()
+    {
+        var json = """
+        {
+            "@type": "L2Trace",
+            "reportFrom": "G9XXX",
+            "time": 1729512000,
+            "port": "1",
+            "srce": "G8PZT-1",
+            "dest": "ID",
+            "ctrl": 3,
+            "l2Type": "UI",
+            "cr": "C",
+            "isRF": true
+        }
+        """;
+
+        var result = System.Text.Json.JsonSerializer.Deserialize<L2Trace>(json);
+        
+        Assert.NotNull(result);
+        Assert.True(result.IsRF);
+    }
+
+    [Fact]
+    public void Should_Deserialize_IsRF_False_From_JSON()
+    {
+        var json = """
+        {
+            "@type": "L2Trace",
+            "reportFrom": "G9XXX",
+            "time": 1729512000,
+            "port": "1",
+            "srce": "G8PZT-1",
+            "dest": "ID",
+            "ctrl": 3,
+            "l2Type": "UI",
+            "cr": "C",
+            "isRF": false
+        }
+        """;
+
+        var result = System.Text.Json.JsonSerializer.Deserialize<L2Trace>(json);
+        
+        Assert.NotNull(result);
+        Assert.False(result.IsRF);
+    }
+
+    [Fact]
+    public void Should_Deserialize_Missing_IsRF_As_Null()
+    {
+        var json = """
+        {
+            "@type": "L2Trace",
+            "reportFrom": "G9XXX",
+            "time": 1729512000,
+            "port": "1",
+            "srce": "G8PZT-1",
+            "dest": "ID",
+            "ctrl": 3,
+            "l2Type": "UI",
+            "cr": "C"
+        }
+        """;
+
+        var result = System.Text.Json.JsonSerializer.Deserialize<L2Trace>(json);
+        
+        Assert.NotNull(result);
+        Assert.Null(result.IsRF);
+    }
+
+    [Fact]
+    public void Should_Accept_IsRF_With_Direction()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Direction = "sent",
+            IsRF = true,
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            CommandResponse = "C"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void Should_Accept_Complete_L2Trace_With_IsRF()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Direction = "sent",
+            IsRF = true,
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            CommandResponse = "C",
+            IFieldLength = 24,
+            ProtocolId = 240,
+            ProtocolName = "DATA",
+            PollFinal = "P",
+            Digipeaters = new[]
+            {
+                new L2Trace.Digipeater { Callsign = "RELAY-1", Repeated = true }
+            }
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    #endregion
 }
