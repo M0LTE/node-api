@@ -33,6 +33,14 @@ public record L2Trace : UdpNodeInfoJsonDatagram
     /// </summary>
     [JsonPropertyName("dirn")]
     public string? Direction { get; init; }
+
+    /// <summary>
+    /// Indicates whether the packet was transmitted/received over radio frequency (RF) (Optional)
+    /// When true, the packet was sent/received via RF. When false or omitted, the packet may have been 
+    /// transmitted via other means (e.g., AXIP, telnet, etc.)
+    /// </summary>
+    [JsonPropertyName("isRF")]
+    public bool? IsRF { get; init; }
     
     /// <summary>
     /// Source callsign, e.g. "G8PZT-1" (Required)
