@@ -12,6 +12,7 @@ public class L2TraceValidator : AbstractValidator<L2Trace>
     private static readonly string[] ValidL3Types = ["NetRom", "Routing info", "Routing poll", "Unknown"];
     private static readonly string[] ValidL4Types = ["NRR Request", "NRR Reply", "CONN REQ", "CONN REQX", "CONN ACK", "CONN NAK", "DISC REQ", "DISC ACK", "INFO", "INFO ACK", "RSET", "PROT EXT", "unknown"];
     private static readonly string[] ValidRoutingTypes = ["NODES", "INP3"];
+    private static readonly string[] ValidDirections = ["sent", "rcvd"];
 
     public L2TraceValidator()
     {
@@ -37,6 +38,11 @@ public class L2TraceValidator : AbstractValidator<L2Trace>
         RuleFor(x => x.Port)
             .NotEmpty()
             .WithMessage("Port ID is required");
+
+        // Direction validation (optional field)
+        RuleFor(x => x.Direction)
+            .Must(d => d == null || ValidDirections.Contains(d))
+            .WithMessage($"Direction must be null or one of: {string.Join(", ", ValidDirections)}");
 
         RuleFor(x => x.Source)
             .NotEmpty()

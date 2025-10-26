@@ -192,6 +192,8 @@ public class RealWorldDeserializationTests
         }
         """;
 
+
+
         var result = JsonSerializer.Deserialize<L2Trace>(json);
         
         Assert.NotNull(result);
@@ -208,5 +210,83 @@ public class RealWorldDeserializationTests
         
         // Third node has no timestamp
         Assert.Null(result.Nodes[2].Timestamp);
+    }
+
+    [Fact]
+    public void Should_Deserialize_Direction_Field_With_Sent()
+    {
+        var json = """
+        {
+        "@type": "L2Trace",
+        "reportFrom": "G8PZT-1",
+        "time": 1761087470,
+        "port": "40",
+        "dirn": "sent",
+        "srce": "G8PZT-1",
+        "dest": "K5DAT-5",
+        "ctrl": 3,
+        "l2Type": "UI",
+        "cr": "C"
+        }
+        """;
+
+
+        var result = JsonSerializer.Deserialize<L2Trace>(json);
+        
+        Assert.NotNull(result);
+        Assert.Equal("sent", result.Direction);
+        Assert.Equal("G8PZT-1", result.ReportFrom);
+        Assert.Equal("G8PZT-1", result.Source);
+    }
+
+    [Fact]
+    public void Should_Deserialize_Direction_Field_With_Rcvd()
+    {
+        var json = """
+        {
+        "@type": "L2Trace",
+        "reportFrom": "G8PZT-1",
+        "time": 1761087470,
+        "port": "40",
+        "dirn": "rcvd",
+        "srce": "K5DAT-5",
+        "dest": "G8PZT-3",
+        "ctrl": 3,
+        "l2Type": "UI",
+        "cr": "C"
+        }
+        """;
+
+
+        var result = JsonSerializer.Deserialize<L2Trace>(json);
+        
+        Assert.NotNull(result);
+        Assert.Equal("rcvd", result.Direction);
+        Assert.Equal("G8PZT-1", result.ReportFrom);
+        Assert.Equal("K5DAT-5", result.Source);
+    }
+
+    [Fact]
+    public void Should_Deserialize_Without_Direction_Field()
+    {
+        var json = """
+        {
+        "@type": "L2Trace",
+        "reportFrom": "G8PZT-1",
+        "time": 1761087470,
+        "port": "40",
+        "srce": "G8PZT-1",
+        "dest": "K5DAT-5",
+        "ctrl": 3,
+        "l2Type": "UI",
+        "cr": "C"
+        }
+        """;
+
+
+        var result = JsonSerializer.Deserialize<L2Trace>(json);
+        
+        Assert.NotNull(result);
+        Assert.Null(result.Direction);
     }
 }

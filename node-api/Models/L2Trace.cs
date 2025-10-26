@@ -24,6 +24,15 @@ public record L2Trace : UdpNodeInfoJsonDatagram
     /// </summary>
     [JsonPropertyName("port")]
     public required string Port { get; init; }
+
+    /// <summary>
+    /// Direction of the packet relative to the reporting node: "sent" or "rcvd" (Optional)
+    /// Indicates whether the packet was sent by the reporting node or received/overheard.
+    /// This field helps distinguish packets sent by the reporting node from those that were merely overheard,
+    /// which is important because reportFrom and source may differ (e.g., when using a port call).
+    /// </summary>
+    [JsonPropertyName("dirn")]
+    public string? Direction { get; init; }
     
     /// <summary>
     /// Source callsign, e.g. "G8PZT-1" (Required)

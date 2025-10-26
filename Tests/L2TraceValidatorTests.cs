@@ -1199,5 +1199,134 @@ public class L2TraceValidatorTests
         var result = _validator.TestValidate(model);
         result.ShouldNotHaveAnyValidationErrors();
     }
+
+    #endregion
+
+    #region Direction Validation
+
+    [Theory]
+    [InlineData("sent")]
+    [InlineData("rcvd")]
+    public void Should_Accept_Valid_Direction(string direction)
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Direction = direction,
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            CommandResponse = "C"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.Direction);
+    }
+
+    [Fact]
+    public void Should_Accept_Null_Direction()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Direction = null,
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            CommandResponse = "C"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.Direction);
+    }
+
+    [Theory]
+    [InlineData("sent ")]
+    [InlineData("SENT")]
+    [InlineData("Sent")]
+    [InlineData("received")]
+    [InlineData("outgoing")]
+    [InlineData("incoming")]
+    [InlineData("tx")]
+    [InlineData("rx")]
+    [InlineData("")]
+    public void Should_Reject_Invalid_Direction(string direction)
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Direction = direction,
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            CommandResponse = "C"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.Direction);
+    }
+
+    [Fact]
+    public void Should_Validate_Direction_With_Port_Call_Scenario()
+    {
+        // Test scenario where reportFrom differs from source (port call case)
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G8PZT-1",
+            TimeUnixSeconds = 1729512000,
+            Port = "2",
+            Direction = "sent",
+            Source = "G8PZT-11", // Port call
+            Destination = "KIDDER-1",
+            Control = 66,
+            L2Type = "I",
+            Modulo = 8,
+            ReceiveSequence = 2,
+            TransmitSequence = 1,
+            CommandResponse = "C",
+            IFieldLength = 2,
+            ProtocolId = 240,
+            ProtocolName = "DATA"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void Should_Validate_Direction_With_Overheard_Packet()
+    {
+        // Test scenario where packet was overheard (rcvd but not destined for the reporting node)
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G8PZT-1",
+            TimeUnixSeconds = 1729512000,
+            Port = "2",
+            Direction = "rcvd",
+            Source = "K5DAT-5",
+            Destination = "G8PZT-3",
+            Control = 3,
+            L2Type = "UI",
+            CommandResponse = "C"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
     #endregion
 }
