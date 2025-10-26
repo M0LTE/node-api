@@ -45,7 +45,11 @@ public class ApiRateLimitingMiddleware
 
         if (!bucket.TryConsume())
         {
-            _logger.LogWarning("Rate limit exceeded for IP: {IpAddress}", ipAddress);
+            // Security: Sanitize IP address before logging to prevent log forging
+            // The SanitizeForLogging method removes all control characters including newlines
+            // to prevent malicious log injection even though the value originates from HTTP headers
+            var sanitizedIp = SanitizeForLogging(ipAddress);
+            _logger.LogWarning("Rate limit exceeded for IP: {IpAddress}", sanitizedIp);
             context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
             context.Response.Headers["Retry-After"] = _windowSeconds.ToString();
             await context.Response.WriteAsJsonAsync(new
@@ -57,6 +61,15 @@ public class ApiRateLimitingMiddleware
         }
 
         await _next(context);
+    }
+
+    private static string SanitizeForLogging(string input)
+    {
+        // Remove newlines and control characters to prevent log forging
+        if (string.IsNullOrEmpty(input))
+            return "unknown";
+        
+        return new string(input.Where(c => !char.IsControl(c)).ToArray());
     }
 
     private static string GetClientIpAddress(HttpContext context)

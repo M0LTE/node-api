@@ -194,7 +194,9 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
             }
 
             json = Encoding.UTF8.GetString(result.Buffer);
-            _logger.LogDebug("Received UDP datagram from {Endpoint}: {Json}", result.RemoteEndPoint, Convert.ToBase64String(result.Buffer));
+            // Security: Don't log full datagram content - just metadata
+            _logger.LogDebug("Received UDP datagram from {Endpoint}, size: {Size} bytes", 
+                result.RemoteEndPoint, result.Buffer.Length);
 
             var message = new MqttApplicationMessageBuilder()
                 .WithTopic(udpTopic)
@@ -229,12 +231,12 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
                         error = JsonPropertyNameMapper.TransformErrorMessage(datagramType, e.ErrorMessage)
                     }).ToList();
 
+                    // Security: Log validation errors but not full datagram content
                     _logger.LogWarning(
-                        "Received invalid datagram from {Endpoint}. Type: {Type}. Errors: {Errors}, Datagram: {Datagram}",
+                        "Received invalid datagram from {Endpoint}. Type: {Type}. Errors: {Errors}",
                         result.RemoteEndPoint,
                         frame!.DatagramType,
-                        string.Join("; ", mappedErrors.Select(e => $"{e.property}: {e.error}")),
-                        Convert.ToBase64String(result.Buffer)
+                        string.Join("; ", mappedErrors.Select(e => $"{e.property}: {e.error}"))
                     );
 
                     // Publish validation errors to MQTT for monitoring
@@ -257,7 +259,9 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
             {
                 if (jsonException is not null)
                 {
-                    _logger.LogWarning("Failed to deserialize JSON from {Endpoint}: {Json}  {message}. Published to {topic}", result.RemoteEndPoint, Convert.ToBase64String(result.Buffer), jsonException.Message, badJsonTopic);
+                    // Security: Don't log full datagram in production logs
+                    _logger.LogWarning("Failed to deserialize JSON from {Endpoint}: {message}. Published to {topic}", 
+                        result.RemoteEndPoint, jsonException.Message, badJsonTopic);
 
                     var badJsonMessage = new MqttApplicationMessageBuilder()
                         .WithTopic(badJsonTopic)
@@ -269,7 +273,10 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
                 }
                 else
                 {
-                    _logger.LogWarning("Received unknown datagram type from {Endpoint}: {Json}", result.RemoteEndPoint, json);
+                    // Security: Limit logged content length to prevent log spam
+                    var loggedJson = json.Length > 200 ? json.Substring(0, 200) + "..." : json;
+                    _logger.LogWarning("Received unknown datagram type from {Endpoint}: {Json}", 
+                        result.RemoteEndPoint, loggedJson);
 
                     var unknownTypeMessage = new MqttApplicationMessageBuilder()
                         .WithTopic(badTypeTopic)

@@ -46,6 +46,13 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddControllers();
+
+// Add request body size limit
+builder.Services.Configure<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions>(options =>
+{
+    options.Limits.MaxRequestBodySize = 10 * 1024 * 1024; // 10 MB limit
+});
+
 builder.Services.AddOpenApi();
 
 // Register network state services

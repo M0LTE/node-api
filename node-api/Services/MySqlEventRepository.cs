@@ -191,20 +191,49 @@ public class MySqlEventRepository(ILogger<MySqlEventRepository> logger) : IEvent
         tsUtc = default;
         id = default;
 
+        // Security: Validate cursor length to prevent DoS
+        if (string.IsNullOrWhiteSpace(cursor) || cursor.Length > 200)
+            return false;
+
         try
         {
+            // Security: Validate base64 format before decoding
+            if (!IsValidBase64String(cursor))
+                return false;
+
             var raw = Encoding.UTF8.GetString(Convert.FromBase64String(cursor));
+            
+            // Security: Validate decoded length
+            if (raw.Length > 150)
+                return false;
+
             var parts = raw.Split('|', 2, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length != 2) return false;
 
-            tsUtc = DateTime.Parse(parts[0], null, System.Globalization.DateTimeStyles.RoundtripKind);
-            id = long.Parse(parts[1]);
-            if (tsUtc.Kind == DateTimeKind.Unspecified) tsUtc = DateTime.SpecifyKind(tsUtc, DateTimeKind.Utc);
+            // Security: Use explicit format and culture
+            if (!DateTime.TryParseExact(parts[0], "O", System.Globalization.CultureInfo.InvariantCulture, 
+                System.Globalization.DateTimeStyles.RoundtripKind, out tsUtc))
+                return false;
+
+            // Security: Validate ID is positive
+            if (!long.TryParse(parts[1], System.Globalization.NumberStyles.None, 
+                System.Globalization.CultureInfo.InvariantCulture, out id) || id < 0)
+                return false;
+
+            if (tsUtc.Kind == DateTimeKind.Unspecified) 
+                tsUtc = DateTime.SpecifyKind(tsUtc, DateTimeKind.Utc);
+            
             return true;
         }
         catch
         {
             return false;
         }
+    }
+
+    private static bool IsValidBase64String(string s)
+    {
+        // Base64 should only contain A-Z, a-z, 0-9, +, /, and = for padding
+        return s.All(c => char.IsLetterOrDigit(c) || c == '+' || c == '/' || c == '=');
     }
 }
