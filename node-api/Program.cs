@@ -81,6 +81,15 @@ options.KnownNetworks.Add(new IPNetwork(IPAddress.Parse("172.17.0.0"), 16));
 
 app.UseForwardedHeaders(options);
 
+// Add no-cache headers to all responses
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+    context.Response.Headers["Pragma"] = "no-cache";
+    context.Response.Headers["Expires"] = "0";
+    await next();
+});
+
 // Enable CORS middleware
 app.UseCors();
 
