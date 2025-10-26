@@ -257,22 +257,6 @@
         }
         .download-button {
             display: inline-block;
-            padding: 10px 20px;
-            background-color: #4caf50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-top: 10px;
-            transition: background-color 0.3s;
-        }
-        .download-button:hover {
-            background-color: #45a049;
-        }
-        .download-button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
         }
     </style>
 </head>
@@ -374,35 +358,35 @@
             }
 
             updateFromNodeUp(data) {
-                this.alias = data.nodeAlias;
-                this.locator = data.locator;
-                this.latitude = data.latitude;
-                this.longitude = data.longitude;
-                this.software = data.software;
-                this.version = data.version;
+                this.alias = data.nodeAlias || this.alias;
+                this.locator = data.locator || this.locator;
+                this.latitude = data.latitude ?? this.latitude;
+                this.longitude = data.longitude ?? this.longitude;
+                this.software = data.software || this.software;
+                this.version = data.version || this.version;
                 this.status = 'online';
                 this.lastSeen = new Date();
             }
 
             updateFromNodeStatus(data) {
-                this.alias = data.nodeAlias;
-                this.locator = data.locator;
-                this.latitude = data.latitude;
-                this.longitude = data.longitude;
-                this.software = data.software;
-                this.version = data.version;
-                this.uptimeSecs = data.uptimeSecs;
-                this.linksIn = data.linksIn;
-                this.linksOut = data.linksOut;
-                this.circuitsIn = data.cctsIn;
-                this.circuitsOut = data.cctsOut;
-                this.l3Relayed = data.l3Relayed;
+                this.alias = data.nodeAlias || this.alias;
+                this.locator = data.locator || this.locator;
+                this.latitude = data.latitude ?? this.latitude;
+                this.longitude = data.longitude ?? this.longitude;
+                this.software = data.software || this.software;
+                this.version = data.version || this.version;
+                this.uptimeSecs = data.uptimeSecs ?? this.uptimeSecs;
+                this.linksIn = data.linksIn ?? this.linksIn;
+                this.linksOut = data.linksOut ?? this.linksOut;
+                this.circuitsIn = data.cctsIn ?? this.circuitsIn;
+                this.circuitsOut = data.cctsOut ?? this.circuitsOut;
+                this.l3Relayed = data.l3Relayed ?? this.l3Relayed;
                 this.status = 'online';
                 this.lastSeen = new Date();
             }
 
             updateFromNodeDown(data) {
-                this.alias = data.nodeAlias;
+                this.alias = data.nodeAlias || this.alias;
                 this.status = 'offline';
                 this.lastSeen = new Date();
             }
@@ -563,6 +547,7 @@
         const linkTracker = new LinkTracker();
         const mqttUrl = 'wss://node-api.packet.oarc.uk:443/mqtt/';
         const statusElement = document.getElementById('mqttStatus');
+        let initialStateLoaded = false;
 
         // Helper function to check if a callsign matches our base
         function matchesBaseCallsign(callsign) {
@@ -605,7 +590,7 @@
                         nodeData.l3Relayed = node.l3Relayed;
                         nodeData.status = node.status === 1 ? 'online' : node.status === 2 ? 'offline' : 'unknown';
                         nodeData.lastSeen = node.lastSeen ? new Date(node.lastSeen) : null;
-                        nodeData.l2TraceCount = node.l2TraceCount;
+                        nodeData.l2TraceCount = node.l2TraceCount || 0;
                         nodeData.lastL2Trace = node.lastL2Trace ? new Date(node.lastL2Trace) : null;
                     });
                 }
@@ -645,8 +630,11 @@
                 } else if (allSsids.size > 0) {
                     currentSelectedSsid = allSsids.keys().next().value;
                 }
+                
+                initialStateLoaded = true;
             } catch (err) {
                 console.error('Error loading initial state:', err);
+                initialStateLoaded = true; // Allow UI to proceed even if loading fails
             }
         }
 
@@ -815,6 +803,7 @@
 
         function selectSsid(fullCallsign) {
             currentSelectedSsid = fullCallsign;
+            console.log('Selected SSID:', fullCallsign);
             
             // Update tab highlighting
             document.querySelectorAll('.ssid-tab').forEach(tab => {
@@ -822,9 +811,17 @@
             });
         }
 
+        // Use event delegation for tab clicks
+        document.addEventListener('click', (e) => {
+            const tab = e.target.closest('.ssid-tab');
+            if (tab && tab.dataset.ssid) {
+                selectSsid(tab.dataset.ssid);
+            }
+        });
+
         // Update UI every second
         setInterval(() => {
-            if (allSsids.size === 0) return;
+            if (!initialStateLoaded || allSsids.size === 0) return;
 
             // Build SSID tabs
             const ssidTabsContainer = document.getElementById('ssidTabs');
@@ -850,7 +847,8 @@
                     const tabClass = `ssid-tab ${isActive ? 'active' : ''} ${hasActivity ? 'has-activity' : ''}`;
                     const activityDot = hasActivity ? '<span class="activity-dot"></span>' : '';
                     
-                    return `<div class="${tabClass}" data-ssid="${ssid}" onclick="selectSsid('${ssid}')">
+                    // Remove onclick, use data attribute and event delegation instead
+                    return `<div class="${tabClass}" data-ssid="${ssid}">
                         ${ssid}${activityDot}
                     </div>`;
                 }).filter(t => t).join('');
@@ -878,65 +876,92 @@
                 </div>
             `;
 
-            // Update node info
+            // Update node info - show all available fields
             const nodeInfoContainer = document.getElementById('nodeInfo');
-            if (nodeData.software || nodeData.locator || nodeData.lastSeen) {
+            const infoCards = [];
+            
+            if (nodeData.software) {
+                infoCards.push(`
+                    <div class="info-card">
+                        <div class="info-label">Software</div>
+                        <div class="info-value">${nodeData.software} ${nodeData.version || ''}</div>
+                    </div>
+                `);
+            }
+            
+            if (nodeData.locator) {
+                infoCards.push(`
+                    <div class="info-card">
+                        <div class="info-label">Location</div>
+                        <div class="info-value">${nodeData.locator}</div>
+                        ${nodeData.latitude !== null && nodeData.longitude !== null ? `
+                            <div style="font-size: 12px; color: #999; margin-top: 5px;">
+                                ${nodeData.latitude.toFixed(4)}°, ${nodeData.longitude.toFixed(4)}°
+                            </div>
+                        ` : ''}
+                    </div>
+                `);
+            }
+            
+            if (nodeData.uptimeSecs !== null && nodeData.uptimeSecs !== undefined) {
+                infoCards.push(`
+                    <div class="info-card">
+                        <div class="info-label">Uptime</div>
+                        <div class="info-value">${formatDuration(nodeData.uptimeSecs)}</div>
+                    </div>
+                `);
+            }
+            
+            if (nodeData.lastSeen) {
+                infoCards.push(`
+                    <div class="info-card">
+                        <div class="info-label">Last Seen</div>
+                        <div class="info-value">${formatLastSeen(nodeData.lastSeen)}</div>
+                    </div>
+                `);
+            }
+            
+            if (nodeData.linksIn !== null || nodeData.linksOut !== null) {
+                infoCards.push(`
+                    <div class="info-card">
+                        <div class="info-label">Links (In/Out)</div>
+                        <div class="info-value">${nodeData.linksIn ?? 0} / ${nodeData.linksOut ?? 0}</div>
+                    </div>
+                `);
+            }
+            
+            if (nodeData.circuitsIn !== null || nodeData.circuitsOut !== null) {
+                infoCards.push(`
+                    <div class="info-card">
+                        <div class="info-label">Circuits (In/Out)</div>
+                        <div class="info-value">${nodeData.circuitsIn ?? 0} / ${nodeData.circuitsOut ?? 0}</div>
+                    </div>
+                `);
+            }
+            
+            if (nodeData.l3Relayed !== null && nodeData.l3Relayed !== undefined) {
+                infoCards.push(`
+                    <div class="info-card">
+                        <div class="info-label">L3 Relayed</div>
+                        <div class="info-value">${nodeData.l3Relayed.toLocaleString()}</div>
+                    </div>
+                `);
+            }
+            
+            if (nodeData.l2TraceCount > 0) {
+                infoCards.push(`
+                    <div class="info-card">
+                        <div class="info-label">L2 Traces</div>
+                        <div class="info-value">${nodeData.l2TraceCount.toLocaleString()}</div>
+                    </div>
+                `);
+            }
+            
+            if (infoCards.length > 0) {
                 nodeInfoContainer.style.display = 'grid';
-                nodeInfoContainer.innerHTML = `
-                    ${nodeData.software ? `
-                        <div class="info-card">
-                            <div class="info-label">Software</div>
-                            <div class="info-value">${nodeData.software} ${nodeData.version || ''}</div>
-                        </div>
-                    ` : ''}
-                    ${nodeData.locator ? `
-                        <div class="info-card">
-                            <div class="info-label">Location</div>
-                            <div class="info-value">${nodeData.locator}</div>
-                            ${nodeData.latitude && nodeData.longitude ? `
-                                <div style="font-size: 12px; color: #999; margin-top: 5px;">
-                                    ${nodeData.latitude.toFixed(4)}°, ${nodeData.longitude.toFixed(4)}°
-                                </div>
-                            ` : ''}
-                        </div>
-                    ` : ''}
-                    ${nodeData.uptimeSecs !== null ? `
-                        <div class="info-card">
-                            <div class="info-label">Uptime</div>
-                            <div class="info-value">${formatDuration(nodeData.uptimeSecs)}</div>
-                        </div>
-                    ` : ''}
-                    ${nodeData.lastSeen ? `
-                        <div class="info-card">
-                            <div class="info-label">Last Seen</div>
-                            <div class="info-value">${formatLastSeen(nodeData.lastSeen)}</div>
-                        </div>
-                    ` : ''}
-                    ${nodeData.linksIn !== null || nodeData.linksOut !== null ? `
-                        <div class="info-card">
-                            <div class="info-label">Links (In/Out)</div>
-                            <div class="info-value">${nodeData.linksIn || 0} / ${nodeData.linksOut || 0}</div>
-                        </div>
-                    ` : ''}
-                    ${nodeData.circuitsIn !== null || nodeData.circuitsOut !== null ? `
-                        <div class="info-card">
-                            <div class="info-label">Circuits (In/Out)</div>
-                            <div class="info-value">${nodeData.circuitsIn || 0} / ${nodeData.circuitsOut || 0}</div>
-                        </div>
-                    ` : ''}
-                    ${nodeData.l3Relayed !== null ? `
-                        <div class="info-card">
-                            <div class="info-label">L3 Relayed</div>
-                            <div class="info-value">${nodeData.l3Relayed.toLocaleString()}</div>
-                        </div>
-                    ` : ''}
-                    ${nodeData.l2TraceCount > 0 ? `
-                        <div class="info-card">
-                            <div class="info-label">L2 Traces</div>
-                            <div class="info-value">${nodeData.l2TraceCount.toLocaleString()}</div>
-                        </div>
-                    ` : ''}
-                `;
+                nodeInfoContainer.innerHTML = infoCards.join('');
+            } else {
+                nodeInfoContainer.style.display = 'none';
             }
 
             // Update links table - show links for ALL SSIDs of this base callsign
