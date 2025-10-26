@@ -261,10 +261,7 @@
         }
         .expand-content {
             display: none;
-            padding: 15px;
-            background-color: #fafbff;
-            border-radius: 0 0 6px 6px;
-            margin-top: 2px;
+            padding-top: 15px;
         }
         .expand-content.expanded {
             display: block;
@@ -315,19 +312,42 @@
     </div>
 
     <div class="container">
-        <h2>Active Nodes</h2>
+        <h2>Reporting Nodes</h2>
+        <p>Nodes actively sending UDP telemetry to this API</p>
         <div class="summary-stats">
             <div class="summary-card">
-                <div class="summary-number" id="activeNodesCount">0</div>
-                <div class="summary-label">Active Nodes</div>
+                <div class="summary-number" id="activeReportingNodesCount">0</div>
+                <div class="summary-label">Active Reporting Nodes</div>
             </div>
             <div class="summary-card">
-                <div class="summary-number" id="totalNodesCount">0</div>
-                <div class="summary-label">Total Nodes Seen</div>
+                <div class="summary-number" id="totalReportingNodesCount">0</div>
+                <div class="summary-label">Total Reporting Nodes</div>
             </div>
         </div>
-        <div id="nodesContainer" class="nodes-grid">
+        <div id="reportingNodesContainer" class="nodes-grid">
             <div class="no-data">Waiting for node data...</div>
+        </div>
+
+        <div class="expandable-section">
+            <div class="expand-toggle" onclick="toggleNeighborNodes()">
+                <span class="expand-toggle-title">📡 Neighbor Nodes (Seen in routing or traffic, not reporting)</span>
+                <span class="expand-toggle-icon" id="neighbor-icon">▶</span>
+            </div>
+            <div class="expand-content" id="neighbor-content">
+                <div class="summary-stats">
+                    <div class="summary-card">
+                        <div class="summary-number" id="activeNeighborNodesCount">0</div>
+                        <div class="summary-label">Active Neighbor Nodes</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-number" id="totalNeighborNodesCount">0</div>
+                        <div class="summary-label">Total Neighbor Nodes</div>
+                    </div>
+                </div>
+                <div id="neighborNodesContainer" class="nodes-grid">
+                    <div class="no-data">No neighbor nodes seen</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -437,7 +457,24 @@
                 } else {
                     this.nodes.set(callsign, {
                         lastSeen: Date.now(),
-                        messageCount: 1
+                        messageCount: 1,
+                        isReporting: false
+                    });
+                }
+            }
+
+            // Mark a node as actively reporting (sending L2Trace with reportFrom)
+            markAsReporting(callsign) {
+                const existing = this.nodes.get(callsign);
+                if (existing) {
+                    existing.isReporting = true;
+                    existing.lastSeen = Date.now();
+                    existing.messageCount++;
+                } else {
+                    this.nodes.set(callsign, {
+                        lastSeen: Date.now(),
+                        messageCount: 1,
+                        isReporting: true
                     });
                 }
             }
@@ -457,7 +494,8 @@
                             ssids: [],
                             messageCount: 0,
                             lastSeen: data.lastSeen,
-                            activeCount: 0
+                            activeCount: 0,
+                            isReporting: false
                         });
                     }
                     
@@ -465,6 +503,11 @@
                     aggregated.ssids.push(callsign);
                     aggregated.messageCount += data.messageCount;
                     aggregated.lastSeen = Math.max(aggregated.lastSeen, data.lastSeen);
+                    
+                    // Mark as reporting if ANY SSID is reporting
+                    if (data.isReporting) {
+                        aggregated.isReporting = true;
+                    }
                     
                     // Count active SSIDs
                     if (this.isActive(data.lastSeen)) {
@@ -476,17 +519,30 @@
                     .sort((a, b) => b.messageCount - a.messageCount);
             }
 
-            getActiveNodes() {
+            getReportingNodes() {
+                return this.getAggregatedNodes()
+                    .filter(node => node.isReporting);
+            }
+
+            getNeighborNodes() {
+                return this.getAggregatedNodes()
+                    .filter(node => !node.isReporting);
+            }
+
+            getActiveReportingNodes() {
                 const now = Date.now();
                 const cutoff = now - this.activeThreshold;
                 
-                // Get aggregated nodes, filter by at least one active SSID
-                return this.getAggregatedNodes()
+                return this.getReportingNodes()
                     .filter(agg => agg.lastSeen > cutoff);
             }
 
-            getAllNodes() {
-                return this.getAggregatedNodes();
+            getActiveNeighborNodes() {
+                const now = Date.now();
+                const cutoff = now - this.activeThreshold;
+                
+                return this.getNeighborNodes()
+                    .filter(agg => agg.lastSeen > cutoff);
             }
 
             isActive(lastSeen) {
@@ -576,8 +632,19 @@
             if (topic === 'out/L2Trace') {
                 try {
                     const data = JSON.parse(message.toString());
+                    
+                    // Track the reporting node (node that sent this frame)
                     if (data.reportFrom) {
-                        nodeTracker.updateNode(data.reportFrom);
+                        nodeTracker.markAsReporting(data.reportFrom);
+                    }
+                    
+                    // Also track source and destination as neighbor nodes
+                    // (they'll stay as neighbors unless they later send a reportFrom)
+                    if (data.srce && data.srce !== data.reportFrom) {
+                        nodeTracker.updateNode(data.srce);
+                    }
+                    if (data.dest && data.dest !== data.reportFrom) {
+                        nodeTracker.updateNode(data.dest);
                     }
                 } catch (err) {
                     console.error('Error parsing L2Trace message:', err);
@@ -631,6 +698,14 @@
         function toggleSection(section) {
             const content = document.getElementById(`${section}-content`);
             const icon = document.getElementById(`${section}-icon`);
+            
+            content.classList.toggle('expanded');
+            icon.classList.toggle('expanded');
+        }
+
+        function toggleNeighborNodes() {
+            const content = document.getElementById('neighbor-content');
+            const icon = document.getElementById('neighbor-icon');
             
             content.classList.toggle('expanded');
             icon.classList.toggle('expanded');
@@ -890,37 +965,74 @@
 
         // Update nodes UI every second
         setInterval(() => {
-            const allNodes = nodeTracker.getAllNodes();
-            const activeNodes = nodeTracker.getActiveNodes();
+            const reportingNodes = nodeTracker.getReportingNodes();
+            const neighborNodes = nodeTracker.getNeighborNodes();
+            const activeReporting = nodeTracker.getActiveReportingNodes();
+            const activeNeighbor = nodeTracker.getActiveNeighborNodes();
 
-            activeNodesCount.textContent = activeNodes.length;
-            totalNodesCount.textContent = allNodes.length;
+            // Update counts
+            document.getElementById('activeReportingNodesCount').textContent = activeReporting.length;
+            document.getElementById('totalReportingNodesCount').textContent = reportingNodes.length;
+            document.getElementById('activeNeighborNodesCount').textContent = activeNeighbor.length;
+            document.getElementById('totalNeighborNodesCount').textContent = neighborNodes.length;
 
-            if (allNodes.length === 0) return;
+            // Render reporting nodes
+            const reportingNodesContainer = document.getElementById('reportingNodesContainer');
+            if (reportingNodes.length === 0) {
+                reportingNodesContainer.innerHTML = '<div class="no-data">No reporting nodes yet</div>';
+            } else {
+                const reportingHtml = reportingNodes.map(({ baseCallsign, ssids, lastSeen, messageCount, activeCount }) => {
+                    const isActive = nodeTracker.isActive(lastSeen);
+                    const staleClass = isActive ? '' : 'stale';
+                    
+                    // Build SSID summary
+                    const ssidCount = ssids.length;
+                    const ssidSummary = ssidCount === 1 ? 
+                        ssids[0] : 
+                        `${ssidCount} SSIDs (${activeCount} active)`;
+                    
+                    return `
+                        <a href="/node.html?callsign=${baseCallsign}" style="text-decoration: none; color: inherit;">
+                            <div class="node-badge ${staleClass}">
+                                <div class="node-callsign">${baseCallsign}</div>
+                                <div class="node-message-count">${messageCount.toLocaleString()} messages</div>
+                                <div class="node-last-seen">${ssidSummary}</div>
+                                <div class="node-last-seen">${formatLastSeen(lastSeen)}</div>
+                            </div>
+                        </a>
+                    `;
+                }).join('');
+                reportingNodesContainer.innerHTML = reportingHtml;
+            }
 
-            const html = allNodes.map(({ baseCallsign, ssids, lastSeen, messageCount, activeCount }) => {
-                const isActive = nodeTracker.isActive(lastSeen);
-                const staleClass = isActive ? '' : 'stale';
-                
-                // Build SSID summary
-                const ssidCount = ssids.length;
-                const ssidSummary = ssidCount === 1 ? 
-                    ssids[0] : 
-                    `${ssidCount} SSIDs (${activeCount} active)`;
-                
-                return `
-                    <a href="/node.html?callsign=${baseCallsign}" style="text-decoration: none; color: inherit;">
-                        <div class="node-badge ${staleClass}">
-                            <div class="node-callsign">${baseCallsign}</div>
-                            <div class="node-message-count">${messageCount.toLocaleString()} messages</div>
-                            <div class="node-last-seen">${ssidSummary}</div>
-                            <div class="node-last-seen">${formatLastSeen(lastSeen)}</div>
-                        </div>
-                    </a>
-                `;
-            }).join('');
-
-            nodesContainer.innerHTML = html;
+            // Render neighbor nodes
+            const neighborNodesContainer = document.getElementById('neighborNodesContainer');
+            if (neighborNodes.length === 0) {
+                neighborNodesContainer.innerHTML = '<div class="no-data">No neighbor nodes seen</div>';
+            } else {
+                const neighborHtml = neighborNodes.map(({ baseCallsign, ssids, lastSeen, messageCount, activeCount }) => {
+                    const isActive = nodeTracker.isActive(lastSeen);
+                    const staleClass = isActive ? '' : 'stale';
+                    
+                    // Build SSID summary
+                    const ssidCount = ssids.length;
+                    const ssidSummary = ssidCount === 1 ? 
+                        ssids[0] : 
+                        `${ssidCount} SSIDs (${activeCount} active)`;
+                    
+                    return `
+                        <a href="/node.html?callsign=${baseCallsign}" style="text-decoration: none; color: inherit;">
+                            <div class="node-badge ${staleClass}">
+                                <div class="node-callsign">${baseCallsign}</div>
+                                <div class="node-message-count">${messageCount.toLocaleString()} references</div>
+                                <div class="node-last-seen">${ssidSummary}</div>
+                                <div class="node-last-seen">${formatLastSeen(lastSeen)}</div>
+                            </div>
+                        </a>
+                    `;
+                }).join('');
+                neighborNodesContainer.innerHTML = neighborHtml;
+            }
         }, 1000);
 
         // Update stats UI every 500ms
