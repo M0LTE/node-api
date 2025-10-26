@@ -229,4 +229,102 @@ public class NetworkStateUpdater : IHostedService
             _logger.LogDebug("Updated link state from LinkDownEvent: {Key}", link.CanonicalKey);
         }
     }
+
+    public void UpdateFromCircuitUpEvent(CircuitUpEvent evt)
+    {
+        var circuit = _networkState.GetOrCreateCircuit(evt.Local, evt.Remote);
+        
+        circuit.Status = Models.NetworkState.CircuitStatus.Active;
+        circuit.LastUpdate = DateTime.UtcNow;
+        
+        if (evt.TimeUnixSeconds.HasValue)
+        {
+            circuit.ConnectedAt = DateTimeOffset.FromUnixTimeSeconds(evt.TimeUnixSeconds.Value).UtcDateTime;
+        }
+
+        var endpoint = new CircuitEndpointState
+        {
+            Node = evt.Node,
+            Id = evt.Id,
+            Direction = evt.Direction,
+            Service = evt.Service,
+            Local = evt.Local,
+            Remote = evt.Remote,
+            LastUpdate = DateTime.UtcNow
+        };
+        
+        circuit.Endpoints[evt.Node] = endpoint;
+
+        if (circuit.Initiator == null)
+        {
+            circuit.Initiator = evt.Direction.Equals("outgoing", StringComparison.OrdinalIgnoreCase) 
+                ? evt.Local 
+                : evt.Remote;
+        }
+
+        _logger.LogInformation("Updated circuit state from CircuitUpEvent: {Key} ({Local} <-> {Remote})", circuit.CanonicalKey, evt.Local, evt.Remote);
+    }
+
+    public void UpdateFromCircuitStatus(Models.CircuitStatus evt)
+    {
+        var circuit = _networkState.GetOrCreateCircuit(evt.Local, evt.Remote);
+        
+        circuit.Status = Models.NetworkState.CircuitStatus.Active;
+        circuit.LastUpdate = DateTime.UtcNow;
+
+        var endpoint = new CircuitEndpointState
+        {
+            Node = evt.Node,
+            Id = evt.Id,
+            Direction = evt.Direction,
+            Service = evt.Service,
+            Local = evt.Local,
+            Remote = evt.Remote,
+            LastUpdate = DateTime.UtcNow,
+            SegmentsSent = evt.SegmentsSent,
+            SegmentsReceived = evt.SegmentsReceived,
+            SegmentsResent = evt.SegmentsResent,
+            SegmentsQueued = evt.SegmentsQueued,
+            BytesSent = evt.BytesSent,
+            BytesReceived = evt.BytesReceived
+        };
+        
+        circuit.Endpoints[evt.Node] = endpoint;
+
+        if (circuit.Initiator == null)
+        {
+            circuit.Initiator = evt.Direction.Equals("outgoing", StringComparison.OrdinalIgnoreCase) 
+                ? evt.Local 
+                : evt.Remote;
+        }
+
+        _logger.LogInformation("Updated circuit state from CircuitStatus: {Key} ({Local} <-> {Remote})", circuit.CanonicalKey, evt.Local, evt.Remote);
+    }
+
+    public void UpdateFromCircuitDownEvent(CircuitDisconnectionEvent evt)
+    {
+        var canonicalKey = _networkState.GetCanonicalCircuitKey(evt.Local, evt.Remote);
+        var circuit = _networkState.GetCircuit(canonicalKey);
+        
+        if (circuit != null)
+        {
+            circuit.Status = Models.NetworkState.CircuitStatus.Disconnected;
+            circuit.DisconnectedAt = DateTime.UtcNow;
+            circuit.LastUpdate = DateTime.UtcNow;
+
+            if (circuit.Endpoints.TryGetValue(evt.Node, out var endpoint))
+            {
+                endpoint.SegmentsSent = evt.SegmentsSent;
+                endpoint.SegmentsReceived = evt.SegmentsReceived;
+                endpoint.SegmentsResent = evt.SegmentsResent;
+                endpoint.SegmentsQueued = evt.SegmentsQueued;
+                endpoint.BytesSent = evt.BytesSent;
+                endpoint.BytesReceived = evt.BytesReceived;
+                endpoint.Reason = evt.Reason;
+                endpoint.LastUpdate = DateTime.UtcNow;
+            }
+
+            _logger.LogDebug("Updated circuit state from CircuitDownEvent: {Key}", circuit.CanonicalKey);
+        }
+    }
 }

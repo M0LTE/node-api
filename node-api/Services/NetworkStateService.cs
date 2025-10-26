@@ -4,7 +4,7 @@ using System.Collections.Concurrent;
 namespace node_api.Services;
 
 /// <summary>
-/// Maintains the current state of all nodes and links in the network.
+/// Maintains the current state of all nodes, links, and circuits in the network.
 /// This is an in-memory state that can later be backed by Redis or MySQL.
 /// </summary>
 public interface INetworkStateService
@@ -21,14 +21,22 @@ public interface INetworkStateService
     IReadOnlyDictionary<string, LinkState> GetAllLinks();
     IEnumerable<LinkState> GetLinksForNode(string callsign);
     
+    // Circuit operations
+    CircuitState GetOrCreateCircuit(string local, string remote);
+    CircuitState? GetCircuit(string canonicalKey);
+    IReadOnlyDictionary<string, CircuitState> GetAllCircuits();
+    IEnumerable<CircuitState> GetCircuitsForNode(string callsign);
+    
     // Utility
     string GetCanonicalLinkKey(string local, string remote);
+    string GetCanonicalCircuitKey(string local, string remote);
 }
 
 public class NetworkStateService : INetworkStateService
 {
     private readonly ConcurrentDictionary<string, NodeState> _nodes = new();
     private readonly ConcurrentDictionary<string, LinkState> _links = new();
+    private readonly ConcurrentDictionary<string, CircuitState> _circuits = new();
     private readonly ILogger<NetworkStateService> _logger;
 
     public NetworkStateService(ILogger<NetworkStateService> logger)
@@ -114,5 +122,48 @@ public class NetworkStateService : INetworkStateService
         return _links.Values.Where(link =>
             link.Endpoint1.Equals(callsign, StringComparison.OrdinalIgnoreCase) ||
             link.Endpoint2.Equals(callsign, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public string GetCanonicalCircuitKey(string local, string remote)
+    {
+        var sorted = new[] { local, remote }.OrderBy(x => x).ToArray();
+        return $"{sorted[0]}<->{sorted[1]}";
+    }
+
+    public CircuitState GetOrCreateCircuit(string local, string remote)
+    {
+        var canonicalKey = GetCanonicalCircuitKey(local, remote);
+        
+        return _circuits.GetOrAdd(canonicalKey, key =>
+        {
+            _logger.LogDebug("Creating new circuit state for {Key}", key);
+            var sorted = new[] { local, remote }.OrderBy(x => x).ToArray();
+            return new CircuitState
+            {
+                CanonicalKey = key,
+                Endpoint1 = sorted[0],
+                Endpoint2 = sorted[1],
+                ConnectedAt = DateTime.UtcNow,
+                LastUpdate = DateTime.UtcNow
+            };
+        });
+    }
+
+    public CircuitState? GetCircuit(string canonicalKey)
+    {
+        _circuits.TryGetValue(canonicalKey, out var circuit);
+        return circuit;
+    }
+
+    public IReadOnlyDictionary<string, CircuitState> GetAllCircuits()
+    {
+        return _circuits;
+    }
+
+    public IEnumerable<CircuitState> GetCircuitsForNode(string callsign)
+    {
+        return _circuits.Values.Where(circuit =>
+            circuit.Endpoint1.Equals(callsign, StringComparison.OrdinalIgnoreCase) ||
+            circuit.Endpoint2.Equals(callsign, StringComparison.OrdinalIgnoreCase));
     }
 }

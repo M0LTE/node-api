@@ -57,6 +57,9 @@ public class MqttStateSubscriber : BackgroundService
             new MqttTopicFilterBuilder().WithTopic("out/LinkUpEvent").Build(),
             new MqttTopicFilterBuilder().WithTopic("out/LinkStatus").Build(),
             new MqttTopicFilterBuilder().WithTopic("out/LinkDownEvent").Build(),
+            new MqttTopicFilterBuilder().WithTopic("out/CircuitUpEvent").Build(),
+            new MqttTopicFilterBuilder().WithTopic("out/CircuitStatus").Build(),
+            new MqttTopicFilterBuilder().WithTopic("out/CircuitDownEvent").Build(),
         });
 
         _logger.LogInformation("MQTT state subscriber subscribed to out/# topics");
@@ -137,6 +140,30 @@ public class MqttStateSubscriber : BackgroundService
                     if (linkDown != null)
                     {
                         _networkStateUpdater.UpdateFromLinkDownEvent(linkDown);
+                    }
+                    break;
+
+                case "out/CircuitUpEvent":
+                    var circuitUp = JsonSerializer.Deserialize<CircuitUpEvent>(payload);
+                    if (circuitUp != null)
+                    {
+                        _networkStateUpdater.UpdateFromCircuitUpEvent(circuitUp);
+                    }
+                    break;
+
+                case "out/CircuitStatus":
+                    var circuitStatus = JsonSerializer.Deserialize<CircuitStatus>(payload);
+                    if (circuitStatus != null)
+                    {
+                        _networkStateUpdater.UpdateFromCircuitStatus(circuitStatus);
+                    }
+                    break;
+
+                case "out/CircuitDownEvent":
+                    var circuitDown = JsonSerializer.Deserialize<CircuitDisconnectionEvent>(payload);
+                    if (circuitDown != null)
+                    {
+                        _networkStateUpdater.UpdateFromCircuitDownEvent(circuitDown);
                     }
                     break;
 
