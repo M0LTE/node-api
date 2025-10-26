@@ -158,7 +158,7 @@ dotnet run
 ## Known Issues and Warnings
 
 - Some nullable reference type warnings exist (CS8620, CS8603) - these are being addressed
-- Environment check for `PRECISION3660` machine name disables `DbWriter` service
+- Environment-specific logic: `DbWriter` service is disabled for development machine `PRECISION3660` - consider making this configuration-driven rather than hard-coded
 - Performance test warnings about blocking operations (xUnit1031) are acceptable for perf tests
 
 ## Security Considerations
@@ -166,8 +166,16 @@ dotnet run
 - All database queries use parameterization
 - Input validation via FluentValidation before processing
 - No authentication currently implemented (service runs in trusted network)
-- CORS is wide-open for development - restrict in production
-- Forwarded headers trust specific networks (172.17.0.0/16)
+- **CORS**: Currently allows any origin for development
+  - For production: Restrict to specific origins in `Program.cs`:
+    ```csharp
+    policy.WithOrigins("https://yourdomain.com")
+          .AllowAnyMethod()
+          .AllowAnyHeader();
+    ```
+- **Forwarded Headers**: Trusts Docker's default network (172.17.0.0/16)
+  - Adjust `KnownNetworks` in `Program.cs` for different deployment scenarios
+  - Add additional trusted proxy networks as needed
 
 ## Tips for Contributors
 
