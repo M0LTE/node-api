@@ -194,6 +194,40 @@
             background-color: #2196f3;
             color: white;
         }
+        .ssid-tab {
+            padding: 10px 15px;
+            background-color: #f0f0f0;
+            border: 2px solid transparent;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            color: #333;
+        }
+        .ssid-tab:hover {
+            background-color: #e0e0e0;
+        }
+        .ssid-tab.active {
+            background-color: white;
+            border-color: #0066cc;
+            border-bottom-color: white;
+            color: #0066cc;
+            font-weight: bold;
+        }
+        .ssid-tab.has-activity {
+            background-color: #e8f5e9;
+        }
+        .ssid-tab.has-activity.active {
+            background-color: white;
+        }
+        .ssid-tab .activity-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-left: 5px;
+            background-color: #4caf50;
+        }
         .trace-window {
             background-color: #1e1e1e;
             color: #d4d4d4;
@@ -259,12 +293,18 @@
             <div class="no-data">Loading node information...</div>
         </div>
         
+        <div id="ssidTabs" style="display: none; margin-top: 20px;">
+            <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px;">
+                <!-- SSID tabs will be inserted here -->
+            </div>
+        </div>
+        
         <div id="nodeInfo" class="info-grid" style="display: none;">
         </div>
     </div>
 
     <div class="container">
-        <h2>Links Involving This Node</h2>
+        <h2>Links Involving This Callsign</h2>
         <div id="linksContainer">
             <div class="no-data">Waiting for link data...</div>
         </div>
@@ -272,7 +312,7 @@
 
     <div class="container">
         <h2>Layer 2 Traces</h2>
-        <p>Real-time traces from this node (most recent first)</p>
+        <p>Real-time traces from this callsign (most recent first, current SSID only)</p>
         <button id="downloadButton" class="download-button" onclick="downloadTraces()" disabled>
             Download Traces as JSON Lines
         </button>
@@ -286,12 +326,27 @@
         // Get callsign from query string
         const urlParams = new URLSearchParams(window.location.search);
         const nodeCallsign = urlParams.get('callsign');
+        
+        // Extract base callsign and SSID
+        let baseCallsign = nodeCallsign;
+        let requestedSsid = null;
+        
+        if (nodeCallsign) {
+            const match = nodeCallsign.match(/^([A-Z0-9]+?)(?:-(\d+))?$/i);
+            if (match) {
+                baseCallsign = match[1];
+                requestedSsid = match[2] ? parseInt(match[2]) : 0;
+            }
+        }
 
         if (!nodeCallsign) {
             document.getElementById('nodeHeader').innerHTML = '<div class="no-data">No callsign specified. Please provide a ?callsign= parameter.</div>';
         } else {
-            document.title = `${nodeCallsign} - Node Details`;
+            document.title = `${baseCallsign} - Node Details`;
         }
+
+        // Track all SSIDs for this base callsign
+        const allSsids = new Map(); // Map<string, NodeData> - key is full callsign with SSID
 
         // Node data tracker
         class NodeData {
@@ -508,6 +563,22 @@
         const mqttUrl = 'wss://node-api.packet.oarc.uk:443/mqtt/';
         const statusElement = document.getElementById('mqttStatus');
 
+        // Helper function to check if a callsign matches our base
+        function matchesBaseCallsign(callsign) {
+            if (!callsign) return false;
+            const match = callsign.match(/^([A-Z0-9]+?)(?:-(\d+))?$/i);
+            if (!match) return false;
+            return match[1].toUpperCase() === baseCallsign.toUpperCase();
+        }
+
+        // Helper function to get or create NodeData for a specific callsign
+        function getOrCreateNodeData(callsign) {
+            if (!allSsids.has(callsign)) {
+                allSsids.set(callsign, new NodeData(callsign));
+            }
+            return allSsids.get(callsign);
+        }
+
         // Connect to MQTT broker
         const client = mqtt.connect(mqttUrl);
 
@@ -540,20 +611,49 @@
         });
 
         client.on('message', (topic, message) => {
-            if (!nodeData) return;
-
             try {
                 const data = JSON.parse(message.toString());
                 
-                if (topic === 'out/NodeUpEvent' && data.nodeCall === nodeCallsign) {
+                // Check NodeUpEvent for any matching SSID
+                if (topic === 'out/NodeUpEvent' && data.nodeCall && matchesBaseCallsign(data.nodeCall)) {
+                    const nodeData = getOrCreateNodeData(data.nodeCall);
                     nodeData.updateFromNodeUp(data);
-                } else if (topic === 'out/NodeStatus' && data.nodeCall === nodeCallsign) {
+                }
+                // Check NodeStatus for any matching SSID
+                else if (topic === 'out/NodeStatus' && data.nodeCall && matchesBaseCallsign(data.nodeCall)) {
+                    const nodeData = getOrCreateNodeData(data.nodeCall);
                     nodeData.updateFromNodeStatus(data);
-                } else if (topic === 'out/NodeDownEvent' && data.nodeCall === nodeCallsign) {
+                }
+                // Check NodeDownEvent for any matching SSID
+                else if (topic === 'out/NodeDownEvent' && data.nodeCall && matchesBaseCallsign(data.nodeCall)) {
+                    const nodeData = getOrCreateNodeData(data.nodeCall);
                     nodeData.updateFromNodeDown(data);
-                } else if (topic === 'out/L2Trace' && data.reportFrom === nodeCallsign) {
-                    nodeData.updateFromL2Trace(data);
-                } else if (topic === 'out/LinkUpEvent') {
+                }
+                // Check L2Trace for any matching SSID
+                else if (topic === 'out/L2Trace') {
+                    // Check reportFrom
+                    if (data.reportFrom && matchesBaseCallsign(data.reportFrom)) {
+                        const nodeData = getOrCreateNodeData(data.reportFrom);
+                        nodeData.updateFromL2Trace(data);
+                    }
+                    // Also check srce and dest for activity tracking
+                    if (data.srce && matchesBaseCallsign(data.srce)) {
+                        const nodeData = getOrCreateNodeData(data.srce);
+                        nodeData.lastSeen = new Date();
+                        if (nodeData.status === 'unknown') {
+                            nodeData.status = 'online';
+                        }
+                    }
+                    if (data.dest && matchesBaseCallsign(data.dest)) {
+                        const nodeData = getOrCreateNodeData(data.dest);
+                        nodeData.lastSeen = new Date();
+                        if (nodeData.status === 'unknown') {
+                            nodeData.status = 'online';
+                        }
+                    }
+                }
+                // Track links for all SSIDs
+                else if (topic === 'out/LinkUpEvent') {
                     linkTracker.handleLinkUp(data);
                 } else if (topic === 'out/LinkStatus') {
                     linkTracker.handleLinkStatus(data);
@@ -610,6 +710,14 @@
         }
 
         function downloadTraces() {
+            // Get the currently selected SSID's node data
+            const currentSsid = document.querySelector('.ssid-tab.active')?.dataset.ssid;
+            if (!currentSsid) {
+                alert('No SSID selected');
+                return;
+            }
+            
+            const nodeData = allSsids.get(currentSsid);
             if (!nodeData || nodeData.l2Traces.length === 0) {
                 alert('No traces available to download');
                 return;
@@ -620,15 +728,62 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `${nodeCallsign}_l2traces_${new Date().toISOString().replace(/[:.]/g, '-')}.jsonl`;
+            a.download = `${currentSsid}_l2traces_${new Date().toISOString().replace(/[:.]/g, '-')}.jsonl`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
 
+        let currentSelectedSsid = nodeCallsign; // Track currently selected SSID
+
+        function selectSsid(fullCallsign) {
+            currentSelectedSsid = fullCallsign;
+            
+            // Update tab highlighting
+            document.querySelectorAll('.ssid-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.ssid === fullCallsign);
+            });
+        }
+
         // Update UI every second
         setInterval(() => {
+            if (allSsids.size === 0) return;
+
+            // Build SSID tabs
+            const ssidTabsContainer = document.getElementById('ssidTabs');
+            const tabsHtml = document.querySelector('#ssidTabs > div');
+            
+            if (allSsids.size > 0) {
+                ssidTabsContainer.style.display = 'block';
+                
+                // Generate tabs for all SSIDs (no SSID, then 0-15)
+                const ssidList = [baseCallsign]; // Base callsign with no SSID
+                for (let i = 0; i <= 15; i++) {
+                    ssidList.push(`${baseCallsign}-${i}`);
+                }
+                
+                const tabs = ssidList.map(ssid => {
+                    const hasData = allSsids.has(ssid);
+                    const nodeData = allSsids.get(ssid);
+                    const isActive = currentSelectedSsid === ssid;
+                    const hasActivity = hasData && nodeData.lastSeen;
+                    
+                    if (!hasData && !isActive) return ''; // Don't show inactive SSIDs unless they're selected
+                    
+                    const tabClass = `ssid-tab ${isActive ? 'active' : ''} ${hasActivity ? 'has-activity' : ''}`;
+                    const activityDot = hasActivity ? '<span class="activity-dot"></span>' : '';
+                    
+                    return `<div class="${tabClass}" data-ssid="${ssid}" onclick="selectSsid('${ssid}')">
+                        ${ssid}${activityDot}
+                    </div>`;
+                }).filter(t => t).join('');
+                
+                tabsHtml.innerHTML = tabs;
+            }
+
+            // Get currently selected node data
+            const nodeData = allSsids.get(currentSelectedSsid);
             if (!nodeData) return;
 
             // Update node header
@@ -638,7 +793,7 @@
             document.getElementById('nodeHeader').innerHTML = `
                 <div class="node-header">
                     <div>
-                        <div class="node-callsign">${nodeData.callsign}</div>
+                        <div class="node-callsign">${currentSelectedSsid}</div>
                         ${nodeData.alias ? `<div class="node-alias">${nodeData.alias}</div>` : ''}
                     </div>
                     <div>
@@ -708,67 +863,84 @@
                 `;
             }
 
-            // Update links table
-            const links = linkTracker.getLinksForNode(nodeCallsign);
+            // Update links table - show links for ALL SSIDs of this base callsign
+            const allLinks = Array.from(allSsids.keys())
+                .flatMap(ssid => linkTracker.getLinksForNode(ssid));
+            
+            // Deduplicate links by canonical key
+            const uniqueLinks = Array.from(new Map(allLinks.map(link => [link.canonicalKey, link])).values())
+                .sort((a, b) => {
+                    if (a.status === 'active' && b.status !== 'active') return -1;
+                    if (a.status !== 'active' && b.status === 'active') return 1;
+                    return b.lastUpdate - a.lastUpdate;
+                });
+            
             const linksContainer = document.getElementById('linksContainer');
             
-            if (links.length === 0) return;
+            if (uniqueLinks.length === 0) {
+                linksContainer.innerHTML = '<div class="no-data">No links found</div>';
+            } else {
+                const html = `
+                    <table class="links-table">
+                        <thead>
+                            <tr>
+                                <th title="Green=Active, Red=Disconnected">St</th>
+                                <th>Local SSID</th>
+                                <th>Remote Node</th>
+                                <th>Initiator</th>
+                                <th>Up Time</th>
+                                <th>TX/RX<br><span style="font-weight: normal; font-size: 11px;">(frames)</span></th>
+                                <th>Resent<br><span style="font-weight: normal; font-size: 11px;">(frames)</span></th>
+                                <th>Queue<br><span style="font-weight: normal; font-size: 11px;">(frames)</span></th>
+                                <th>RTT<br><span style="font-weight: normal; font-size: 11px;">(ms)</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${uniqueLinks.map(link => {
+                                // Determine which endpoint is ours
+                                const localCallsign = matchesBaseCallsign(link.endpoint1) ? link.endpoint1 : link.endpoint2;
+                                const remoteNode = matchesBaseCallsign(link.endpoint1) ? link.endpoint2 : link.endpoint1;
+                                const localStats = link.endpoints[localCallsign];
+                                const statusClass = link.status === 'active' ? 'active' : 'disconnected';
+                                const statusTitle = link.status === 'active' ? 'Active' : 'Disconnected';
+                                
+                                let initiatorClass = 'direction-badge ';
+                                const initiator = link.initiator || '-';
+                                if (matchesBaseCallsign(initiator)) {
+                                    initiatorClass += 'direction-outgoing';
+                                } else {
+                                    initiatorClass += 'direction-incoming';
+                                }
+                                
+                                const uptime = Math.max(
+                                    ...Object.values(link.endpoints).map(ep => ep.upForSecs || 0)
+                                );
+                                
+                                return `
+                                    <tr>
+                                        <td title="${statusTitle}" style="text-align: center;"><span class="status-indicator ${statusClass}"></span></td>
+                                        <td class="callsign"><a href="/node.html?callsign=${localCallsign}" style="color: #0066cc; text-decoration: none;">${localCallsign}</a></td>
+                                        <td class="callsign"><a href="/node.html?callsign=${remoteNode}" style="color: #0066cc; text-decoration: none;">${remoteNode}</a></td>
+                                        <td><span class="${initiatorClass}">${initiator}</span></td>
+                                        <td>${formatDuration(uptime)}</td>
+                                        <td class="metric">${localStats?.framesSent || '-'} / ${localStats?.framesReceived || '-'}</td>
+                                        <td class="metric">${localStats?.framesResent || '-'}</td>
+                                        <td class="metric">${localStats?.framesQueued || '-'}</td>
+                                        <td class="metric">${localStats?.l2RttMs ? localStats.l2RttMs + 'ms' : '-'}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                `;
 
-            const html = `
-                <table class="links-table">
-                    <thead>
-                        <tr>
-                            <th title="Green=Active, Red=Disconnected">St</th>
-                            <th>Remote Node</th>
-                            <th>Initiator</th>
-                            <th>Up Time</th>
-                            <th>TX/RX<br><span style="font-weight: normal; font-size: 11px;">(frames)</span></th>
-                            <th>Resent<br><span style="font-weight: normal; font-size: 11px;">(frames)</span></th>
-                            <th>Queue<br><span style="font-weight: normal; font-size: 11px;">(frames)</span></th>
-                            <th>RTT<br><span style="font-weight: normal; font-size: 11px;">(ms)</span></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${links.map(link => {
-                            const remoteNode = link.endpoint1 === nodeCallsign ? link.endpoint2 : link.endpoint1;
-                            const localStats = link.endpoints[nodeCallsign];
-                            const statusClass = link.status === 'active' ? 'active' : 'disconnected';
-                            const statusTitle = link.status === 'active' ? 'Active' : 'Disconnected';
-                            
-                            let initiatorClass = 'direction-badge ';
-                            const initiator = link.initiator || '-';
-                            if (initiator === nodeCallsign) {
-                                initiatorClass += 'direction-outgoing';
-                            } else {
-                                initiatorClass += 'direction-incoming';
-                            }
-                            
-                            const uptime = Math.max(
-                                ...Object.values(link.endpoints).map(ep => ep.upForSecs || 0)
-                            );
-                            
-                            return `
-                                <tr>
-                                    <td title="${statusTitle}" style="text-align: center;"><span class="status-indicator ${statusClass}"></span></td>
-                                    <td class="callsign"><a href="/node.html?callsign=${remoteNode}" style="color: #0066cc; text-decoration: none;">${remoteNode}</a></td>
-                                    <td><span class="${initiatorClass}">${initiator}</span></td>
-                                    <td>${formatDuration(uptime)}</td>
-                                    <td class="metric">${localStats?.framesSent || '-'} / ${localStats?.framesReceived || '-'}</td>
-                                    <td class="metric">${localStats?.framesResent || '-'}</td>
-                                    <td class="metric">${localStats?.framesQueued || '-'}</td>
-                                    <td class="metric">${localStats?.l2RttMs ? localStats.l2RttMs + 'ms' : '-'}</td>
-                                </tr>
-                            `;
-                        }).join('')}
-                    </tbody>
-                </table>
-            `;
-
-            linksContainer.innerHTML = html;
+                linksContainer.innerHTML = html;
+            }
         }, 1000);
 
         // Update trace window every second
         setInterval(() => {
+            const nodeData = allSsids.get(currentSelectedSsid);
             if (!nodeData) return;
 
             const traceWindow = document.getElementById('traceWindow');
@@ -791,6 +963,20 @@
                     const port = trace.data.port || '-';
                     const cr = trace.data.cr || '';
                     const pf = trace.data.pf || '';
+                    const reportFrom = trace.data.reportFrom || '';
+                    
+                    // Determine if this was TX or RX
+                    // If reportFrom matches srce, it was transmitted by the reporter
+                    // If reportFrom matches dest, it was received by the reporter
+                    let txrx = '';
+                    if (reportFrom === srce) {
+                        txrx = 'TX';
+                    } else if (reportFrom === dest) {
+                        txrx = 'RX';
+                    } else {
+                        // Reporter is neither source nor dest (shouldn't happen for direct links)
+                        txrx = '??';
+                    }
                     
                     // Build additional info string
                     let additionalInfo = [];
@@ -843,6 +1029,7 @@
                     return `
                         <div class="trace-line">
                             <span class="trace-timestamp">[${time}]</span>
+                            <span class="trace-type" style="color: ${txrx === 'TX' ? '#ce9178' : '#4ec9b0'};">${txrx}</span>
                             <span class="trace-type">${type}${crpf}</span>
                             <span class="trace-data">p${port} ${srce} &rarr; ${dest}${infoStr}</span>
                         </div>

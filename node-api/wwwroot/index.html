@@ -268,8 +268,15 @@
         // Node tracker
         class NodeTracker {
             constructor() {
-                this.nodes = new Map();
+                this.nodes = new Map(); // Map of individual callsigns
                 this.activeThreshold = 60000; // 60 seconds
+            }
+
+            // Extract base callsign without SSID
+            getBaseCallsign(callsign) {
+                if (!callsign) return null;
+                const match = callsign.match(/^([A-Z0-9]+?)(?:-(\d+))?$/i);
+                return match ? match[1].toUpperCase() : callsign.toUpperCase();
             }
 
             updateNode(callsign) {
@@ -285,18 +292,51 @@
                 }
             }
 
+            // Get aggregated stats by base callsign
+            getAggregatedNodes() {
+                const baseCallsigns = new Map();
+                
+                // Aggregate all SSIDs by base callsign
+                for (const [callsign, data] of this.nodes.entries()) {
+                    const base = this.getBaseCallsign(callsign);
+                    if (!base) continue;
+                    
+                    if (!baseCallsigns.has(base)) {
+                        baseCallsigns.set(base, {
+                            baseCallsign: base,
+                            ssids: [],
+                            messageCount: 0,
+                            lastSeen: data.lastSeen,
+                            activeCount: 0
+                        });
+                    }
+                    
+                    const aggregated = baseCallsigns.get(base);
+                    aggregated.ssids.push(callsign);
+                    aggregated.messageCount += data.messageCount;
+                    aggregated.lastSeen = Math.max(aggregated.lastSeen, data.lastSeen);
+                    
+                    // Count active SSIDs
+                    if (this.isActive(data.lastSeen)) {
+                        aggregated.activeCount++;
+                    }
+                }
+                
+                return Array.from(baseCallsigns.values())
+                    .sort((a, b) => b.messageCount - a.messageCount);
+            }
+
             getActiveNodes() {
                 const now = Date.now();
                 const cutoff = now - this.activeThreshold;
-                return Array.from(this.nodes.entries())
-                    .filter(([_, data]) => data.lastSeen > cutoff)
-                    .map(([callsign, data]) => ({ callsign, ...data }));
+                
+                // Get aggregated nodes, filter by at least one active SSID
+                return this.getAggregatedNodes()
+                    .filter(agg => agg.lastSeen > cutoff);
             }
 
             getAllNodes() {
-                return Array.from(this.nodes.entries())
-                    .map(([callsign, data]) => ({ callsign, ...data }))
-                    .sort((a, b) => b.messageCount - a.messageCount);
+                return this.getAggregatedNodes();
             }
 
             isActive(lastSeen) {
@@ -387,15 +427,22 @@
 
             if (allNodes.length === 0) return;
 
-            const html = allNodes.map(({ callsign, lastSeen, messageCount }) => {
+            const html = allNodes.map(({ baseCallsign, ssids, lastSeen, messageCount, activeCount }) => {
                 const isActive = nodeTracker.isActive(lastSeen);
                 const staleClass = isActive ? '' : 'stale';
                 
+                // Build SSID summary
+                const ssidCount = ssids.length;
+                const ssidSummary = ssidCount === 1 ? 
+                    ssids[0] : 
+                    `${ssidCount} SSIDs (${activeCount} active)`;
+                
                 return `
-                    <a href="/node.html?callsign=${callsign}" style="text-decoration: none; color: inherit;">
+                    <a href="/node.html?callsign=${baseCallsign}" style="text-decoration: none; color: inherit;">
                         <div class="node-badge ${staleClass}">
-                            <div class="node-callsign">${callsign}</div>
+                            <div class="node-callsign">${baseCallsign}</div>
                             <div class="node-message-count">${messageCount.toLocaleString()} messages</div>
+                            <div class="node-last-seen">${ssidSummary}</div>
                             <div class="node-last-seen">${formatLastSeen(lastSeen)}</div>
                         </div>
                     </a>
