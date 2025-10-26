@@ -270,6 +270,9 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
         {
             var frame = wrappedFrame.Datagram;
 
+            // Network state is now updated by MqttStateSubscriber listening to out/# topics
+            // This handler just publishes to MQTT
+
             var payload = JsonSerializer.SerializeToUtf8Bytes(frame, frame.GetType(), options);
 
             var topic = outTopicPrefix + "/" + wrappedFrame.Datagram.DatagramType;

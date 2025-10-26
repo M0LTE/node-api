@@ -377,6 +377,45 @@
         const totalLinksCount = document.getElementById('totalLinksCount');
         const disconnectedCount = document.getElementById('disconnectedCount');
 
+        // Fetch initial link state from API
+        async function loadInitialState() {
+            try {
+                const response = await fetch('/api/links');
+                if (response.ok) {
+                    const links = await response.json();
+                    console.log(`Loaded ${links.length} links from API`);
+                    
+                    // Populate linkTracker with existing links
+                    links.forEach(link => {
+                        linkTracker.links.set(link.canonicalKey, {
+                            canonicalKey: link.canonicalKey,
+                            endpoint1: link.endpoint1,
+                            endpoint2: link.endpoint2,
+                            status: link.status === 0 ? 'active' : 'disconnected',
+                            connectedAt: new Date(link.connectedAt),
+                            disconnectedAt: link.disconnectedAt ? new Date(link.disconnectedAt) : null,
+                            lastUpdate: new Date(link.lastUpdate),
+                            initiator: link.initiator,
+                            endpoints: Object.fromEntries(
+                                Object.entries(link.endpoints).map(([key, ep]) => [
+                                    key,
+                                    {
+                                        ...ep,
+                                        lastUpdate: new Date(ep.lastUpdate)
+                                    }
+                                ])
+                            )
+                        });
+                    });
+                }
+            } catch (err) {
+                console.error('Error loading initial state:', err);
+            }
+        }
+
+        // Load initial state before connecting to MQTT
+        loadInitialState();
+
         // Connect to MQTT broker
         const client = mqtt.connect(mqttUrl);
 

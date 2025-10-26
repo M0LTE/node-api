@@ -30,6 +30,13 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
+// Register network state services
+builder.Services.AddSingleton<INetworkStateService, NetworkStateService>();
+builder.Services.AddSingleton<NetworkStateUpdater>();
+
+// Register MQTT subscriber to populate network state from MQTT events
+builder.Services.AddHostedService<MqttStateSubscriber>();
+
 // Register repositories
 builder.Services.AddSingleton<ITraceRepository, MySqlTraceRepository>();
 builder.Services.AddSingleton<IEventRepository, MySqlEventRepository>();

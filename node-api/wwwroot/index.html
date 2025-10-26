@@ -354,6 +354,31 @@
         const activeNodesCount = document.getElementById('activeNodesCount');
         const totalNodesCount = document.getElementById('totalNodesCount');
 
+        // Fetch initial node state from API
+        async function loadInitialState() {
+            try {
+                const response = await fetch('/api/nodes');
+                if (response.ok) {
+                    const nodes = await response.json();
+                    console.log(`Loaded ${nodes.length} nodes from API`);
+                    
+                    // Populate nodeTracker with existing nodes
+                    nodes.forEach(node => {
+                        const lastSeen = node.lastSeen ? new Date(node.lastSeen).getTime() : Date.now();
+                        nodeTracker.nodes.set(node.callsign, {
+                            lastSeen: lastSeen,
+                            messageCount: node.l2TraceCount || 0
+                        });
+                    });
+                }
+            } catch (err) {
+                console.error('Error loading initial state:', err);
+            }
+        }
+
+        // Load initial state before connecting to MQTT
+        loadInitialState();
+
         // Connect to MQTT broker
         const client = mqtt.connect(mqttUrl);
 
