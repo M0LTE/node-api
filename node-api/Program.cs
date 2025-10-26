@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging.Console;
 using node_api.Models;
 using node_api.Services;
 using node_api.Validators;
+using node_api.Middleware;
 using Scalar.AspNetCore;
 using System.Net;
 using IPNetwork = Microsoft.AspNetCore.HttpOverrides.IPNetwork;
@@ -16,14 +17,31 @@ builder.Logging.AddConsole(options =>
     options.FormatterName = ConsoleFormatterNames.Systemd;
 });
 
-// Add CORS services
+// Load security settings
+var securitySettings = builder.Configuration.GetSection("Security").Get<SecuritySettings>() ?? new SecuritySettings();
+
+// Add CORS services with configurable origins
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        var allowedOrigins = securitySettings.CorsAllowedOrigins;
+        
+        if (allowedOrigins.Contains("*"))
+        {
+            // Allow any origin (development mode)
+            policy.AllowAnyOrigin()
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        }
+        else
+        {
+            // Restrict to specific origins (production mode)
+            policy.WithOrigins(allowedOrigins.ToArray())
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials();
+        }
     });
 });
 
@@ -80,6 +98,12 @@ var options = new ForwardedHeadersOptions
 options.KnownNetworks.Add(new IPNetwork(IPAddress.Parse("172.17.0.0"), 16));
 
 app.UseForwardedHeaders(options);
+
+// Add security headers middleware
+app.UseMiddleware<SecurityHeadersMiddleware>();
+
+// Add API rate limiting middleware
+app.UseMiddleware<ApiRateLimitingMiddleware>();
 
 // Add no-cache headers to all responses
 app.Use(async (context, next) =>

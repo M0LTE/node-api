@@ -18,23 +18,30 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
 {
     private readonly ILogger<UdpNodeInfoListener> _logger;
     private readonly DatagramValidationService _validationService;
+    private readonly SecuritySettings _securitySettings;
     private readonly Channel<(UdpNodeInfoJsonDatagram Frame, IPEndPoint RemoteEndPoint)> _processingChannel;
     private readonly ChannelWriter<(UdpNodeInfoJsonDatagram Frame, IPEndPoint RemoteEndPoint)> _channelWriter;
     private readonly SemaphoreSlim _processingSemaphore;
+    private readonly UdpRateLimiter _rateLimiter;
     private IManagedMqttClient? mqttClient;
     private UdpClient? _udpClient;
     private Task? _processingTask;
+    private Task? _cleanupTask;
 
     public int Port { get; set; } = 13579;
     public int MaxConcurrentProcessing { get; set; } = 100;
     public TimeSpan ReconnectDelay { get; set; } = TimeSpan.FromSeconds(5);
+    private const int MaxDatagramSize = 65507; // Maximum UDP datagram size
 
     public UdpNodeInfoListener(
         ILogger<UdpNodeInfoListener> logger,
-        DatagramValidationService validationService)
+        DatagramValidationService validationService,
+        IConfiguration configuration)
     {
         _logger = logger;
         _validationService = validationService;
+        _securitySettings = configuration.GetSection("Security").Get<SecuritySettings>() ?? new SecuritySettings();
+        
         var channelOptions = new BoundedChannelOptions(MaxConcurrentProcessing * 2)
         {
             FullMode = BoundedChannelFullMode.Wait,
@@ -45,6 +52,17 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
         _processingChannel = Channel.CreateBounded<(UdpNodeInfoJsonDatagram, IPEndPoint)>(channelOptions);
         _channelWriter = _processingChannel.Writer;
         _processingSemaphore = new SemaphoreSlim(MaxConcurrentProcessing, MaxConcurrentProcessing);
+        _rateLimiter = new UdpRateLimiter(
+            _securitySettings.UdpRateLimiting.Enabled,
+            _securitySettings.UdpRateLimiting.MaxPacketsPerSecondPerIp,
+            _securitySettings.UdpRateLimiting.MaxTotalPacketsPerSecond);
+        
+        _logger.LogInformation("UDP Security: IP filtering enabled with {Count} allowed networks", 
+            _securitySettings.UdpAllowedSourceNetworks.Count);
+        _logger.LogInformation("UDP Rate limiting: {Status}, Max per IP: {PerIp}/s, Max total: {Total}/s",
+            _securitySettings.UdpRateLimiting.Enabled ? "Enabled" : "Disabled",
+            _securitySettings.UdpRateLimiting.MaxPacketsPerSecondPerIp,
+            _securitySettings.UdpRateLimiting.MaxTotalPacketsPerSecond);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -64,6 +82,16 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
 
         // Start the frame processing task
         _processingTask = ProcessFramesAsync(stoppingToken);
+
+        // Start periodic cleanup task for rate limiter
+        _cleanupTask = Task.Run(async () =>
+        {
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken).ConfigureAwait(false);
+                _rateLimiter.CleanupOldBuckets();
+            }
+        }, stoppingToken);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -114,6 +142,8 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
     const string badJsonTopic = "in/udp/errored/badjson";
     const string badTypeTopic = "in/udp/errored/badtype";
     const string validationErrorTopic = "in/udp/errored/validation";
+    const string blockedIpTopic = "in/udp/errored/blockedip";
+    const string rateLimitTopic = "in/udp/errored/ratelimit";
     const string outTopicPrefix = "out";
 
     private async Task ProcessDatagramAsync(UdpReceiveResult result, CancellationToken stoppingToken)
@@ -121,6 +151,48 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
         string? json;
         try
         {
+            // Security check 1: Validate source IP against allowed networks
+            if (!IpNetworkValidator.IsIpAllowed(result.RemoteEndPoint.Address, _securitySettings.UdpAllowedSourceNetworks))
+            {
+                _logger.LogWarning("Blocked UDP datagram from unauthorized IP: {Ip}", result.RemoteEndPoint.Address);
+                
+                var blockedMessage = new MqttApplicationMessageBuilder()
+                    .WithTopic(blockedIpTopic)
+                    .WithPayload(JsonSerializer.SerializeToUtf8Bytes(new { 
+                        ip = result.RemoteEndPoint.Address.ToString(),
+                        timestamp = DateTime.UtcNow
+                    }))
+                    .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
+                    .Build();
+                await mqttClient!.EnqueueAsync(blockedMessage);
+                return;
+            }
+
+            // Security check 2: Rate limiting
+            if (!_rateLimiter.AllowPacket(result.RemoteEndPoint.Address))
+            {
+                _logger.LogWarning("Rate limited UDP datagram from {Ip}", result.RemoteEndPoint.Address);
+                
+                var rateLimitMessage = new MqttApplicationMessageBuilder()
+                    .WithTopic(rateLimitTopic)
+                    .WithPayload(JsonSerializer.SerializeToUtf8Bytes(new { 
+                        ip = result.RemoteEndPoint.Address.ToString(),
+                        timestamp = DateTime.UtcNow
+                    }))
+                    .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
+                    .Build();
+                await mqttClient!.EnqueueAsync(rateLimitMessage);
+                return;
+            }
+
+            // Security check 3: Validate datagram size
+            if (result.Buffer.Length > MaxDatagramSize)
+            {
+                _logger.LogWarning("Rejected oversized UDP datagram from {Ip}: {Size} bytes", 
+                    result.RemoteEndPoint.Address, result.Buffer.Length);
+                return;
+            }
+
             json = Encoding.UTF8.GetString(result.Buffer);
             _logger.LogDebug("Received UDP datagram from {Endpoint}: {Json}", result.RemoteEndPoint, Convert.ToBase64String(result.Buffer));
 
