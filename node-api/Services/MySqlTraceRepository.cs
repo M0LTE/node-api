@@ -1,5 +1,6 @@
 using Dapper;
 using node_api.Controllers;
+using node_api.Utilities;
 using System.Text;
 using System.Text.Json;
 
@@ -182,7 +183,7 @@ public class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger) : ITrace
         try
         {
             // Security: Validate base64 format before decoding
-            if (!IsValidBase64String(cursor))
+            if (!ValidationHelper.IsValidBase64String(cursor))
                 return false;
 
             var raw = Encoding.UTF8.GetString(Convert.FromBase64String(cursor));
@@ -213,11 +214,5 @@ public class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger) : ITrace
         {
             return false;
         }
-    }
-
-    private static bool IsValidBase64String(string s)
-    {
-        // Base64 should only contain A-Z, a-z, 0-9, +, /, and = for padding
-        return s.All(c => char.IsLetterOrDigit(c) || c == '+' || c == '/' || c == '=');
     }
 }

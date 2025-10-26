@@ -274,7 +274,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
                 else
                 {
                     // Security: Limit logged content length to prevent log spam
-                    var loggedJson = json.Length > 200 ? json.Substring(0, 200) + "..." : json;
+                    var loggedJson = json.Length > 200 ? json[..200] + "..." : json;
                     _logger.LogWarning("Received unknown datagram type from {Endpoint}: {Json}", 
                         result.RemoteEndPoint, loggedJson);
 
