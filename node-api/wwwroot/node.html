@@ -1044,14 +1044,20 @@
                     // Determine if this was TX or RX
                     // If reportFrom matches srce, it was transmitted by the reporter
                     // If reportFrom matches dest, it was received by the reporter
+                    // Normalize to uppercase for comparison since callsigns are case-insensitive
+                    const reportFromUpper = (reportFrom || '').toUpperCase();
+                    const srceUpper = (srce || '').toUpperCase();
+                    const destUpper = (dest || '').toUpperCase();
+                    
                     let txrx = '';
-                    if (reportFrom === srce) {
+                    if (reportFromUpper === srceUpper) {
                         txrx = 'TX';
-                    } else if (reportFrom === dest) {
+                    } else if (reportFromUpper === destUpper) {
                         txrx = 'RX';
                     } else {
-                        // Reporter is neither source nor dest (shouldn't happen for direct links)
-                        txrx = '??';
+                        // Reporter is neither source nor dest
+                        // This can happen when a node is monitoring/relaying traffic
+                        txrx = 'OV'; // Overheard/observed
                     }
                     
                     // Build additional info string
@@ -1105,7 +1111,7 @@
                     return `
                         <div class="trace-line">
                             <span class="trace-timestamp">[${time}]</span>
-                            <span class="trace-type" style="color: ${txrx === 'TX' ? '#ce9178' : '#4ec9b0'};">${txrx}</span>
+                            <span class="trace-type" style="color: ${txrx === 'TX' ? '#ce9178' : txrx === 'RX' ? '#4ec9b0' : '#9cdcfe'};">${txrx}</span>
                             <span class="trace-type">${type}${crpf}</span>
                             <span class="trace-data">p${port} ${srce} &rarr; ${dest}${infoStr}</span>
                         </div>
