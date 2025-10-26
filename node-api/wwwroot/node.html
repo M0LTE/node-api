@@ -257,6 +257,22 @@
         }
         .download-button {
             display: inline-block;
+            padding: 10px 20px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+        .download-button:hover {
+            background-color: #45a049;
+        }
+        .download-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -809,6 +825,9 @@
             document.querySelectorAll('.ssid-tab').forEach(tab => {
                 tab.classList.toggle('active', tab.dataset.ssid === fullCallsign);
             });
+            
+            // Trigger immediate UI update
+            updateUIForCurrentSsid();
         }
 
         // Use event delegation for tab clicks
@@ -818,6 +837,142 @@
                 selectSsid(tab.dataset.ssid);
             }
         });
+
+        // Extract UI update logic into a function
+        function updateUIForCurrentSsid() {
+            // Get currently selected node data
+            let nodeData = allSsids.get(currentSelectedSsid);
+            if (!nodeData) return;
+
+            // If this SSID doesn't have complete data, try to fall back to base callsign or any other SSID with data
+            // This handles the case where all SSIDs belong to the same physical node
+            if (!nodeData.software || !nodeData.locator) {
+                // Try base callsign first
+                const baseNodeData = allSsids.get(baseCallsign);
+                if (baseNodeData && (baseNodeData.software || baseNodeData.locator)) {
+                    nodeData = baseNodeData;
+                } else {
+                    // Try any SSID with data
+                    for (const [ssid, data] of allSsids.entries()) {
+                        if (data.software || data.locator) {
+                            nodeData = data;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Update node header (use current SSID for display, but data from wherever we found it)
+            const statusClass = nodeData.status === 'online' ? 'status-online' : 
+                               nodeData.status === 'offline' ? 'status-offline' : 'status-unknown';
+            
+            document.getElementById('nodeHeader').innerHTML = `
+                <div class="node-header">
+                    <div>
+                        <div class="node-callsign">${currentSelectedSsid}</div>
+                        ${nodeData.alias ? `<div class="node-alias">${nodeData.alias}</div>` : ''}
+                    </div>
+                    <div>
+                        <span class="status-badge ${statusClass}">${nodeData.status.toUpperCase()}</span>
+                    </div>
+                </div>
+            `;
+
+            // Update node info - show all available fields
+            const nodeInfoContainer = document.getElementById('nodeInfo');
+            const infoCards = [];
+            
+            // Only show cards when there's actual data
+            if (nodeData.software && nodeData.software.trim && nodeData.software.trim()) {
+                infoCards.push(`
+                    <div class="info-card">
+                        <div class="info-label">Software</div>
+                        <div class="info-value">${nodeData.software}${nodeData.version ? ' ' + nodeData.version : ''}</div>
+                    </div>
+                `);
+            }
+            
+            if (nodeData.locator && nodeData.locator.trim && nodeData.locator.trim()) {
+                infoCards.push(`
+                    <div class="info-card">
+                        <div class="info-label">Location</div>
+                        <div class="info-value">${nodeData.locator}</div>
+                        ${nodeData.latitude !== null && nodeData.latitude !== undefined && nodeData.longitude !== null && nodeData.longitude !== undefined ? `
+                            <div style="font-size: 12px; color: #999; margin-top: 5px;">
+                                ${nodeData.latitude.toFixed(4)}Â°, ${nodeData.longitude.toFixed(4)}Â°
+                            </div>
+                        ` : ''}
+                    </div>
+                `);
+            }
+            
+            if (nodeData.uptimeSecs !== null && nodeData.uptimeSecs !== undefined && nodeData.uptimeSecs > 0) {
+                infoCards.push(`
+                    <div class="info-card">
+                        <div class="info-label">Uptime</div>
+                        <div class="info-value">${formatDuration(nodeData.uptimeSecs)}</div>
+                    </div>
+                `);
+            }
+            
+            // For lastSeen, use the current SSID's own data
+            const currentSsidData = allSsids.get(currentSelectedSsid);
+            if (currentSsidData && currentSsidData.lastSeen) {
+                infoCards.push(`
+                    <div class="info-card">
+                        <div class="info-label">Last Seen</div>
+                        <div class="info-value">${formatLastSeen(currentSsidData.lastSeen)}</div>
+                    </div>
+                `);
+            }
+            
+            if ((nodeData.linksIn !== null && nodeData.linksIn !== undefined) || 
+                (nodeData.linksOut !== null && nodeData.linksOut !== undefined)) {
+                infoCards.push(`
+                    <div class="info-card">
+                        <div class="info-label">Links (In/Out)</div>
+                        <div class="info-value">${nodeData.linksIn ?? 0} / ${nodeData.linksOut ?? 0}</div>
+                    </div>
+                `);
+            }
+            
+            if ((nodeData.circuitsIn !== null && nodeData.circuitsIn !== undefined) || 
+                (nodeData.circuitsOut !== null && nodeData.circuitsOut !== undefined)) {
+                infoCards.push(`
+                    <div class="info-card">
+                        <div class="info-label">Circuits (In/Out)</div>
+                        <div class="info-value">${nodeData.circuitsIn ?? 0} / ${nodeData.circuitsOut ?? 0}</div>
+                    </div>
+                `);
+            }
+            
+            if (nodeData.l3Relayed !== null && nodeData.l3Relayed !== undefined && nodeData.l3Relayed > 0) {
+                infoCards.push(`
+                    <div class="info-card">
+                        <div class="info-label">L3 Relayed</div>
+                        <div class="info-value">${nodeData.l3Relayed.toLocaleString()}</div>
+                    </div>
+                `);
+            }
+            
+            // For L2 traces, sum up across all SSIDs since they all belong to the same physical node
+            const totalL2Traces = Array.from(allSsids.values()).reduce((sum, data) => sum + (data.l2TraceCount || 0), 0);
+            if (totalL2Traces > 0) {
+                infoCards.push(`
+                    <div class="info-card">
+                        <div class="info-label">L2 Traces (All SSIDs)</div>
+                        <div class="info-value">${totalL2Traces.toLocaleString()}</div>
+                    </div>
+                `);
+            }
+            
+            if (infoCards.length > 0) {
+                nodeInfoContainer.style.display = 'grid';
+                nodeInfoContainer.innerHTML = infoCards.join('');
+            } else {
+                nodeInfoContainer.style.display = 'none';
+            }
+        }
 
         // Update UI every second
         setInterval(() => {
@@ -856,113 +1011,8 @@
                 tabsHtml.innerHTML = tabs;
             }
 
-            // Get currently selected node data
-            const nodeData = allSsids.get(currentSelectedSsid);
-            if (!nodeData) return;
-
-            // Update node header
-            const statusClass = nodeData.status === 'online' ? 'status-online' : 
-                               nodeData.status === 'offline' ? 'status-offline' : 'status-unknown';
-            
-            document.getElementById('nodeHeader').innerHTML = `
-                <div class="node-header">
-                    <div>
-                        <div class="node-callsign">${currentSelectedSsid}</div>
-                        ${nodeData.alias ? `<div class="node-alias">${nodeData.alias}</div>` : ''}
-                    </div>
-                    <div>
-                        <span class="status-badge ${statusClass}">${nodeData.status.toUpperCase()}</span>
-                    </div>
-                </div>
-            `;
-
-            // Update node info - show all available fields
-            const nodeInfoContainer = document.getElementById('nodeInfo');
-            const infoCards = [];
-            
-            if (nodeData.software) {
-                infoCards.push(`
-                    <div class="info-card">
-                        <div class="info-label">Software</div>
-                        <div class="info-value">${nodeData.software} ${nodeData.version || ''}</div>
-                    </div>
-                `);
-            }
-            
-            if (nodeData.locator) {
-                infoCards.push(`
-                    <div class="info-card">
-                        <div class="info-label">Location</div>
-                        <div class="info-value">${nodeData.locator}</div>
-                        ${nodeData.latitude !== null && nodeData.longitude !== null ? `
-                            <div style="font-size: 12px; color: #999; margin-top: 5px;">
-                                ${nodeData.latitude.toFixed(4)}°, ${nodeData.longitude.toFixed(4)}°
-                            </div>
-                        ` : ''}
-                    </div>
-                `);
-            }
-            
-            if (nodeData.uptimeSecs !== null && nodeData.uptimeSecs !== undefined) {
-                infoCards.push(`
-                    <div class="info-card">
-                        <div class="info-label">Uptime</div>
-                        <div class="info-value">${formatDuration(nodeData.uptimeSecs)}</div>
-                    </div>
-                `);
-            }
-            
-            if (nodeData.lastSeen) {
-                infoCards.push(`
-                    <div class="info-card">
-                        <div class="info-label">Last Seen</div>
-                        <div class="info-value">${formatLastSeen(nodeData.lastSeen)}</div>
-                    </div>
-                `);
-            }
-            
-            if (nodeData.linksIn !== null || nodeData.linksOut !== null) {
-                infoCards.push(`
-                    <div class="info-card">
-                        <div class="info-label">Links (In/Out)</div>
-                        <div class="info-value">${nodeData.linksIn ?? 0} / ${nodeData.linksOut ?? 0}</div>
-                    </div>
-                `);
-            }
-            
-            if (nodeData.circuitsIn !== null || nodeData.circuitsOut !== null) {
-                infoCards.push(`
-                    <div class="info-card">
-                        <div class="info-label">Circuits (In/Out)</div>
-                        <div class="info-value">${nodeData.circuitsIn ?? 0} / ${nodeData.circuitsOut ?? 0}</div>
-                    </div>
-                `);
-            }
-            
-            if (nodeData.l3Relayed !== null && nodeData.l3Relayed !== undefined) {
-                infoCards.push(`
-                    <div class="info-card">
-                        <div class="info-label">L3 Relayed</div>
-                        <div class="info-value">${nodeData.l3Relayed.toLocaleString()}</div>
-                    </div>
-                `);
-            }
-            
-            if (nodeData.l2TraceCount > 0) {
-                infoCards.push(`
-                    <div class="info-card">
-                        <div class="info-label">L2 Traces</div>
-                        <div class="info-value">${nodeData.l2TraceCount.toLocaleString()}</div>
-                    </div>
-                `);
-            }
-            
-            if (infoCards.length > 0) {
-                nodeInfoContainer.style.display = 'grid';
-                nodeInfoContainer.innerHTML = infoCards.join('');
-            } else {
-                nodeInfoContainer.style.display = 'none';
-            }
+            // Update the UI for the current SSID
+            updateUIForCurrentSsid();
 
             // Update links table - show links for ALL SSIDs of this base callsign
             const allLinks = Array.from(allSsids.keys())
@@ -1036,114 +1086,6 @@
                 `;
 
                 linksContainer.innerHTML = html;
-            }
-        }, 1000);
-
-        // Update trace window every second
-        setInterval(() => {
-            const nodeData = allSsids.get(currentSelectedSsid);
-            if (!nodeData) return;
-
-            const traceWindow = document.getElementById('traceWindow');
-            const downloadButton = document.getElementById('downloadButton');
-
-            if (nodeData.l2Traces.length === 0) {
-                traceWindow.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">Waiting for traces...</div>';
-                downloadButton.disabled = true;
-            } else {
-                downloadButton.disabled = false;
-                
-                // Show last 100 traces in the window
-                const tracesToShow = nodeData.l2Traces.slice(0, 100);
-                
-                const html = tracesToShow.map(trace => {
-                    const time = formatTimestamp(trace.timestamp);
-                    const type = trace.data.l2type || trace.data.l2Type || 'UNKNOWN';
-                    const srce = trace.data.srce || '-';
-                    const dest = trace.data.dest || '-';
-                    const port = trace.data.port || '-';
-                    const cr = trace.data.cr || '';
-                    const pf = trace.data.pf || '';
-                    const reportFrom = trace.data.reportFrom || '';
-                    
-                    // Determine if this was TX or RX
-                    // If reportFrom matches srce, it was transmitted by the reporter
-                    // If reportFrom matches dest, it was received by the reporter
-                    // Normalize to uppercase for comparison since callsigns are case-insensitive
-                    const reportFromUpper = (reportFrom || '').toUpperCase();
-                    const srceUpper = (srce || '').toUpperCase();
-                    const destUpper = (dest || '').toUpperCase();
-                    
-                    let txrx = '';
-                    if (reportFromUpper === srceUpper) {
-                        txrx = 'TX';
-                    } else if (reportFromUpper === destUpper) {
-                        txrx = 'RX';
-                    } else {
-                        // Reporter is neither source nor dest
-                        // This can happen when a node is monitoring/relaying traffic
-                        txrx = 'OV'; // Overheard/observed
-                    }
-                    
-                    // Build additional info string
-                    let additionalInfo = [];
-                    
-                    // Add sequence numbers for I frames
-                    if (type === 'I' && (trace.data.tseq !== undefined || trace.data.rseq !== undefined)) {
-                        const tseq = trace.data.tseq !== undefined ? trace.data.tseq : '?';
-                        const rseq = trace.data.rseq !== undefined ? trace.data.rseq : '?';
-                        additionalInfo.push(`N(S)=${tseq} N(R)=${rseq}`);
-                    }
-                    
-                    // Add sequence for RR, RNR, REJ frames
-                    if ((type === 'RR' || type === 'RNR' || type === 'REJ') && trace.data.rseq !== undefined) {
-                        additionalInfo.push(`N(R)=${trace.data.rseq}`);
-                    }
-                    
-                    // Add PID and protocol for I/UI frames
-                    if (trace.data.pid !== undefined) {
-                        const pidHex = trace.data.pid.toString(16).toUpperCase().padStart(2, '0');
-                        additionalInfo.push(`PID=0x${pidHex}`);
-                        if (trace.data.ptcl) {
-                            additionalInfo.push(`${trace.data.ptcl}`);
-                        }
-                    }
-                    
-                    // Add info length for I/UI frames
-                    if (trace.data.ilen !== undefined && trace.data.ilen > 0) {
-                        additionalInfo.push(`len=${trace.data.ilen}`);
-                    }
-                    
-                    // Add L3 info for NET/ROM frames
-                    if (trace.data.l3type) {
-                        additionalInfo.push(`L3:${trace.data.l3type}`);
-                        if (trace.data.l4type) {
-                            additionalInfo.push(`L4:${trace.data.l4type}`);
-                        }
-                    }
-                    
-                    // Add digipeaters if present
-                    if (trace.data.digis && trace.data.digis.length > 0) {
-                        const digiStr = trace.data.digis.map(d => 
-                            d.call + (d.rptd ? '*' : '')
-                        ).join(',');
-                        additionalInfo.push(`via ${digiStr}`);
-                    }
-                    
-                    const infoStr = additionalInfo.length > 0 ? ' ' + additionalInfo.join(' ') : '';
-                    const crpf = (cr || pf) ? ` [${cr}${pf}]` : '';
-                    
-                    return `
-                        <div class="trace-line">
-                            <span class="trace-timestamp">[${time}]</span>
-                            <span class="trace-type" style="color: ${txrx === 'TX' ? '#ce9178' : txrx === 'RX' ? '#4ec9b0' : '#9cdcfe'};">${txrx}</span>
-                            <span class="trace-type">${type}${crpf}</span>
-                            <span class="trace-data">p${port} ${srce} &rarr; ${dest}${infoStr}</span>
-                        </div>
-                    `;
-                }).join('');
-                
-                traceWindow.innerHTML = html;
             }
         }, 1000);
     </script>
