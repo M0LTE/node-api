@@ -19,6 +19,7 @@
     <PackageReference Include="MQTTnet.Extensions.ManagedClient" Version="4.3.7.1207" />
     <PackageReference Include="MySql.Data" Version="9.4.0" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.8.11" />
+    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="9.0.10" />
   </ItemGroup>
 
 </Project>

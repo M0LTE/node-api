@@ -34,6 +34,11 @@
             padding-bottom: 8px;
             margin-top: 0;
         }
+        h3 {
+            color: #444;
+            margin: 15px 0 10px 0;
+            font-size: 16px;
+        }
         p {
             color: #666;
             line-height: 1.6;
@@ -189,6 +194,109 @@
             font-size: 14px;
             margin-top: 5px;
         }
+        
+        /* System Metrics Styles */
+        .metrics-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .metric-card.warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .metric-card.good {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        .metric-title {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .metric-value {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .metric-subtitle {
+            font-size: 11px;
+            opacity: 0.8;
+        }
+        .expandable-section {
+            margin-top: 15px;
+        }
+        .expand-toggle {
+            cursor: pointer;
+            padding: 10px 15px;
+            background-color: #f0f4ff;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            transition: background-color 0.2s;
+        }
+        .expand-toggle:hover {
+            background-color: #e0e8ff;
+        }
+        .expand-toggle-title {
+            font-weight: 600;
+            color: #333;
+        }
+        .expand-toggle-icon {
+            color: #666;
+            transition: transform 0.2s;
+        }
+        .expand-toggle-icon.expanded {
+            transform: rotate(90deg);
+        }
+        .expand-content {
+            display: none;
+            padding: 15px;
+            background-color: #fafbff;
+            border-radius: 0 0 6px 6px;
+            margin-top: 2px;
+        }
+        .expand-content.expanded {
+            display: block;
+        }
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .detail-label {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .detail-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+        .timestamp {
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+            margin-top: 10px;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -207,13 +315,6 @@
     </div>
 
     <div class="container">
-        <h2>Real-time MQTT Statistics</h2>
-        <div id="statsContainer" class="stats-grid">
-            <div class="no-data">Waiting for MQTT data...</div>
-        </div>
-    </div>
-
-    <div class="container">
         <h2>Active Nodes</h2>
         <div class="summary-stats">
             <div class="summary-card">
@@ -228,6 +329,54 @@
         <div id="nodesContainer" class="nodes-grid">
             <div class="no-data">Waiting for node data...</div>
         </div>
+    </div>
+
+    <div class="container">
+        <h2>Real-time MQTT Statistics</h2>
+        <div id="statsContainer" class="stats-grid">
+            <div class="no-data">Waiting for MQTT data...</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>System Metrics</h2>
+        <div id="metricsOverview" class="metrics-overview">
+            <div class="no-data">Waiting for metrics data...</div>
+        </div>
+        
+        <div class="expandable-section">
+            <div class="expand-toggle" onclick="toggleSection('database')">
+                <span class="expand-toggle-title">📊 Database Metrics</span>
+                <span class="expand-toggle-icon" id="database-icon">▶</span>
+            </div>
+            <div class="expand-content" id="database-content"></div>
+        </div>
+
+        <div class="expandable-section">
+            <div class="expand-toggle" onclick="toggleSection('system')">
+                <span class="expand-toggle-title">🖥️ System Resources</span>
+                <span class="expand-toggle-icon" id="system-icon">▶</span>
+            </div>
+            <div class="expand-content" id="system-content"></div>
+        </div>
+
+        <div class="expandable-section">
+            <div class="expand-toggle" onclick="toggleSection('application')">
+                <span class="expand-toggle-title">⚙️ Application Metrics</span>
+                <span class="expand-toggle-icon" id="application-icon">▶</span>
+            </div>
+            <div class="expand-content" id="application-content"></div>
+        </div>
+
+        <div class="expandable-section">
+            <div class="expand-toggle" onclick="toggleSection('dotnet')">
+                <span class="expand-toggle-title">🔧 .NET Runtime</span>
+                <span class="expand-toggle-icon" id="dotnet-icon">▶</span>
+            </div>
+            <div class="expand-content" id="dotnet-content"></div>
+        </div>
+
+        <div class="timestamp" id="metricsTimestamp"></div>
     </div>
 
     <script src="https://unpkg.com/mqtt@5.3.4/dist/mqtt.min.js"></script>
@@ -348,12 +497,15 @@
 
         const topicStatsMap = new Map();
         const nodeTracker = new NodeTracker();
+        let systemMetrics = null;
         const mqttUrl = 'wss://node-api.packet.oarc.uk:443/mqtt/';
         const statusElement = document.getElementById('mqttStatus');
         const statsContainer = document.getElementById('statsContainer');
         const nodesContainer = document.getElementById('nodesContainer');
         const activeNodesCount = document.getElementById('activeNodesCount');
         const totalNodesCount = document.getElementById('totalNodesCount');
+        const metricsOverview = document.getElementById('metricsOverview');
+        const metricsTimestamp = document.getElementById('metricsTimestamp');
 
         // Fetch initial node state from API
         async function loadInitialState() {
@@ -395,9 +547,23 @@
             client.subscribe('out/#', (err) => {
                 if (err) console.error('Error subscribing to out/#:', err);
             });
+            client.subscribe('metrics/system', (err) => {
+                if (err) console.error('Error subscribing to metrics/system:', err);
+            });
         });
 
         client.on('message', (topic, message) => {
+            // Handle system metrics
+            if (topic === 'metrics/system') {
+                try {
+                    systemMetrics = JSON.parse(message.toString());
+                    updateMetricsDisplay();
+                } catch (err) {
+                    console.error('Error parsing metrics:', err);
+                }
+                return;
+            }
+
             // Get or create stats for this topic
             if (!topicStatsMap.has(topic)) {
                 topicStatsMap.set(topic, new TopicStats(topic));
@@ -441,6 +607,285 @@
             if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
             if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
             return `${Math.floor(seconds / 86400)}d ago`;
+        }
+
+        function formatBytes(bytes) {
+            if (!bytes) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function formatUptime(seconds) {
+            if (!seconds) return 'N/A';
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            
+            if (days > 0) return `${days}d ${hours}h`;
+            if (hours > 0) return `${hours}h ${mins}m`;
+            return `${mins}m`;
+        }
+
+        function toggleSection(section) {
+            const content = document.getElementById(`${section}-content`);
+            const icon = document.getElementById(`${section}-icon`);
+            
+            content.classList.toggle('expanded');
+            icon.classList.toggle('expanded');
+        }
+
+        function updateMetricsDisplay() {
+            if (!systemMetrics) return;
+
+            // Update overview cards
+            const cards = [];
+            
+            // CPU Card
+            if (systemMetrics.system?.cpu_usage_percent !== undefined) {
+                const cpu = systemMetrics.system.cpu_usage_percent;
+                const cpuClass = cpu > 80 ? 'warning' : cpu < 50 ? 'good' : '';
+                cards.push(`
+                    <div class="metric-card ${cpuClass}">
+                        <div class="metric-title">CPU Usage</div>
+                        <div class="metric-value">${cpu.toFixed(1)}%</div>
+                        <div class="metric-subtitle">${systemMetrics.system.processor_count || 0} cores</div>
+                    </div>
+                `);
+            }
+
+            // Memory Card
+            if (systemMetrics.system?.memory_usage_percent !== undefined) {
+                const mem = systemMetrics.system.memory_usage_percent;
+                const memClass = mem > 85 ? 'warning' : mem < 60 ? 'good' : '';
+                cards.push(`
+                    <div class="metric-card ${memClass}">
+                        <div class="metric-title">Memory Usage</div>
+                        <div class="metric-value">${mem.toFixed(1)}%</div>
+                        <div class="metric-subtitle">${formatBytes(systemMetrics.system.used_memory_bytes)} / ${formatBytes(systemMetrics.system.total_memory_bytes)}</div>
+                    </div>
+                `);
+            }
+
+            // Disk Card
+            if (systemMetrics.disk?.usage_percent !== undefined) {
+                const disk = systemMetrics.disk.usage_percent;
+                const diskClass = disk > 80 ? 'warning' : disk < 60 ? 'good' : '';
+                cards.push(`
+                    <div class="metric-card ${diskClass}">
+                        <div class="metric-title">Disk Usage</div>
+                        <div class="metric-value">${disk.toFixed(1)}%</div>
+                        <div class="metric-subtitle">${formatBytes(systemMetrics.disk.used_bytes)} / ${formatBytes(systemMetrics.disk.total_bytes)}</div>
+                    </div>
+                `);
+            }
+
+            // Database Connections Card
+            if (systemMetrics.database?.connections !== undefined) {
+                cards.push(`
+                    <div class="metric-card">
+                        <div class="metric-title">DB Connections</div>
+                        <div class="metric-value">${systemMetrics.database.connections}</div>
+                        <div class="metric-subtitle">${(systemMetrics.database.queries_per_second || 0).toFixed(2)} QPS</div>
+                    </div>
+                `);
+            }
+
+            // App Memory Card
+            if (systemMetrics.application?.memory_working_set_bytes !== undefined) {
+                cards.push(`
+                    <div class="metric-card">
+                        <div class="metric-title">App Memory</div>
+                        <div class="metric-value">${formatBytes(systemMetrics.application.memory_working_set_bytes)}</div>
+                        <div class="metric-subtitle">${systemMetrics.application.thread_count || 0} threads</div>
+                    </div>
+                `);
+            }
+
+            metricsOverview.innerHTML = cards.join('');
+
+            // Update database details
+            if (systemMetrics.database) {
+                const db = systemMetrics.database;
+                document.getElementById('database-content').innerHTML = `
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">Connections</div>
+                            <div class="detail-value">${db.connections || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Threads Running</div>
+                            <div class="detail-value">${db.threads_running || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Queries/sec</div>
+                            <div class="detail-value">${db.queries_per_second?.toFixed(2) || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Slow Queries</div>
+                            <div class="detail-value">${db.slow_queries?.toLocaleString() || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Uptime</div>
+                            <div class="detail-value">${formatUptime(db.uptime_seconds)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Buffer Pool</div>
+                            <div class="detail-value">${db.innodb_buffer_pool_utilization_pct?.toFixed(1) || 'N/A'}%</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Data Size</div>
+                            <div class="detail-value">${formatBytes(db.total_data_size_bytes)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Index Size</div>
+                            <div class="detail-value">${formatBytes(db.total_index_size_bytes)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Tmp Tables (Disk)</div>
+                            <div class="detail-value">${db.created_tmp_disk_tables?.toLocaleString() || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Version</div>
+                            <div class="detail-value">${db.version || 'N/A'}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Update system details
+            if (systemMetrics.system) {
+                const sys = systemMetrics.system;
+                document.getElementById('system-content').innerHTML = `
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">CPU Usage</div>
+                            <div class="detail-value">${sys.cpu_usage_percent?.toFixed(1) || 'N/A'}%</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Processor Count</div>
+                            <div class="detail-value">${sys.processor_count || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Memory Usage</div>
+                            <div class="detail-value">${sys.memory_usage_percent?.toFixed(1) || 'N/A'}%</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Total Memory</div>
+                            <div class="detail-value">${formatBytes(sys.total_memory_bytes)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Available Memory</div>
+                            <div class="detail-value">${formatBytes(sys.available_memory_bytes)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">System Uptime</div>
+                            <div class="detail-value">${formatUptime(sys.uptime_seconds)}</div>
+                        </div>
+                        <div class="detail-item" style="grid-column: 1 / -1;">
+                            <div class="detail-label">OS</div>
+                            <div class="detail-value" style="font-size: 14px;">${sys.os_description || 'N/A'}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Update application details
+            if (systemMetrics.application) {
+                const app = systemMetrics.application;
+                document.getElementById('application-content').innerHTML = `
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">Uptime</div>
+                            <div class="detail-value">${formatUptime(app.uptime_seconds)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Working Set</div>
+                            <div class="detail-value">${formatBytes(app.memory_working_set_bytes)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Private Memory</div>
+                            <div class="detail-value">${formatBytes(app.memory_private_bytes)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Virtual Memory</div>
+                            <div class="detail-value">${formatBytes(app.memory_virtual_bytes)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Thread Count</div>
+                            <div class="detail-value">${app.thread_count || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Handle Count</div>
+                            <div class="detail-value">${app.handle_count?.toLocaleString() || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Total CPU Time</div>
+                            <div class="detail-value">${app.total_processor_time_seconds?.toFixed(1) || 'N/A'}s</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">User CPU Time</div>
+                            <div class="detail-value">${app.user_processor_time_seconds?.toFixed(1) || 'N/A'}s</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Update .NET details
+            if (systemMetrics.dotnet) {
+                const dotnet = systemMetrics.dotnet;
+                document.getElementById('dotnet-content').innerHTML = `
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">Runtime Version</div>
+                            <div class="detail-value">${dotnet.runtime_version || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">GC Heap Size</div>
+                            <div class="detail-value">${formatBytes(dotnet.gc_heap_size_bytes)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">GC Total Memory</div>
+                            <div class="detail-value">${formatBytes(dotnet.gc_total_memory_bytes)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Gen 0 Collections</div>
+                            <div class="detail-value">${dotnet.gc_gen0_collections?.toLocaleString() || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Gen 1 Collections</div>
+                            <div class="detail-value">${dotnet.gc_gen1_collections?.toLocaleString() || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Gen 2 Collections</div>
+                            <div class="detail-value">${dotnet.gc_gen2_collections?.toLocaleString() || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">ThreadPool Threads</div>
+                            <div class="detail-value">${dotnet.threadpool_thread_count || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">ThreadPool Queue</div>
+                            <div class="detail-value">${dotnet.threadpool_queue_length?.toLocaleString() || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Completed Items</div>
+                            <div class="detail-value">${dotnet.threadpool_completed_items?.toLocaleString() || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Assemblies Loaded</div>
+                            <div class="detail-value">${dotnet.assemblies_loaded?.toLocaleString() || 'N/A'}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Update timestamp
+            if (systemMetrics.timestamp) {
+                const ts = new Date(systemMetrics.timestamp);
+                metricsTimestamp.textContent = `Last updated: ${ts.toLocaleTimeString()}`;
+            }
         }
 
         // Update nodes UI every second

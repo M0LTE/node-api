@@ -41,6 +41,9 @@ builder.Services.AddHostedService<NetworkStatePersistenceService>();
 // Register MQTT subscriber to populate network state from MQTT events
 builder.Services.AddHostedService<MqttStateSubscriber>();
 
+// Register system metrics publisher
+builder.Services.AddHostedService<SystemMetricsPublisher>();
+
 // Register repositories
 builder.Services.AddSingleton<ITraceRepository, MySqlTraceRepository>();
 builder.Services.AddSingleton<IEventRepository, MySqlEventRepository>();
