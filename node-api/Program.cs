@@ -34,6 +34,10 @@ builder.Services.AddOpenApi();
 builder.Services.AddSingleton<INetworkStateService, NetworkStateService>();
 builder.Services.AddSingleton<NetworkStateUpdater>();
 
+// Register MySQL persistence for network state
+builder.Services.AddSingleton<MySqlNetworkStateRepository>();
+builder.Services.AddHostedService<NetworkStatePersistenceService>();
+
 // Register MQTT subscriber to populate network state from MQTT events
 builder.Services.AddHostedService<MqttStateSubscriber>();
 

@@ -43,6 +43,38 @@ internal static partial class QueryLogger
     }
 
     /// <summary>
+    /// Executes a query returning a single result or default and logs if it exceeds the slow query threshold.
+    /// </summary>
+    public static async Task<T?> QuerySingleOrDefaultWithLoggingAsync<T>(
+        IDbConnection connection,
+        CommandDefinition command,
+        ILogger logger,
+        int slowQueryThresholdMs)
+    {
+        var sw = Stopwatch.StartNew();
+        try
+        {
+            var result = await connection.QuerySingleOrDefaultAsync<T>(command);
+            sw.Stop();
+
+            if (sw.ElapsedMilliseconds >= slowQueryThresholdMs)
+            {
+                LogSlowQuery(logger, command.CommandText, sw.ElapsedMilliseconds, command.Parameters);
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            sw.Stop();
+            var sanitizedQuery = SanitizeSql(command.CommandText);
+            logger.LogError(ex, "Query failed after {ElapsedMs}ms: {Query}",
+                sw.ElapsedMilliseconds, sanitizedQuery);
+            throw;
+        }
+    }
+
+    /// <summary>
     /// Executes a scalar query and logs if it exceeds the slow query threshold.
     /// </summary>
     public static async Task<T> ExecuteScalarWithLoggingAsync<T>(
@@ -55,6 +87,38 @@ internal static partial class QueryLogger
         try
         {
             var result = await connection.ExecuteScalarAsync<T>(command);
+            sw.Stop();
+
+            if (sw.ElapsedMilliseconds >= slowQueryThresholdMs)
+            {
+                LogSlowQuery(logger, command.CommandText, sw.ElapsedMilliseconds, command.Parameters);
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            sw.Stop();
+            var sanitizedQuery = SanitizeSql(command.CommandText);
+            logger.LogError(ex, "Query failed after {ElapsedMs}ms: {Query}",
+                sw.ElapsedMilliseconds, sanitizedQuery);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Executes a non-query command and logs if it exceeds the slow query threshold.
+    /// </summary>
+    public static async Task<int> ExecuteWithLoggingAsync(
+        IDbConnection connection,
+        CommandDefinition command,
+        ILogger logger,
+        int slowQueryThresholdMs)
+    {
+        var sw = Stopwatch.StartNew();
+        try
+        {
+            var result = await connection.ExecuteAsync(command);
             sw.Stop();
 
             if (sw.ElapsedMilliseconds >= slowQueryThresholdMs)
