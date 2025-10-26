@@ -77,7 +77,7 @@ internal static partial class QueryLogger
     /// <summary>
     /// Executes a scalar query and logs if it exceeds the slow query threshold.
     /// </summary>
-    public static async Task<T> ExecuteScalarWithLoggingAsync<T>(
+    public static async Task<T?> ExecuteScalarWithLoggingAsync<T>(
         IDbConnection connection,
         CommandDefinition command,
         ILogger logger,

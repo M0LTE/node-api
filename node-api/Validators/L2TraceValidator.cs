@@ -112,12 +112,12 @@ public class L2TraceValidator : AbstractValidator<L2Trace>
             RuleFor(x => x.L3Source)
                 .NotEmpty()
                 .WithMessage("L3Source is required when L3Type is 'NetRom'")
-                .MustBeValidCallsign();
+                .MustBeValidCallsignWhenNotNull();
 
             RuleFor(x => x.L3Destination)
                 .NotEmpty()
                 .WithMessage("L3Destination is required when L3Type is 'NetRom'")
-                .MustBeValidCallsign();
+                .MustBeValidCallsignWhenNotNull();
 
             RuleFor(x => x.TimeToLive)
                 .NotNull()
@@ -141,12 +141,12 @@ public class L2TraceValidator : AbstractValidator<L2Trace>
                 RuleFor(x => x.OriginatingUserCallsign)
                     .NotEmpty()
                     .WithMessage("OriginatingUserCallsign is required for CONN REQ/CONN REQX")
-                    .MustBeValidCallsign();
+                    .MustBeValidCallsignWhenNotNull();
 
                 RuleFor(x => x.OriginatingNodeCallsign)
                     .NotEmpty()
                     .WithMessage("OriginatingNodeCallsign is required for CONN REQ/CONN REQX")
-                    .MustBeValidCallsign();
+                    .MustBeValidCallsignWhenNotNull();
 
                 RuleFor(x => x.ProposedWindow)
                     .NotNull()
@@ -259,7 +259,7 @@ public class NetRomNodeValidator : AbstractValidator<L2Trace.Node>
         RuleFor(x => x.Callsign)
             .NotEmpty()
             .WithMessage("Node callsign is required")
-            .MustBeValidCallsign();
+            .MustBeValidCallsignWhenNotNull();
 
         RuleFor(x => x.Alias)
             .NotNull()
@@ -268,7 +268,7 @@ public class NetRomNodeValidator : AbstractValidator<L2Trace.Node>
         RuleFor(x => x.Via)
             .NotEmpty()
             .WithMessage("Via is required for NETROM routing")
-            .MustBeValidCallsign();
+            .MustBeValidCallsignWhenNotNull();
 
         RuleFor(x => x.Quality)
             .NotNull()
@@ -285,7 +285,7 @@ public class Inp3NodeValidator : AbstractValidator<L2Trace.Node>
         RuleFor(x => x.Callsign)
             .NotEmpty()
             .WithMessage("Node callsign is required")
-            .MustBeValidCallsign();
+            .MustBeValidCallsignWhenNotNull();
 
         RuleFor(x => x.Hops)
             .NotNull()

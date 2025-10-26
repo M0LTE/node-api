@@ -70,7 +70,7 @@ public class PerformanceTests
     }
 
     [Fact]
-    public void Should_Handle_Concurrent_Validation()
+    public async Task Should_Handle_Concurrent_Validation()
     {
         // Arrange
         var validator = new L2TraceValidator();
@@ -93,7 +93,7 @@ public class PerformanceTests
             return result.IsValid;
         })).ToArray();
 
-        Task.WaitAll(tasks);
+        await Task.WhenAll(tasks);
 
         // Assert - all validations should succeed
         Assert.All(tasks, task => Assert.True(task.Result));
@@ -148,7 +148,7 @@ public class PerformanceTests
     }
 
     [Fact]
-    public void Should_Handle_Validation_Of_All_Event_Types_Concurrently()
+    public async Task Should_Handle_Validation_Of_All_Event_Types_Concurrently()
     {
         // Arrange - create one of each event type
         var events = new List<UdpNodeInfoJsonDatagram>
@@ -275,7 +275,7 @@ public class PerformanceTests
             return deserialized != null;
         })).ToArray();
 
-        Task.WaitAll(tasks);
+        await Task.WhenAll(tasks);
         sw.Stop();
 
         // Assert
