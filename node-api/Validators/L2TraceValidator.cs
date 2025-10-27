@@ -10,7 +10,7 @@ public class L2TraceValidator : AbstractValidator<L2Trace>
     private static readonly string[] ValidPollFinal = ["P", "F"];
     private static readonly string[] ValidProtocolNames = ["SEG", "DATA", "NET/ROM", "IP", "ARP", "FLEXNET", "?"];
     private static readonly string[] ValidL3Types = ["NetRom", "Routing info", "Routing poll", "Unknown"];
-    private static readonly string[] ValidL4Types = ["NRR Request", "NRR Reply", "CONN REQ", "CONN REQX", "CONN ACK", "CONN NAK", "DISC REQ", "DISC ACK", "INFO", "INFO ACK", "RSET", "PROT EXT", "unknown"];
+    private static readonly string[] ValidL4Types = ["NRR Request", "NRR Reply", "CONN REQ", "CONN REQX", "CONN ACK", "CONN NAK", "DISC REQ", "DISC ACK", "INFO", "INFO ACK", "RSET", "PROT EXT", "IP", "NCMP", "NDP", "GNET", "unknown"];
     private static readonly string[] ValidRoutingTypes = ["NODES", "INP3"];
     private static readonly string[] ValidDirections = ["sent", "rcvd"];
 
