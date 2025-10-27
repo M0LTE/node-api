@@ -74,18 +74,17 @@ jobs:
 
       - name: Build and push Docker image
         if: github.event_name != 'pull_request'
+        working-directory: node-api
         env:
-          CONTAINER_IMAGE_TAGS: ${{ steps.tags.outputs.tags }}
+          ContainerImageTags: ${{ steps.tags.outputs.tags }}
+          ContainerRegistry: ${{ env.REGISTRY }}
+          ContainerRepository: ${{ env.IMAGE_NAME }}
         run: |
-          cd node-api
           dotnet publish \
             --configuration Release \
             --runtime linux-x64 \
             --self-contained false \
-            /t:PublishContainer \
-            /p:ContainerRegistry="${{ env.REGISTRY }}" \
-            /p:ContainerRepository="${{ env.IMAGE_NAME }}" \
-            /p:ContainerImageTags="${CONTAINER_IMAGE_TAGS}"
+            /t:PublishContainer
 
       - name: Build Docker image (PR only - no push)
         if: github.event_name == 'pull_request'
