@@ -1008,6 +1008,106 @@ public class L2TraceValidatorTests
 
     #endregion
 
+    #region L4Type Validation
+
+    [Theory]
+    [InlineData("IP")]
+    [InlineData("NCMP")]
+    [InlineData("NDP")]
+    [InlineData("GNET")]
+    public void Should_Accept_New_L4Types(string l4Type)
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            Port = "2",
+            Source = "G8PZT-1",
+            Destination = "G8PZT",
+            Control = 232,
+            L2Type = "I",
+            CommandResponse = "C",
+            ProtocolName = "NET/ROM",
+            L3Type = "NetRom",
+            L3Source = "G8PZT-1",
+            L3Destination = "G8PZT",
+            TimeToLive = 25,
+            L4Type = l4Type
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.L4Type);
+    }
+
+    [Theory]
+    [InlineData("NRR Request")]
+    [InlineData("NRR Reply")]
+    [InlineData("CONN REQ")]
+    [InlineData("CONN REQX")]
+    [InlineData("CONN ACK")]
+    [InlineData("CONN NAK")]
+    [InlineData("DISC REQ")]
+    [InlineData("DISC ACK")]
+    [InlineData("INFO")]
+    [InlineData("INFO ACK")]
+    [InlineData("RSET")]
+    [InlineData("PROT EXT")]
+    [InlineData("IP")]
+    [InlineData("NCMP")]
+    [InlineData("NDP")]
+    [InlineData("GNET")]
+    [InlineData("unknown")]
+    public void Should_Accept_All_Valid_L4Types(string l4Type)
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            Port = "2",
+            Source = "G8PZT-1",
+            Destination = "G8PZT",
+            Control = 232,
+            L2Type = "I",
+            CommandResponse = "C",
+            ProtocolName = "NET/ROM",
+            L3Type = "NetRom",
+            L3Source = "G8PZT-1",
+            L3Destination = "G8PZT",
+            TimeToLive = 25,
+            L4Type = l4Type
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.L4Type);
+    }
+
+    [Fact]
+    public void Should_Reject_Invalid_L4Type()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            Port = "2",
+            Source = "G8PZT-1",
+            Destination = "G8PZT",
+            Control = 232,
+            L2Type = "I",
+            CommandResponse = "C",
+            ProtocolName = "NET/ROM",
+            L3Type = "NetRom",
+            L3Source = "G8PZT-1",
+            L3Destination = "G8PZT",
+            TimeToLive = 25,
+            L4Type = "INVALID_TYPE"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.L4Type);
+    }
+
+    #endregion
+
     #region Routing Info Validation
 
     [Fact]
