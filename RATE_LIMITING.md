@@ -36,6 +36,55 @@ Rate limiting is configured via `appsettings.json`:
 
 ## How an IP Becomes Rate Limited
 
+### Visual Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     UDP Datagram Arrives                        │
+│                       (Port 13579)                              │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│               Extract IP Address & Callsign                     │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+                           ▼
+                   ┌───────────────┐
+                   │  Blacklisted? │──── YES ──┐
+                   └───────┬───────┘           │
+                           │ NO                │
+                           ▼                   ▼
+              ┌─────────────────────┐   ┌────────────┐
+              │ Get Rate Limit      │   │   BLOCK    │
+              │ Bucket for IP       │   │ (Permanent)│
+              └──────────┬──────────┘   └─────┬──────┘
+                         │                    │
+                         ▼                    │
+              ┌─────────────────────┐         │
+              │ Remove timestamps   │         │
+              │ older than 1 second │         │
+              └──────────┬──────────┘         │
+                         │                    │
+                         ▼                    │
+              ┌─────────────────────┐         │
+              │ Count >= Limit?     │         │
+              └──────────┬──────────┘         │
+                         │                    │
+               ┌─────────┴─────────┐          │
+               │ YES               │ NO       │
+               ▼                   ▼          │
+        ┌────────────┐      ┌───────────┐    │
+        │   BLOCK    │      │   ALLOW   │    │
+        │(Temporary) │      │ & Add TS  │    │
+        └─────┬──────┘      └─────┬─────┘    │
+              │                   │          │
+              ▼                   ▼          ▼
+        ┌─────────────────────────────────────┐
+        │  Log, Record, Publish MQTT Event    │
+        └─────────────────────────────────────┘
+```
+
 ### 1. Request Arrives
 
 When a UDP datagram arrives at the service (port 13579), the `UdpNodeInfoListener` extracts:
@@ -140,12 +189,14 @@ IP addresses are **redacted** in logs and MQTT messages:
 Rate limits are **automatically removed** through the sliding window mechanism:
 
 ```
-Initial state (10 req/s limit):
-  0.0s: Request 1-10 → All allowed
-  0.1s: Request 11 → BLOCKED
-  0.5s: Request 12 → BLOCKED
-  1.0s: Request 13 → BLOCKED (timestamps from 0.0s still count)
-  1.1s: Request 14 → ALLOWED (timestamps from 0.0s removed, only 9 in window)
+Time:     ├────────┼────────┼────────┼────────┼────────┤
+         0.0s    0.5s    1.0s    1.5s    2.0s    2.5s
+          │        │        │        │        │        │
+Req 1-10: ✓✓✓✓✓✓✓✓✓✓        │        │        │        │
+Req 11:   ─────────✗ (BLOCKED: 10 in window 0.0-0.5)  │
+Req 12:   ────────────────────✗ (BLOCKED: 10 in 0.0-1.0)
+Req 13:   ─────────────────────────✓ (ALLOWED: 9 in 0.5-1.5)
+Req 14:   ──────────────────────────────✓ (ALLOWED)   │
 ```
 
 **Key Point**: There is no "un-rate limiting" event. As soon as old timestamps age out (after 1 second), new requests are automatically allowed.
