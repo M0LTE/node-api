@@ -109,3 +109,41 @@ jobs:
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Deploy to remote server
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+        run: |
+          # Setup SSH key
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          
+          # Add host to known_hosts to avoid prompt
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+          
+          # Copy the update script to ensure it's current (convert line endings)
+          sed -i 's/\r$//' deploy/update-service.sh
+          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            deploy/update-service.sh \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_SCRIPT_PATH }}
+          
+          # Make it executable
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            "chmod +x ${{ secrets.DEPLOY_SCRIPT_PATH }}"
+          
+          # Execute remote update script
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            "bash ${{ secrets.DEPLOY_SCRIPT_PATH }}"
+          
+          # Cleanup
+          rm ~/.ssh/deploy_key
+
+      - name: Deployment summary
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+        run: |
+          echo "### Deployment Complete :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Server:** \`${{ secrets.DEPLOY_HOST }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** Deployed and restarted" >> $GITHUB_STEP_SUMMARY
