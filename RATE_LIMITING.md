@@ -20,7 +20,7 @@ Rate limiting is configured via `appsettings.json`:
 
 ```json
 {
-  "UdpRateLimitSettings": {
+  "UdpRateLimit": {
     "RequestsPerSecondPerIp": 10,
     "Blacklist": [
       "192.168.1.0/24",
@@ -116,7 +116,7 @@ When a request is blocked, the service records the event:
 ```
 
 This information is:
-- Stored in memory (last 100 blocked IPs)
+- Stored in memory (last 100 blocked IPs, top 50 returned in stats)
 - Published to MQTT topic `metrics/ratelimit`
 - Exposed via diagnostics API at `/api/diagnostics/ratelimit/stats`
 
@@ -243,7 +243,7 @@ Rate limit events are published to `metrics/ratelimit`:
 - **totalBlacklisted**: Counter of all blacklist blocks since service start
 - **totalRateLimited**: Counter of all rate limit blocks since service start
 - **activeIpAddresses**: Number of IPs with rate limit buckets in memory
-- **recentlyBlockedIps**: Last 100 blocked IPs (blacklist or rate limit)
+- **recentlyBlockedIps**: Top 50 most recently blocked IPs (from last 100 stored)
 - **activeIpRates**: Top 20 most active IPs in last 60 seconds
 
 ## Implementation Details
@@ -284,8 +284,9 @@ This prevents memory leaks from one-time senders.
 
 #### Blocked IP History
 
-- Limited to last 100 blocked IPs
-- Oldest entries removed when limit exceeded
+- Stores last 100 blocked IPs in memory
+- Returns top 50 most recent in API/stats
+- Oldest entries removed when 100 limit exceeded
 - Separate from active rate limit buckets
 
 ### Request Flow
