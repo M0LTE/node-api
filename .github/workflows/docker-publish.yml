@@ -111,7 +111,7 @@ jobs:
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Deploy to remote server
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master' && secrets.DEPLOY_SSH_KEY != ''
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master' && secrets.DEPLOY_SSH_KEY
         run: |
           # Setup SSH key
           mkdir -p ~/.ssh
@@ -141,7 +141,7 @@ jobs:
           rm ~/.ssh/deploy_key
 
       - name: Deployment summary
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master' && secrets.DEPLOY_SSH_KEY != ''
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master' && secrets.DEPLOY_SSH_KEY
         run: |
           echo "### Deployment Complete :rocket:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -149,7 +149,7 @@ jobs:
           echo "**Status:** Deployed and restarted" >> $GITHUB_STEP_SUMMARY
 
       - name: Deployment skipped
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master' && secrets.DEPLOY_SSH_KEY == ''
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master' && !secrets.DEPLOY_SSH_KEY
         run: |
           echo "### Deployment Skipped :information_source:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
