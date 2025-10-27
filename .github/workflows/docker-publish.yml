@@ -81,9 +81,9 @@ jobs:
             --runtime linux-x64 \
             --self-contained false \
             /t:PublishContainer \
-            /p:ContainerRegistry=${{ env.REGISTRY }} \
-            /p:ContainerRepository=${{ env.IMAGE_NAME }} \
-            /p:ContainerImageTags="${{ steps.tags.outputs.tags }}"
+            /p:ContainerRegistry="${{ env.REGISTRY }}" \
+            /p:ContainerRepository="${{ env.IMAGE_NAME }}" \
+            "/p:ContainerImageTags=${{ steps.tags.outputs.tags }}"
 
       - name: Build Docker image (PR only - no push)
         if: github.event_name == 'pull_request'
