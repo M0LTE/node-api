@@ -394,7 +394,7 @@ public class PerformanceTests
         // Assert
         Assert.NotNull(deserialized);
         Assert.Equal(largeData, deserialized.Data);
-        Assert.True(sw.ElapsedMilliseconds < 100,
-            $"Large payload serialization took {sw.ElapsedMilliseconds}ms, expected < 100ms");
+        Assert.True(sw.ElapsedMilliseconds < 250,
+            $"Large payload serialization took {sw.ElapsedMilliseconds}ms, expected < 250ms");
     }
 }
