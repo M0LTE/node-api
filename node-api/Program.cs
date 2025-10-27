@@ -30,6 +30,11 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
+// Register UDP rate limiting
+var rateLimitSettings = builder.Configuration.GetSection("UdpRateLimit").Get<UdpRateLimitSettings>() ?? new UdpRateLimitSettings();
+builder.Services.AddSingleton(rateLimitSettings);
+builder.Services.AddSingleton<IUdpRateLimitService, UdpRateLimitService>();
+
 // Register network state services
 builder.Services.AddSingleton<INetworkStateService, NetworkStateService>();
 builder.Services.AddSingleton<NetworkStateUpdater>();

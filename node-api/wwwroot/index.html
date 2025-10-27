@@ -294,6 +294,40 @@
             margin-top: 10px;
             font-style: italic;
         }
+        .blocked-ip-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .blocked-ip-table th {
+            background-color: #f0f4ff;
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #ddd;
+        }
+        .blocked-ip-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .blocked-ip-table tr:hover {
+            background-color: #f9f9f9;
+        }
+        .reason-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .reason-blacklist {
+            background-color: #f44336;
+            color: white;
+        }
+        .reason-ratelimit {
+            background-color: #ff9800;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -355,6 +389,42 @@
         <h2>Real-time MQTT Statistics</h2>
         <div id="statsContainer" class="stats-grid">
             <div class="no-data">Waiting for MQTT data...</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>UDP Rate Limiting</h2>
+        <div class="metrics-overview">
+            <div class="metric-card" id="rateLimitTotalBlocked">
+                <div class="metric-title">Total Blocked</div>
+                <div class="metric-value">0</div>
+                <div class="metric-subtitle">All time</div>
+            </div>
+            <div class="metric-card warning" id="rateLimitBlacklisted">
+                <div class="metric-title">Blacklisted</div>
+                <div class="metric-value">0</div>
+                <div class="metric-subtitle">IP in blacklist</div>
+            </div>
+            <div class="metric-card warning" id="rateLimitRateLimited">
+                <div class="metric-title">Rate Limited</div>
+                <div class="metric-value">0</div>
+                <div class="metric-subtitle">Exceeded req/s</div>
+            </div>
+            <div class="metric-card good" id="rateLimitActiveIPs">
+                <div class="metric-title">Active IPs</div>
+                <div class="metric-value">0</div>
+                <div class="metric-subtitle">Being tracked</div>
+            </div>
+        </div>
+        
+        <div class="expandable-section">
+            <div class="expand-toggle" onclick="toggleSection('blocked-ips')">
+                <span class="expand-toggle-title">🚫 Recently Blocked IPs</span>
+                <span class="expand-toggle-icon" id="blocked-ips-icon">▶</span>
+            </div>
+            <div class="expand-content" id="blocked-ips-content">
+                <div id="blockedIpsList" class="no-data">No IPs blocked yet</div>
+            </div>
         </div>
     </div>
 
@@ -563,6 +633,14 @@
         const metricsOverview = document.getElementById('metricsOverview');
         const metricsTimestamp = document.getElementById('metricsTimestamp');
 
+        // Rate limit tracking
+        let rateLimitStats = {
+            totalBlacklisted: 0,
+            totalRateLimited: 0,
+            activeIpAddresses: 0,
+            recentlyBlockedIps: []
+        };
+
         // Fetch initial node state from API
         async function loadInitialState() {
             try {
@@ -585,8 +663,25 @@
             }
         }
 
+        // Fetch rate limit stats from API
+        async function fetchRateLimitStats() {
+            try {
+                const response = await fetch('/api/diagnostics/ratelimit/stats');
+                if (response.ok) {
+                    rateLimitStats = await response.json();
+                    updateRateLimitDisplay();
+                }
+            } catch (err) {
+                console.error('Error fetching rate limit stats:', err);
+            }
+        }
+
         // Load initial state before connecting to MQTT
         loadInitialState();
+        fetchRateLimitStats();
+
+        // Refresh rate limit stats every 5 seconds
+        setInterval(fetchRateLimitStats, 5000);
 
         // Connect to MQTT broker
         const client = mqtt.connect(mqttUrl);
@@ -606,6 +701,9 @@
             client.subscribe('metrics/system', (err) => {
                 if (err) console.error('Error subscribing to metrics/system:', err);
             });
+            client.subscribe('metrics/ratelimit', (err) => {
+                if (err) console.error('Error subscribing to metrics/ratelimit:', err);
+            });
         });
 
         client.on('message', (topic, message) => {
@@ -616,6 +714,17 @@
                     updateMetricsDisplay();
                 } catch (err) {
                     console.error('Error parsing metrics:', err);
+                }
+                return;
+            }
+
+            // Handle rate limit events
+            if (topic === 'metrics/ratelimit') {
+                try {
+                    const event = JSON.parse(message.toString());
+                    handleRateLimitEvent(event);
+                } catch (err) {
+                    console.error('Error parsing rate limit event:', err);
                 }
                 return;
             }
@@ -709,6 +818,84 @@
             
             content.classList.toggle('expanded');
             icon.classList.toggle('expanded');
+        }
+
+        function handleRateLimitEvent(event) {
+            // Update counters based on reason
+            if (event.reason === 'blacklist') {
+                rateLimitStats.totalBlacklisted++;
+            } else if (event.reason === 'rate_limit') {
+                rateLimitStats.totalRateLimited++;
+            }
+
+            // Add to recently blocked list
+            const existing = rateLimitStats.recentlyBlockedIps.find(ip => ip.ipAddress === event.ip);
+            if (existing) {
+                existing.blockedAt = event.timestamp;
+                existing.blockCount = event.block_count;
+                existing.reason = event.reason;
+            } else {
+                rateLimitStats.recentlyBlockedIps.unshift({
+                    ipAddress: event.ip,
+                    reason: event.reason,
+                    blockedAt: event.timestamp,
+                    blockCount: event.block_count
+                });
+                
+                // Keep only the 50 most recent
+                if (rateLimitStats.recentlyBlockedIps.length > 50) {
+                    rateLimitStats.recentlyBlockedIps = rateLimitStats.recentlyBlockedIps.slice(0, 50);
+                }
+            }
+
+            updateRateLimitDisplay();
+        }
+
+        function updateRateLimitDisplay() {
+            // Update overview cards
+            const totalBlocked = rateLimitStats.totalBlacklisted + rateLimitStats.totalRateLimited;
+            
+            document.querySelector('#rateLimitTotalBlocked .metric-value').textContent = totalBlocked.toLocaleString();
+            document.querySelector('#rateLimitBlacklisted .metric-value').textContent = rateLimitStats.totalBlacklisted.toLocaleString();
+            document.querySelector('#rateLimitRateLimited .metric-value').textContent = rateLimitStats.totalRateLimited.toLocaleString();
+            document.querySelector('#rateLimitActiveIPs .metric-value').textContent = rateLimitStats.activeIpAddresses.toLocaleString();
+
+            // Update blocked IPs list
+            const blockedIpsList = document.getElementById('blockedIpsList');
+            if (!rateLimitStats.recentlyBlockedIps || rateLimitStats.recentlyBlockedIps.length === 0) {
+                blockedIpsList.innerHTML = '<div class="no-data">No IPs blocked yet</div>';
+            } else {
+                const tableHtml = `
+                    <table class="blocked-ip-table">
+                        <thead>
+                            <tr>
+                                <th>IP Address</th>
+                                <th>Reason</th>
+                                <th>Block Count</th>
+                                <th>Last Blocked</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rateLimitStats.recentlyBlockedIps.map(ip => {
+                                const reasonClass = ip.reason === 'blacklist' ? 'reason-blacklist' : 'reason-ratelimit';
+                                const reasonText = ip.reason === 'blacklist' ? 'Blacklist' : 'Rate Limit';
+                                const blockedTime = new Date(ip.blockedAt);
+                                const timeAgo = formatLastSeen(blockedTime.getTime());
+                                
+                                return `
+                                    <tr>
+                                        <td><code>${ip.ipAddress}</code></td>
+                                        <td><span class="reason-badge ${reasonClass}">${reasonText}</span></td>
+                                        <td>${ip.blockCount.toLocaleString()}</td>
+                                        <td>${timeAgo}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                `;
+                blockedIpsList.innerHTML = tableHtml;
+            }
         }
 
         function updateMetricsDisplay() {
@@ -960,6 +1147,26 @@
             if (systemMetrics.timestamp) {
                 const ts = new Date(systemMetrics.timestamp);
                 metricsTimestamp.textContent = `Last updated: ${ts.toLocaleTimeString()}`;
+            }
+        }
+
+        function updateRateLimitMetrics(metrics) {
+            const totalBlocked = metrics.totalBlocked || 0;
+            const blacklisted = metrics.blacklisted || 0;
+            const rateLimited = metrics.rateLimited || 0;
+            const activeIPs = metrics.activeIPs || 0;
+
+            document.getElementById('rateLimitTotalBlocked').querySelector('.metric-value').textContent = totalBlocked;
+            document.getElementById('rateLimitBlacklisted').querySelector('.metric-value').textContent = blacklisted;
+            document.getElementById('rateLimitRateLimited').querySelector('.metric-value').textContent = rateLimited;
+            document.getElementById('rateLimitActiveIPs').querySelector('.metric-value').textContent = activeIPs;
+
+            // Update blocked IPs list
+            const blockedIpsList = document.getElementById('blockedIpsList');
+            if (metrics.recentlyBlockedIPs && metrics.recentlyBlockedIPs.length > 0) {
+                blockedIpsList.innerHTML = metrics.recentlyBlockedIPs.map(ip => `<div>${ip}</div>`).join('');
+            } else {
+                blockedIpsList.textContent = 'No IPs blocked yet';
             }
         }
 

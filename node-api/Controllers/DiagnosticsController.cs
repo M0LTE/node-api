@@ -257,4 +257,15 @@ public class DiagnosticsController : ControllerBase
         /// </summary>
         public string? AttemptedValue { get; set; }
     }
+
+    /// <summary>
+    /// Gets current UDP rate limiting statistics
+    /// </summary>
+    [HttpGet("ratelimit/stats")]
+    [Produces("application/json")]
+    public IActionResult GetRateLimitStats([FromServices] Services.IUdpRateLimitService rateLimitService)
+    {
+        var stats = rateLimitService.GetStats();
+        return Ok(stats);
+    }
 }

@@ -18,6 +18,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
 {
     private readonly ILogger<UdpNodeInfoListener> _logger;
     private readonly DatagramValidationService _validationService;
+    private readonly IUdpRateLimitService _rateLimitService;
     private readonly Channel<(UdpNodeInfoJsonDatagram Frame, IPEndPoint RemoteEndPoint)> _processingChannel;
     private readonly ChannelWriter<(UdpNodeInfoJsonDatagram Frame, IPEndPoint RemoteEndPoint)> _channelWriter;
     private readonly SemaphoreSlim _processingSemaphore;
@@ -31,10 +32,12 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
 
     public UdpNodeInfoListener(
         ILogger<UdpNodeInfoListener> logger,
-        DatagramValidationService validationService)
+        DatagramValidationService validationService,
+        IUdpRateLimitService rateLimitService)
     {
         _logger = logger;
         _validationService = validationService;
+        _rateLimitService = rateLimitService;
         var channelOptions = new BoundedChannelOptions(MaxConcurrentProcessing * 2)
         {
             FullMode = BoundedChannelFullMode.Wait,
@@ -61,6 +64,9 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
                 .Build())
             .Build();
         await mqttClient.StartAsync(options);
+
+        // Pass MQTT client to rate limit service so it can publish events
+        _rateLimitService.SetMqttClient(mqttClient);
 
         // Start the frame processing task
         _processingTask = ProcessFramesAsync(stoppingToken);
@@ -118,6 +124,13 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
 
     private async Task ProcessDatagramAsync(UdpReceiveResult result, CancellationToken stoppingToken)
     {
+        // Check rate limit and blacklist first
+        if (!await _rateLimitService.ShouldAllowRequestAsync(result.RemoteEndPoint.Address))
+        {
+            _logger.LogDebug("Blocked datagram from {Endpoint} due to rate limiting or blacklist", result.RemoteEndPoint);
+            return;
+        }
+
         string? json;
         try
         {
