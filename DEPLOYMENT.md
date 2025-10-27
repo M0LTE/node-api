@@ -18,7 +18,29 @@ sudo chown $USER:$USER /opt/node-api
 exit
 ```
 
-### 2. Copy the Update Script
+### 2. Allow GitHub Actions through the Firewall
+
+Your server uses UFW and currently only allows SSH from your home IP. To allow GitHub Actions to deploy, you need to add their IP ranges.
+
+**Copy the UFW script to the server:**
+```bash
+scp deploy/add-github-actions-to-ufw.sh debian@node-api.packet.oarc.uk:/opt/node-api/
+ssh debian@node-api.packet.oarc.uk "chmod +x /opt/node-api/add-github-actions-to-ufw.sh"
+```
+
+**Run it to add GitHub Actions IPs:**
+```bash
+ssh debian@node-api.packet.oarc.uk "bash /opt/node-api/add-github-actions-to-ufw.sh"
+```
+
+This script fetches the current GitHub Actions IP ranges from GitHub's API and adds them to UFW.
+
+**Alternative (simpler but less secure):** Open SSH to all IPs:
+```bash
+ssh debian@node-api.packet.oarc.uk "sudo ufw allow 22/tcp comment 'SSH'"
+```
+
+### 3. Copy the Update Script
 
 ```bash
 # From your local machine
@@ -38,13 +60,13 @@ Or if `dos2unix` is not installed:
 ssh debian@node-api.packet.oarc.uk "sed -i 's/\r$//' /opt/node-api/update-service.sh"
 ```
 
-### 3. Test the Script
+### 4. Test the Script
 
 ```bash
 ssh debian@node-api.packet.oarc.uk "bash /opt/node-api/update-service.sh"
 ```
 
-### 4. Setup GitHub Actions (for automated deployment)
+### 5. Setup GitHub Actions (for automated deployment)
 
 Generate an SSH key for GitHub Actions:
 
@@ -62,7 +84,6 @@ Copy the public key to the server:
 
 **On Windows (PowerShell):**
 ```powershell
-# Read the public key and copy it to the server
 type $env:USERPROFILE\.ssh\node-api-deploy.pub | ssh debian@node-api.packet.oarc.uk "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
 ```
 
@@ -103,6 +124,26 @@ Get-Content $env:USERPROFILE\.ssh\node-api-deploy | clip
 cat ~/.ssh/node-api-deploy | pbcopy   # macOS
 cat ~/.ssh/node-api-deploy | xclip    # Linux (requires xclip)
 # Or just: cat ~/.ssh/node-api-deploy  # and copy manually
+```
+
+### 6. Configure Passwordless Sudo
+
+```bash
+# On the Debian server
+sudo visudo -f /etc/sudoers.d/node-api-deploy
+```
+
+Add this line:
+
+```
+debian ALL=(ALL) NOPASSWD: /bin/systemctl restart node-api, /bin/systemctl status node-api
+```
+
+Save and exit, then test:
+
+```bash
+sudo systemctl status node-api
+# Should not prompt for password
 ```
 
 ## Daily Usage
@@ -166,6 +207,11 @@ ssh debian@node-api.packet.oarc.uk "sed -i 's/\r$//' /opt/node-api/update-servic
 - Ensure SSH key is added to GitHub secrets
 - Verify the public key is in `~/.ssh/authorized_keys` on the Debian server
 - Check that the `debian` user has sudo privileges without password for systemctl commands
+
+### GitHub Actions can't connect via SSH
+- Ensure UFW allows GitHub Actions IP ranges (see step 2 above)
+- Test connectivity: `ssh -vvv debian@node-api.packet.oarc.uk` from a GitHub Actions workflow
+- Check UFW status: `sudo ufw status numbered`
 
 ### Service doesn't restart
 - Check the systemd service name matches: `node-api`
