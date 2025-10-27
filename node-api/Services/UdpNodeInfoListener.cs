@@ -124,29 +124,55 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
 
     private async Task ProcessDatagramAsync(UdpReceiveResult result, CancellationToken stoppingToken)
     {
-        // Check rate limit and blacklist first
-        if (!await _rateLimitService.ShouldAllowRequestAsync(result.RemoteEndPoint.Address))
-        {
-            _logger.LogDebug("Blocked datagram from {Endpoint} due to rate limiting or blacklist", result.RemoteEndPoint);
-            return;
-        }
+        string? json = null;
+        string? reportingCallsign = null;
 
-        string? json;
         try
         {
             json = Encoding.UTF8.GetString(result.Buffer);
+            
+            // Try to extract reportFrom for rate limiting before full processing
+            try
+            {
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("reportFrom", out var reportFromProp))
+                {
+                    reportingCallsign = reportFromProp.GetString();
+                }
+            }
+            catch
+            {
+                // Ignore errors in extraction, will still rate limit without callsign
+            }
+        }
+        catch
+        {
+            // Can't even decode as UTF-8, still need to rate limit
+        }
+
+        // Check rate limit and blacklist first (with callsign if available)
+        if (!await _rateLimitService.ShouldAllowRequestAsync(result.RemoteEndPoint.Address, reportingCallsign))
+        {
+            _logger.LogDebug("Blocked datagram from {Endpoint} (Callsign: {Callsign}) due to rate limiting or blacklist", 
+                result.RemoteEndPoint, reportingCallsign ?? "Unknown");
+            return;
+        }
+
+        // Continue with normal processing
+        try
+        {
             _logger.LogDebug("Received UDP datagram from {Endpoint}: {Json}", result.RemoteEndPoint, Convert.ToBase64String(result.Buffer));
 
             var message = new MqttApplicationMessageBuilder()
                 .WithTopic(udpTopic)
-                .WithPayload(json)
+                .WithPayload(json!)
                 .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
                 .Build();
             await mqttClient!.EnqueueAsync(message);
 
             _logger.LogDebug("Sent UDP datagram from {Endpoint} to {Topic}", result.RemoteEndPoint, udpTopic);
 
-            if (UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var frame, out var jsonException) && frame != null)
+            if (UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json!, out var frame, out var jsonException) && frame != null)
             {
                 _logger.LogDebug("Validating from {Endpoint}...", result.RemoteEndPoint);
                 // Validate the deserialized datagram

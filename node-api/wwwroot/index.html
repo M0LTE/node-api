@@ -921,25 +921,38 @@
                     <table class="blocked-ip-table">
                         <thead>
                             <tr>
+                                <th>Callsign</th>
                                 <th>IP Address</th>
                                 <th>Reason</th>
                                 <th>Block Count</th>
-                                <th>Last Blocked</th>
+                                <th>Expires</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${rateLimitStats.recentlyBlockedIps.map(ip => {
                                 const reasonClass = ip.reason === 'blacklist' ? 'reason-blacklist' : 'reason-ratelimit';
                                 const reasonText = ip.reason === 'blacklist' ? 'Blacklist' : 'Rate Limit';
-                                const blockedTime = new Date(ip.blockedAt);
-                                const timeAgo = formatLastSeen(blockedTime.getTime());
+                                const now = Date.now();
+                                
+                                let expiryText = 'Never';
+                                if (ip.expiresAt) {
+                                    const expiryTime = new Date(ip.expiresAt);
+                                    if (expiryTime.getTime() > now) {
+                                        expiryText = formatLastSeen(expiryTime.getTime());
+                                    } else {
+                                        expiryText = 'Expired';
+                                    }
+                                } else if (ip.reason !== 'blacklist') {
+                                    expiryText = 'Soon';
+                                }
                                 
                                 return `
                                     <tr>
+                                        <td><strong>${ip.reportingCallsign || 'Unknown'}</strong></td>
                                         <td><code>${ip.ipAddress}</code></td>
                                         <td><span class="reason-badge ${reasonClass}">${reasonText}</span></td>
                                         <td>${ip.blockCount.toLocaleString()}</td>
-                                        <td>${timeAgo}</td>
+                                        <td>${expiryText}</td>
                                     </tr>
                                 `;
                             }).join('')}
@@ -954,13 +967,14 @@
             if (!rateLimitStats.activeIpRates || rateLimitStats.activeIpRates.length === 0) {
                 activeIpsList.innerHTML = '<div class="no-data">No active IPs</div>';
             } else {
-                // Get the max rate limit from settings (default 10)
-                const maxRate = 10; // This could be fetched from settings
+                // Get the max rate limit from settings (updated to 25)
+                const maxRate = 25;
                 
                 const tableHtml = `
                     <table class="active-ip-table">
                         <thead>
                             <tr>
+                                <th>Callsign</th>
                                 <th>IP Address</th>
                                 <th>Requests/sec</th>
                                 <th>Rate</th>
@@ -976,6 +990,7 @@
                                 
                                 return `
                                     <tr>
+                                        <td><strong>${ip.reportingCallsign || 'Unknown'}</strong></td>
                                         <td><code>${ip.ipAddress}</code></td>
                                         <td><strong>${ip.requestsPerSecond.toFixed(1)}</strong></td>
                                         <td>

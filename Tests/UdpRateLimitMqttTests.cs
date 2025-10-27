@@ -36,15 +36,17 @@ public class UdpRateLimitMqttTests
         var ip = IPAddress.Parse("192.168.1.100");
 
         // Act
-        await service.ShouldAllowRequestAsync(ip);
+        await service.ShouldAllowRequestAsync(ip, "TEST-1");
         var stats = service.GetStats();
 
         // Assert
         stats.TotalBlacklisted.Should().Be(1);
         stats.RecentlyBlockedIps.Should().HaveCount(1);
-        stats.RecentlyBlockedIps[0].IpAddress.Should().Be("192.168.1.100");
+        stats.RecentlyBlockedIps[0].IpAddress.Should().Contain("***"); // IP should be redacted
         stats.RecentlyBlockedIps[0].Reason.Should().Be("blacklist");
         stats.RecentlyBlockedIps[0].BlockCount.Should().Be(1);
+        stats.RecentlyBlockedIps[0].ReportingCallsign.Should().Be("TEST-1");
+        stats.RecentlyBlockedIps[0].ExpiresAt.Should().BeNull(); // Blacklist is permanent
     }
 
     [Fact]
@@ -60,18 +62,21 @@ public class UdpRateLimitMqttTests
         var ip = IPAddress.Parse("192.168.1.1");
 
         // Act - Exceed rate limit
-        await service.ShouldAllowRequestAsync(ip);
-        await service.ShouldAllowRequestAsync(ip);
-        await service.ShouldAllowRequestAsync(ip); // This one should be blocked
+        await service.ShouldAllowRequestAsync(ip, "TEST-2");
+        await service.ShouldAllowRequestAsync(ip, "TEST-2");
+        await service.ShouldAllowRequestAsync(ip, "TEST-2"); // This one should be blocked
 
         var stats = service.GetStats();
 
         // Assert
         stats.TotalRateLimited.Should().Be(1);
         stats.RecentlyBlockedIps.Should().HaveCount(1);
-        stats.RecentlyBlockedIps[0].IpAddress.Should().Be("192.168.1.1");
+        stats.RecentlyBlockedIps[0].IpAddress.Should().Contain("***"); // IP should be redacted
         stats.RecentlyBlockedIps[0].Reason.Should().Be("rate_limit");
         stats.RecentlyBlockedIps[0].BlockCount.Should().Be(1);
+        stats.RecentlyBlockedIps[0].ReportingCallsign.Should().Be("TEST-2");
+        stats.RecentlyBlockedIps[0].ExpiresAt.Should().NotBeNull(); // Rate limit is temporary
+        stats.RecentlyBlockedIps[0].ExpiresAt.Should().BeAfter(DateTimeOffset.UtcNow);
     }
 
     [Fact]
@@ -86,18 +91,16 @@ public class UdpRateLimitMqttTests
         var service = new UdpRateLimitService(CreateLogger(), settings);
         var ip = IPAddress.Parse("192.168.1.1");
 
-        // Act - Make multiple requests that get blocked
+        // Act - Make requests that get blocked
         await service.ShouldAllowRequestAsync(ip); // Allowed
         await service.ShouldAllowRequestAsync(ip); // Blocked (count: 1)
-        await service.ShouldAllowRequestAsync(ip); // Blocked (count: 2)
-        await service.ShouldAllowRequestAsync(ip); // Blocked (count: 3)
 
         var stats = service.GetStats();
 
-        // Assert
-        stats.TotalRateLimited.Should().Be(3);
+        // Assert - Only one block event is recorded (subsequent requests while blocked don't increment)
+        stats.TotalRateLimited.Should().Be(1);
         stats.RecentlyBlockedIps.Should().HaveCount(1);
-        stats.RecentlyBlockedIps[0].BlockCount.Should().Be(3);
+        stats.RecentlyBlockedIps[0].BlockCount.Should().Be(1);
     }
 
     [Fact]
@@ -121,11 +124,11 @@ public class UdpRateLimitMqttTests
 
         var stats = service.GetStats();
 
-        // Assert
+        // Assert - IPs are redacted, so check by reason and callsign
         stats.RecentlyBlockedIps.Should().HaveCount(3);
-        stats.RecentlyBlockedIps.Should().Contain(b => b.IpAddress == "192.168.1.100" && b.Reason == "blacklist");
-        stats.RecentlyBlockedIps.Should().Contain(b => b.IpAddress == "192.168.1.101" && b.Reason == "blacklist");
-        stats.RecentlyBlockedIps.Should().Contain(b => b.IpAddress == "192.168.1.1" && b.Reason == "rate_limit");
+        stats.RecentlyBlockedIps.Should().Contain(b => b.Reason == "blacklist");
+        stats.RecentlyBlockedIps.Where(b => b.Reason == "blacklist").Should().HaveCount(2);
+        stats.RecentlyBlockedIps.Should().Contain(b => b.Reason == "rate_limit");
     }
 
     [Fact]
@@ -194,20 +197,11 @@ public class UdpRateLimitMqttTests
         await service.ShouldAllowRequestAsync(ip); // Blocked
 
         var statsAfterFirst = service.GetStats();
-        var firstTimestamp = statsAfterFirst.RecentlyBlockedIps[0].BlockedAt;
 
-        // Wait a moment
-        await Task.Delay(100);
-
-        // Second block
-        await service.ShouldAllowRequestAsync(ip); // Blocked again
-
-        var statsAfterSecond = service.GetStats();
-
-        // Assert
-        statsAfterSecond.RecentlyBlockedIps.Should().HaveCount(1, "should update existing entry, not create new one");
-        statsAfterSecond.RecentlyBlockedIps[0].BlockCount.Should().Be(2);
-        statsAfterSecond.RecentlyBlockedIps[0].BlockedAt.Should().BeAfter(firstTimestamp);
+        // Assert - With temporary blocking, subsequent requests while blocked are just rejected
+        // They don't create new block events
+        statsAfterFirst.RecentlyBlockedIps.Should().HaveCount(1, "should have one blocked IP");
+        statsAfterFirst.RecentlyBlockedIps[0].BlockCount.Should().Be(1, "initial block count");
     }
 
     [Fact]
@@ -228,25 +222,26 @@ public class UdpRateLimitMqttTests
         // IP1 makes 5 requests
         for (int i = 0; i < 5; i++)
         {
-            await service.ShouldAllowRequestAsync(ip1);
+            await service.ShouldAllowRequestAsync(ip1, "TEST-1");
         }
         
         // IP2 makes 3 requests
         for (int i = 0; i < 3; i++)
         {
-            await service.ShouldAllowRequestAsync(ip2);
+            await service.ShouldAllowRequestAsync(ip2, "TEST-2");
         }
 
         var stats = service.GetStats();
 
         // Assert
         stats.ActiveIpRates.Should().NotBeEmpty();
-        stats.ActiveIpRates.Should().Contain(r => r.IpAddress == "192.168.1.1");
-        stats.ActiveIpRates.Should().Contain(r => r.IpAddress == "192.168.1.2");
+        stats.ActiveIpRates.Should().Contain(r => r.ReportingCallsign == "TEST-1");
+        stats.ActiveIpRates.Should().Contain(r => r.ReportingCallsign == "TEST-2");
         
-        var ip1Rate = stats.ActiveIpRates.First(r => r.IpAddress == "192.168.1.1");
+        var ip1Rate = stats.ActiveIpRates.First(r => r.ReportingCallsign == "TEST-1");
         ip1Rate.RequestsPerSecond.Should().BeGreaterThan(0);
         ip1Rate.TotalRequests.Should().BeGreaterThan(0);
+        ip1Rate.IpAddress.Should().Contain("***"); // IP should be redacted
     }
 
     [Fact]
@@ -261,20 +256,48 @@ public class UdpRateLimitMqttTests
         var service = new UdpRateLimitService(CreateLogger(), settings);
 
         // Act - Create different activity levels
-        await service.ShouldAllowRequestAsync(IPAddress.Parse("192.168.1.1")); // 1 request
+        await service.ShouldAllowRequestAsync(IPAddress.Parse("192.168.1.1"), "LOW"); // 1 request
         
         for (int i = 0; i < 5; i++)
-            await service.ShouldAllowRequestAsync(IPAddress.Parse("192.168.1.2")); // 5 requests
+            await service.ShouldAllowRequestAsync(IPAddress.Parse("192.168.1.2"), "HIGH"); // 5 requests
         
         for (int i = 0; i < 3; i++)
-            await service.ShouldAllowRequestAsync(IPAddress.Parse("192.168.1.3")); // 3 requests
+            await service.ShouldAllowRequestAsync(IPAddress.Parse("192.168.1.3"), "MED"); // 3 requests
 
         var stats = service.GetStats();
 
         // Assert - Should be ordered by request rate (descending)
         stats.ActiveIpRates.Should().HaveCount(3);
-        stats.ActiveIpRates[0].IpAddress.Should().Be("192.168.1.2"); // Most active
-        stats.ActiveIpRates[1].IpAddress.Should().Be("192.168.1.3");
-        stats.ActiveIpRates[2].IpAddress.Should().Be("192.168.1.1"); // Least active
+        stats.ActiveIpRates[0].ReportingCallsign.Should().Be("HIGH"); // Most active
+        stats.ActiveIpRates[1].ReportingCallsign.Should().Be("MED");
+        stats.ActiveIpRates[2].ReportingCallsign.Should().Be("LOW"); // Least active
+    }
+
+    [Fact]
+    public async Task TemporaryBlock_ShouldExpireAfterDuration()
+    {
+        // Arrange
+        var settings = new UdpRateLimitSettings
+        {
+            RequestsPerSecondPerIp = 1,
+            Blacklist = Array.Empty<string>()
+        };
+        var service = new UdpRateLimitService(CreateLogger(), settings);
+        var ip = IPAddress.Parse("192.168.1.1");
+
+        // Act - Trigger rate limit
+        await service.ShouldAllowRequestAsync(ip, "TEST");
+        await service.ShouldAllowRequestAsync(ip, "TEST"); // Blocked
+
+        var statsBeforeExpiry = service.GetStats();
+        
+        // Assert - Should be blocked
+        statsBeforeExpiry.RecentlyBlockedIps.Should().HaveCount(1);
+        var blockedInfo = statsBeforeExpiry.RecentlyBlockedIps[0];
+        blockedInfo.ExpiresAt.Should().NotBeNull();
+        blockedInfo.ExpiresAt.Should().BeAfter(DateTimeOffset.UtcNow);
+        
+        // Note: We can't easily test actual expiration in a unit test without waiting 5 minutes
+        // or mocking the clock. This test just verifies the ExpiresAt is set correctly.
     }
 }
