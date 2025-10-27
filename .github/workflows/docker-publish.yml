@@ -132,33 +132,60 @@ jobs:
       - name: Deploy to remote server
         if: steps.check-deploy.outputs.enabled == 'true'
         run: |
-          set -x  # Enable verbose output for debugging
+          set -e  # Exit on error
           
           # Setup SSH key
           mkdir -p ~/.ssh
           echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           
+          # Verify SSH key is valid
+          echo "Verifying SSH key format..."
+          ssh-keygen -l -f ~/.ssh/deploy_key || {
+            echo "ERROR: Invalid SSH key format"
+            exit 1
+          }
+          
+          # Test host connectivity
+          echo "Testing connectivity to ${{ secrets.DEPLOY_HOST }}..."
+          if ! ping -c 1 -W 5 ${{ secrets.DEPLOY_HOST }} > /dev/null 2>&1; then
+            echo "WARNING: Host ${{ secrets.DEPLOY_HOST }} is not responding to ping (this may be normal if ICMP is blocked)",
+          fi
+          
           # Add host to known_hosts to avoid prompt
-          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts 2>&1
+          echo "Adding host to known_hosts..."
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts 2>&1 || {
+            echo "ERROR: Failed to scan host keys from ${{ secrets.DEPLOY_HOST }}"
+            echo "This usually means the host is unreachable or SSH is not running on port 22"
+            exit 1
+          }
           
           # Copy the update script to ensure it's current (convert line endings)
           sed -i 's/\r$//' deploy/update-service.sh
           
           echo "Copying deployment script to server..."
-          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=10 \
             deploy/update-service.sh \
-            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_SCRIPT_PATH }}
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_SCRIPT_PATH }} || {
+            echo "ERROR: Failed to copy deployment script"
+            exit 1
+          }
           
           echo "Making script executable..."
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=10 \
             ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
-            "chmod +x ${{ secrets.DEPLOY_SCRIPT_PATH }}"
+            "chmod +x ${{ secrets.DEPLOY_SCRIPT_PATH }}" || {
+            echo "ERROR: Failed to make script executable"
+            exit 1
+          }
           
           echo "Executing remote update..."
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=10 \
             ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
-            "bash ${{ secrets.DEPLOY_SCRIPT_PATH }}"
+            "bash ${{ secrets.DEPLOY_SCRIPT_PATH }}" || {
+            echo "ERROR: Remote deployment script failed"
+            exit 1
+          }
           
           # Cleanup
           rm ~/.ssh/deploy_key
