@@ -304,8 +304,8 @@ public record L2Trace : UdpNodeInfoJsonDatagram
     public string? Payload { get; init; }
 
     /// <summary>
-    /// UI frame info portion (Optional)
-    /// Contains the information field content for UI frames.
+    /// Frame info portion (Optional)
+    /// Contains the information field content for UI and I frames.
     /// </summary>
     [JsonPropertyName("info")]
     public string? Info { get; init; }

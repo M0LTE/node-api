@@ -1854,7 +1854,7 @@ public class L2TraceValidatorTests
     [Fact]
     public void Should_Accept_Icrc_With_Other_Frame_Types()
     {
-        // While icrc is primarily for I frames with PID 240, 
+        // While Icrc is primarily for I frames with PID 240, 
         // the validator should not reject it for other frame types
         var model = new L2Trace
         {
