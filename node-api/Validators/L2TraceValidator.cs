@@ -91,6 +91,12 @@ public class L2TraceValidator : AbstractValidator<L2Trace>
             .When(x => x.L2Type != "I" && x.L2Type != "UI")
             .WithMessage("IFieldLength should only be present for 'I' and 'UI' frame types");
 
+        // Icrc validation - should be a valid 16-bit value (0-65535) when present
+        RuleFor(x => x.Icrc)
+            .InclusiveBetween(0, 65535)
+            .When(x => x.Icrc.HasValue)
+            .WithMessage("Icrc must be between 0 and 65535 (16-bit unsigned integer)");
+
         // Digipeater validation
         RuleForEach(x => x.Digipeaters)
             .SetValidator(new DigipeaterValidator())

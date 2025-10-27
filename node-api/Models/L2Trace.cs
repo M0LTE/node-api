@@ -304,6 +304,21 @@ public record L2Trace : UdpNodeInfoJsonDatagram
     public string? Payload { get; init; }
 
     /// <summary>
+    /// UI frame info portion (Optional)
+    /// Contains the information field content for UI frames.
+    /// </summary>
+    [JsonPropertyName("info")]
+    public string? Info { get; init; }
+
+    /// <summary>
+    /// 16-bit CRC of the info field (Optional)
+    /// For numbered I frames with PID 240, provides a simple CRC to detect duplicate frames
+    /// without requiring transmission of the full info field.
+    /// </summary>
+    [JsonPropertyName("icrc")]
+    public int? Icrc { get; init; }
+
+    /// <summary>
     /// Represents a node in routing information broadcasts (NetRom or INP3)
     /// </summary>
     public record Node
