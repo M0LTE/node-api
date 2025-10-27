@@ -1649,7 +1649,7 @@ public class L2TraceValidatorTests
     }
 
     [Fact]
-    public void Should_Accept_Info_For_I_Frame()
+    public void Should_Reject_Info_For_I_Frame()
     {
         var model = new L2Trace
         {
@@ -1669,7 +1669,8 @@ public class L2TraceValidatorTests
         };
 
         var result = _validator.TestValidate(model);
-        result.ShouldNotHaveValidationErrorFor(x => x.Info);
+        result.ShouldHaveValidationErrorFor(x => x.Info)
+            .WithErrorMessage("Info should only be present for 'UI' frame types");
     }
 
     [Theory]
@@ -1852,10 +1853,9 @@ public class L2TraceValidatorTests
     }
 
     [Fact]
-    public void Should_Accept_Icrc_With_Other_Frame_Types()
+    public void Should_Reject_Icrc_With_Other_Frame_Types()
     {
-        // While Icrc is primarily for I frames with PID 240, 
-        // the validator should not reject it for other frame types
+        // Icrc should only be present on I frames
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
@@ -1871,7 +1871,8 @@ public class L2TraceValidatorTests
         };
 
         var result = _validator.TestValidate(model);
-        result.ShouldNotHaveValidationErrorFor(x => x.Icrc);
+        result.ShouldHaveValidationErrorFor(x => x.Icrc)
+            .WithErrorMessage("Icrc should only be present for 'I' frame types");
     }
 
     [Fact]
@@ -1923,8 +1924,9 @@ public class L2TraceValidatorTests
     }
 
     [Fact]
-    public void Should_Accept_Both_Info_And_Icrc()
+    public void Should_Accept_Icrc_For_I_Frame()
     {
+        // Icrc is allowed on I frames only
         var model = new L2Trace
         {
             DatagramType = "L2Trace",
@@ -1939,12 +1941,10 @@ public class L2TraceValidatorTests
             IFieldLength = 100,
             ProtocolId = 240,
             ProtocolName = "DATA",
-            Info = "Sample info content",
             Icrc = 12345
         };
 
         var result = _validator.TestValidate(model);
-        result.ShouldNotHaveValidationErrorFor(x => x.Info);
         result.ShouldNotHaveValidationErrorFor(x => x.Icrc);
     }
 
@@ -1977,7 +1977,7 @@ public class L2TraceValidatorTests
     }
 
     [Fact]
-    public void Should_Accept_Complete_L2Trace_With_Info_And_Icrc()
+    public void Should_Accept_Complete_I_Frame_With_Icrc()
     {
         var model = new L2Trace
         {
@@ -1995,12 +1995,197 @@ public class L2TraceValidatorTests
             IFieldLength = 100,
             ProtocolId = 240,
             ProtocolName = "DATA",
-            Info = "Complete frame information",
             Icrc = 65535,
             PollFinal = "P",
             Modulo = 8,
             ReceiveSequence = 5,
             TransmitSequence = 3,
+            Digipeaters = new[]
+            {
+                new L2Trace.Digipeater { Callsign = "RELAY-1", Repeated = true }
+            }
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    #endregion
+
+    #region Info Field Frame Type Validation
+
+    [Fact]
+    public void Should_Accept_Info_Only_On_UI_Frames()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            CommandResponse = "C",
+            IFieldLength = 24,
+            Info = "UI frame info content"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.Info);
+    }
+
+    [Theory]
+    [InlineData("I")]
+    [InlineData("RR")]
+    [InlineData("RNR")]
+    [InlineData("REJ")]
+    [InlineData("SABME")]
+    [InlineData("UA")]
+    [InlineData("DM")]
+    [InlineData("FRMR")]
+    public void Should_Reject_Info_On_Non_UI_Frames(string l2Type)
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 0,
+            L2Type = l2Type,
+            CommandResponse = "C",
+            Info = "Should not be present"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.Info)
+            .WithErrorMessage("Info should only be present for 'UI' frame types");
+    }
+
+    [Fact]
+    public void Should_Accept_Null_Info_On_Any_Frame_Type()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 0,
+            L2Type = "I",
+            CommandResponse = "C",
+            Info = null
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.Info);
+    }
+
+    #endregion
+
+    #region Icrc Field Frame Type Validation
+
+    [Fact]
+    public void Should_Accept_Icrc_Only_On_I_Frames()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 0,
+            L2Type = "I",
+            CommandResponse = "C",
+            IFieldLength = 100,
+            ProtocolId = 240,
+            Icrc = 12345
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.Icrc);
+    }
+
+    [Theory]
+    [InlineData("UI")]
+    [InlineData("RR")]
+    [InlineData("RNR")]
+    [InlineData("REJ")]
+    [InlineData("SABME")]
+    [InlineData("UA")]
+    [InlineData("DM")]
+    [InlineData("FRMR")]
+    public void Should_Reject_Icrc_On_Non_I_Frames(string l2Type)
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = l2Type,
+            CommandResponse = "C",
+            Icrc = 12345
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.Icrc)
+            .WithErrorMessage("Icrc should only be present for 'I' frame types");
+    }
+
+    [Fact]
+    public void Should_Accept_Null_Icrc_On_Any_Frame_Type()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            CommandResponse = "C",
+            Icrc = null
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.Icrc);
+    }
+
+    [Fact]
+    public void Should_Accept_Complete_UI_Frame_With_Info()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Direction = "sent",
+            IsRF = true,
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            CommandResponse = "C",
+            IFieldLength = 100,
+            ProtocolId = 240,
+            ProtocolName = "DATA",
+            Info = "Complete UI frame information",
+            PollFinal = "P",
             Digipeaters = new[]
             {
                 new L2Trace.Digipeater { Callsign = "RELAY-1", Repeated = true }
