@@ -110,8 +110,18 @@ jobs:
           echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
+      - name: Check deployment configuration
+        id: check-deploy
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+        run: |
+          if [ -n "${{ secrets.DEPLOY_SSH_KEY }}" ]; then
+            echo "enabled=true" >> $GITHUB_OUTPUT
+          else
+            echo "enabled=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Deploy to remote server
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master' && secrets.DEPLOY_SSH_KEY
+        if: steps.check-deploy.outputs.enabled == 'true'
         run: |
           # Setup SSH key
           mkdir -p ~/.ssh
@@ -141,7 +151,7 @@ jobs:
           rm ~/.ssh/deploy_key
 
       - name: Deployment summary
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master' && secrets.DEPLOY_SSH_KEY
+        if: steps.check-deploy.outputs.enabled == 'true'
         run: |
           echo "### Deployment Complete :rocket:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -149,7 +159,7 @@ jobs:
           echo "**Status:** Deployed and restarted" >> $GITHUB_STEP_SUMMARY
 
       - name: Deployment skipped
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master' && !secrets.DEPLOY_SSH_KEY
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master' && steps.check-deploy.outputs.enabled == 'false'
         run: |
           echo "### Deployment Skipped :information_source:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
