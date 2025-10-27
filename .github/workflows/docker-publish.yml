@@ -114,41 +114,56 @@ jobs:
         id: check-deploy
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
         run: |
-          if [ -n "${{ secrets.DEPLOY_SSH_KEY }}" ]; then
+          if [ -n "${{ secrets.DEPLOY_SSH_KEY }}" ] && \
+             [ -n "${{ secrets.DEPLOY_HOST }}" ] && \
+             [ -n "${{ secrets.DEPLOY_USER }}" ] && \
+             [ -n "${{ secrets.DEPLOY_SCRIPT_PATH }}" ]; then
             echo "enabled=true" >> $GITHUB_OUTPUT
+            echo "All deployment secrets are configured"
           else
             echo "enabled=false" >> $GITHUB_OUTPUT
+            echo "Missing deployment secrets:"
+            [ -z "${{ secrets.DEPLOY_SSH_KEY }}" ] && echo "  - DEPLOY_SSH_KEY"
+            [ -z "${{ secrets.DEPLOY_HOST }}" ] && echo "  - DEPLOY_HOST"
+            [ -z "${{ secrets.DEPLOY_USER }}" ] && echo "  - DEPLOY_USER"
+            [ -z "${{ secrets.DEPLOY_SCRIPT_PATH }}" ] && echo "  - DEPLOY_SCRIPT_PATH"
           fi
 
       - name: Deploy to remote server
         if: steps.check-deploy.outputs.enabled == 'true'
         run: |
+          set -x  # Enable verbose output for debugging
+          
           # Setup SSH key
           mkdir -p ~/.ssh
           echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           
           # Add host to known_hosts to avoid prompt
-          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts 2>&1
           
           # Copy the update script to ensure it's current (convert line endings)
           sed -i 's/\r$//' deploy/update-service.sh
+          
+          echo "Copying deployment script to server..."
           scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
             deploy/update-service.sh \
             ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_SCRIPT_PATH }}
           
-          # Make it executable
+          echo "Making script executable..."
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
             ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
             "chmod +x ${{ secrets.DEPLOY_SCRIPT_PATH }}"
           
-          # Execute remote update script
+          echo "Executing remote update..."
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
             ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
             "bash ${{ secrets.DEPLOY_SCRIPT_PATH }}"
           
           # Cleanup
           rm ~/.ssh/deploy_key
+          
+          echo "Deployment completed successfully!"
 
       - name: Deployment summary
         if: steps.check-deploy.outputs.enabled == 'true'
