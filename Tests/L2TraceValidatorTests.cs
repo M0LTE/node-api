@@ -1600,4 +1600,416 @@ public class L2TraceValidatorTests
     }
 
     #endregion
+
+    #region Info Field Validation
+
+    [Fact]
+    public void Should_Accept_Null_Info()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            CommandResponse = "C",
+            Info = null
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.Info);
+    }
+
+    [Fact]
+    public void Should_Accept_Info_For_UI_Frame()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            CommandResponse = "C",
+            IFieldLength = 24,
+            ProtocolId = 240,
+            ProtocolName = "DATA",
+            Info = "This is UI frame information content"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.Info);
+    }
+
+    [Fact]
+    public void Should_Accept_Info_For_I_Frame()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 0,
+            L2Type = "I",
+            CommandResponse = "C",
+            IFieldLength = 50,
+            ProtocolId = 240,
+            ProtocolName = "DATA",
+            Info = "Sample I frame data content"
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.Info);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("Short info")]
+    [InlineData("This is a much longer info field with various characters: 123!@#$%^&*()")]
+    public void Should_Accept_Various_Info_Values(string info)
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            CommandResponse = "C",
+            Info = info
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.Info);
+    }
+
+    [Fact]
+    public void Should_Deserialize_Info_From_JSON()
+    {
+        var json = """
+        {
+            "@type": "L2Trace",
+            "reportFrom": "G9XXX",
+            "time": 1729512000,
+            "port": "1",
+            "srce": "G8PZT-1",
+            "dest": "ID",
+            "ctrl": 3,
+            "l2Type": "UI",
+            "cr": "C",
+            "info": "Test information field"
+        }
+        """;
+
+        var result = System.Text.Json.JsonSerializer.Deserialize<L2Trace>(json);
+        
+        Assert.NotNull(result);
+        Assert.Equal("Test information field", result.Info);
+    }
+
+    [Fact]
+    public void Should_Deserialize_Missing_Info_As_Null()
+    {
+        var json = """
+        {
+            "@type": "L2Trace",
+            "reportFrom": "G9XXX",
+            "time": 1729512000,
+            "port": "1",
+            "srce": "G8PZT-1",
+            "dest": "ID",
+            "ctrl": 3,
+            "l2Type": "UI",
+            "cr": "C"
+        }
+        """;
+
+        var result = System.Text.Json.JsonSerializer.Deserialize<L2Trace>(json);
+        
+        Assert.NotNull(result);
+        Assert.Null(result.Info);
+    }
+
+    #endregion
+
+    #region Icrc Field Validation
+
+    [Fact]
+    public void Should_Accept_Null_Icrc()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 0,
+            L2Type = "I",
+            CommandResponse = "C",
+            Icrc = null
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.Icrc);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(100)]
+    [InlineData(32768)]
+    [InlineData(65535)]
+    public void Should_Accept_Valid_Icrc_Values(int icrc)
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 0,
+            L2Type = "I",
+            CommandResponse = "C",
+            IFieldLength = 100,
+            ProtocolId = 240,
+            ProtocolName = "DATA",
+            Icrc = icrc
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.Icrc);
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(-100)]
+    [InlineData(65536)]
+    [InlineData(70000)]
+    [InlineData(100000)]
+    public void Should_Reject_Invalid_Icrc_Values(int icrc)
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 0,
+            L2Type = "I",
+            CommandResponse = "C",
+            IFieldLength = 100,
+            ProtocolId = 240,
+            ProtocolName = "DATA",
+            Icrc = icrc
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(x => x.Icrc)
+            .WithErrorMessage("Icrc must be between 0 and 65535 (16-bit unsigned integer)");
+    }
+
+    [Fact]
+    public void Should_Accept_Icrc_For_I_Frame_With_PID_240()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 0,
+            L2Type = "I",
+            CommandResponse = "C",
+            IFieldLength = 100,
+            ProtocolId = 240,
+            ProtocolName = "DATA",
+            Icrc = 12345
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.Icrc);
+    }
+
+    [Fact]
+    public void Should_Accept_Icrc_With_Other_Frame_Types()
+    {
+        // While Icrc is primarily for I frames with PID 240, 
+        // the validator should not reject it for other frame types
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 3,
+            L2Type = "UI",
+            CommandResponse = "C",
+            Icrc = 54321
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.Icrc);
+    }
+
+    [Fact]
+    public void Should_Deserialize_Icrc_From_JSON()
+    {
+        var json = """
+        {
+            "@type": "L2Trace",
+            "reportFrom": "G9XXX",
+            "time": 1729512000,
+            "port": "1",
+            "srce": "G8PZT-1",
+            "dest": "ID",
+            "ctrl": 0,
+            "l2Type": "I",
+            "cr": "C",
+            "pid": 240,
+            "icrc": 32768
+        }
+        """;
+
+        var result = System.Text.Json.JsonSerializer.Deserialize<L2Trace>(json);
+        
+        Assert.NotNull(result);
+        Assert.Equal(32768, result.Icrc);
+    }
+
+    [Fact]
+    public void Should_Deserialize_Missing_Icrc_As_Null()
+    {
+        var json = """
+        {
+            "@type": "L2Trace",
+            "reportFrom": "G9XXX",
+            "time": 1729512000,
+            "port": "1",
+            "srce": "G8PZT-1",
+            "dest": "ID",
+            "ctrl": 0,
+            "l2Type": "I",
+            "cr": "C"
+        }
+        """;
+
+        var result = System.Text.Json.JsonSerializer.Deserialize<L2Trace>(json);
+        
+        Assert.NotNull(result);
+        Assert.Null(result.Icrc);
+    }
+
+    [Fact]
+    public void Should_Accept_Both_Info_And_Icrc()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 0,
+            L2Type = "I",
+            CommandResponse = "C",
+            IFieldLength = 100,
+            ProtocolId = 240,
+            ProtocolName = "DATA",
+            Info = "Sample info content",
+            Icrc = 12345
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.Info);
+        result.ShouldNotHaveValidationErrorFor(x => x.Icrc);
+    }
+
+    [Fact]
+    public void Should_Deserialize_Both_Info_And_Icrc_From_JSON()
+    {
+        var json = """
+        {
+            "@type": "L2Trace",
+            "reportFrom": "G9XXX",
+            "time": 1729512000,
+            "port": "1",
+            "srce": "G8PZT-1",
+            "dest": "ID",
+            "ctrl": 0,
+            "l2Type": "I",
+            "cr": "C",
+            "pid": 240,
+            "ilen": 50,
+            "info": "Frame information",
+            "icrc": 45678
+        }
+        """;
+
+        var result = System.Text.Json.JsonSerializer.Deserialize<L2Trace>(json);
+        
+        Assert.NotNull(result);
+        Assert.Equal("Frame information", result.Info);
+        Assert.Equal(45678, result.Icrc);
+    }
+
+    [Fact]
+    public void Should_Accept_Complete_L2Trace_With_Info_And_Icrc()
+    {
+        var model = new L2Trace
+        {
+            DatagramType = "L2Trace",
+            ReportFrom = "G9XXX",
+            TimeUnixSeconds = 1729512000,
+            Port = "1",
+            Direction = "sent",
+            IsRF = true,
+            Source = "G8PZT-1",
+            Destination = "ID",
+            Control = 0,
+            L2Type = "I",
+            CommandResponse = "C",
+            IFieldLength = 100,
+            ProtocolId = 240,
+            ProtocolName = "DATA",
+            Info = "Complete frame information",
+            Icrc = 65535,
+            PollFinal = "P",
+            Modulo = 8,
+            ReceiveSequence = 5,
+            TransmitSequence = 3,
+            Digipeaters = new[]
+            {
+                new L2Trace.Digipeater { Callsign = "RELAY-1", Repeated = true }
+            }
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    #endregion
 }
