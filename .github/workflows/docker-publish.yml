@@ -45,19 +45,32 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels)
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
+      - name: Determine version tags
+        id: tags
+        run: |
+          TAGS="latest"
+          
+          # Add semantic version tags for version tags
+          if [[ "${{ github.ref }}" =~ ^refs/tags/v(.*)$ ]]; then
+            VERSION="${BASH_REMATCH[1]}"
+            TAGS="${VERSION};latest"
+            
+            # Add major.minor tag
+            if [[ "$VERSION" =~ ^([0-9]+)\.([0-9]+)\. ]]; then
+              TAGS="${TAGS};${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
+              # Add major tag
+              TAGS="${TAGS};${BASH_REMATCH[1]}"
+            fi
+          # Add branch name and SHA for branch pushes
+          elif [[ "${{ github.ref }}" =~ ^refs/heads/(.*)$ ]]; then
+            BRANCH="${BASH_REMATCH[1]}"
+            SHA="${{ github.sha }}"
+            SHORT_SHA="${SHA:0:7}"
+            TAGS="${BRANCH};${BRANCH}-${SHORT_SHA};latest"
+          fi
+          
+          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+          echo "Building with tags: ${TAGS}"
 
       - name: Build and push Docker image
         if: github.event_name != 'pull_request'
@@ -70,7 +83,7 @@ jobs:
             /t:PublishContainer \
             /p:ContainerRegistry=${{ env.REGISTRY }} \
             /p:ContainerRepository=${{ env.IMAGE_NAME }} \
-            /p:ContainerImageTags="${{ steps.meta.outputs.tags }}"
+            /p:ContainerImageTags="${{ steps.tags.outputs.tags }}"
 
       - name: Build Docker image (PR only - no push)
         if: github.event_name == 'pull_request'
@@ -82,6 +95,16 @@ jobs:
             --self-contained false \
             /t:PublishContainer
 
-      - name: Image digest
+      - name: Image summary
         if: github.event_name != 'pull_request'
-        run: echo "Image pushed with tags - ${{ steps.meta.outputs.tags }}"
+        run: |
+          echo "### Docker Image Published :whale:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Registry:** \`${{ env.REGISTRY }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Repository:** \`${{ env.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:** \`${{ steps.tags.outputs.tags }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Pull command:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
