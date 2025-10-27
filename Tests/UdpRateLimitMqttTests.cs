@@ -209,4 +209,72 @@ public class UdpRateLimitMqttTests
         statsAfterSecond.RecentlyBlockedIps[0].BlockCount.Should().Be(2);
         statsAfterSecond.RecentlyBlockedIps[0].BlockedAt.Should().BeAfter(firstTimestamp);
     }
+
+    [Fact]
+    public async Task ShouldTrackActiveIPRates()
+    {
+        // Arrange
+        var settings = new UdpRateLimitSettings
+        {
+            RequestsPerSecondPerIp = 10,
+            Blacklist = Array.Empty<string>()
+        };
+        var service = new UdpRateLimitService(CreateLogger(), settings);
+
+        // Act - Make requests from multiple IPs
+        var ip1 = IPAddress.Parse("192.168.1.1");
+        var ip2 = IPAddress.Parse("192.168.1.2");
+        
+        // IP1 makes 5 requests
+        for (int i = 0; i < 5; i++)
+        {
+            await service.ShouldAllowRequestAsync(ip1);
+        }
+        
+        // IP2 makes 3 requests
+        for (int i = 0; i < 3; i++)
+        {
+            await service.ShouldAllowRequestAsync(ip2);
+        }
+
+        var stats = service.GetStats();
+
+        // Assert
+        stats.ActiveIpRates.Should().NotBeEmpty();
+        stats.ActiveIpRates.Should().Contain(r => r.IpAddress == "192.168.1.1");
+        stats.ActiveIpRates.Should().Contain(r => r.IpAddress == "192.168.1.2");
+        
+        var ip1Rate = stats.ActiveIpRates.First(r => r.IpAddress == "192.168.1.1");
+        ip1Rate.RequestsPerSecond.Should().BeGreaterThan(0);
+        ip1Rate.TotalRequests.Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public async Task ActiveIPRates_ShouldShowMostActiveIPsFirst()
+    {
+        // Arrange
+        var settings = new UdpRateLimitSettings
+        {
+            RequestsPerSecondPerIp = 10,
+            Blacklist = Array.Empty<string>()
+        };
+        var service = new UdpRateLimitService(CreateLogger(), settings);
+
+        // Act - Create different activity levels
+        await service.ShouldAllowRequestAsync(IPAddress.Parse("192.168.1.1")); // 1 request
+        
+        for (int i = 0; i < 5; i++)
+            await service.ShouldAllowRequestAsync(IPAddress.Parse("192.168.1.2")); // 5 requests
+        
+        for (int i = 0; i < 3; i++)
+            await service.ShouldAllowRequestAsync(IPAddress.Parse("192.168.1.3")); // 3 requests
+
+        var stats = service.GetStats();
+
+        // Assert - Should be ordered by request rate (descending)
+        stats.ActiveIpRates.Should().HaveCount(3);
+        stats.ActiveIpRates[0].IpAddress.Should().Be("192.168.1.2"); // Most active
+        stats.ActiveIpRates[1].IpAddress.Should().Be("192.168.1.3");
+        stats.ActiveIpRates[2].IpAddress.Should().Be("192.168.1.1"); // Least active
+    }
 }

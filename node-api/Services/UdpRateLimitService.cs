@@ -38,6 +38,7 @@ public class RateLimitStats
     public int TotalRateLimited { get; set; }
     public int ActiveIpAddresses { get; set; }
     public List<BlockedIpInfo> RecentlyBlockedIps { get; set; } = new();
+    public List<IpRateInfo> ActiveIpRates { get; set; } = new();
 }
 
 /// <summary>
@@ -49,6 +50,17 @@ public class BlockedIpInfo
     public required string Reason { get; set; }
     public required DateTimeOffset BlockedAt { get; set; }
     public int BlockCount { get; set; }
+}
+
+/// <summary>
+/// Information about an active IP's request rate
+/// </summary>
+public class IpRateInfo
+{
+    public required string IpAddress { get; set; }
+    public required double RequestsPerSecond { get; set; }
+    public required int TotalRequests { get; set; }
+    public required DateTimeOffset LastRequest { get; set; }
 }
 
 /// <summary>
@@ -218,12 +230,43 @@ public class UdpRateLimitService : IUdpRateLimitService, IDisposable
             .Take(50)
             .ToList();
 
+        // Get active IP rates
+        var now = DateTimeOffset.UtcNow;
+        var activeIpRates = _rateLimitBuckets
+            .Where(kvp => (now - kvp.Value.LastAccess).TotalSeconds < 60) // Active in last minute
+            .Select(kvp =>
+            {
+                var bucket = kvp.Value;
+                double rps;
+                int total;
+                
+                lock (bucket.RequestTimestamps)
+                {
+                    var oneSecondAgo = now.AddSeconds(-1);
+                    var recentCount = bucket.RequestTimestamps.Count(t => t >= oneSecondAgo);
+                    total = bucket.RequestTimestamps.Count;
+                    rps = recentCount; // Requests in the last second
+                }
+                
+                return new IpRateInfo
+                {
+                    IpAddress = kvp.Key,
+                    RequestsPerSecond = rps,
+                    TotalRequests = total,
+                    LastRequest = bucket.LastAccess
+                };
+            })
+            .OrderByDescending(r => r.RequestsPerSecond)
+            .Take(20) // Top 20 most active IPs
+            .ToList();
+
         return new RateLimitStats
         {
             TotalBlacklisted = (int)Interlocked.Read(ref _totalBlacklisted),
             TotalRateLimited = (int)Interlocked.Read(ref _totalRateLimited),
             ActiveIpAddresses = _rateLimitBuckets.Count,
-            RecentlyBlockedIps = recentBlocked
+            RecentlyBlockedIps = recentBlocked,
+            ActiveIpRates = activeIpRates
         };
     }
 

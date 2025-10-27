@@ -328,6 +328,48 @@
             background-color: #ff9800;
             color: white;
         }
+        .active-ip-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .active-ip-table th {
+            background-color: #f0f4ff;
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #ddd;
+        }
+        .active-ip-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .active-ip-table tr:hover {
+            background-color: #f9f9f9;
+        }
+        .rate-bar-container {
+            width: 150px;
+            height: 20px;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        .rate-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50 0%, #ffc107 70%, #f44336 100%);
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+        .rate-value {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            line-height: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #333;
+        }
     </style>
 </head>
 <body>
@@ -424,6 +466,16 @@
             </div>
             <div class="expand-content" id="blocked-ips-content">
                 <div id="blockedIpsList" class="no-data">No IPs blocked yet</div>
+            </div>
+        </div>
+
+        <div class="expandable-section">
+            <div class="expand-toggle" onclick="toggleSection('active-ips')">
+                <span class="expand-toggle-title">📊 Active IP Request Rates</span>
+                <span class="expand-toggle-icon" id="active-ips-icon">▶</span>
+            </div>
+            <div class="expand-content" id="active-ips-content">
+                <div id="activeIpsList" class="no-data">No active IPs</div>
             </div>
         </div>
     </div>
@@ -895,6 +947,52 @@
                     </table>
                 `;
                 blockedIpsList.innerHTML = tableHtml;
+            }
+
+            // Update active IP rates list
+            const activeIpsList = document.getElementById('activeIpsList');
+            if (!rateLimitStats.activeIpRates || rateLimitStats.activeIpRates.length === 0) {
+                activeIpsList.innerHTML = '<div class="no-data">No active IPs</div>';
+            } else {
+                // Get the max rate limit from settings (default 10)
+                const maxRate = 10; // This could be fetched from settings
+                
+                const tableHtml = `
+                    <table class="active-ip-table">
+                        <thead>
+                            <tr>
+                                <th>IP Address</th>
+                                <th>Requests/sec</th>
+                                <th>Rate</th>
+                                <th>Total Requests</th>
+                                <th>Last Seen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rateLimitStats.activeIpRates.map(ip => {
+                                const lastSeen = new Date(ip.lastRequest);
+                                const timeAgo = formatLastSeen(lastSeen.getTime());
+                                const percentage = Math.min((ip.requestsPerSecond / maxRate) * 100, 100);
+                                
+                                return `
+                                    <tr>
+                                        <td><code>${ip.ipAddress}</code></td>
+                                        <td><strong>${ip.requestsPerSecond.toFixed(1)}</strong></td>
+                                        <td>
+                                            <div class="rate-bar-container">
+                                                <div class="rate-bar" style="width: ${percentage}%"></div>
+                                                <div class="rate-value">${percentage.toFixed(0)}%</div>
+                                            </div>
+                                        </td>
+                                        <td>${ip.totalRequests.toLocaleString()}</td>
+                                        <td>${timeAgo}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                `;
+                activeIpsList.innerHTML = tableHtml;
             }
         }
 
