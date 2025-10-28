@@ -704,11 +704,17 @@
                     // Populate nodeTracker with existing nodes
                     nodes.forEach(node => {
                         const lastSeen = node.lastSeen ? new Date(node.lastSeen).getTime() : Date.now();
+                        const isReporting = node.l2TraceCount && node.l2TraceCount > 0;
+                        
                         nodeTracker.nodes.set(node.callsign, {
                             lastSeen: lastSeen,
-                            messageCount: node.l2TraceCount || 0
+                            messageCount: node.l2TraceCount || 0,
+                            isReporting: isReporting
                         });
                     });
+                    
+                    // Trigger initial UI update
+                    updateNodesDisplay();
                 }
             } catch (err) {
                 console.error('Error loading initial state:', err);
@@ -837,6 +843,77 @@
             return `${Math.floor(seconds / 86400)}d ago`;
         }
 
+        function updateNodesDisplay() {
+            const reportingNodes = nodeTracker.getReportingNodes();
+            const neighborNodes = nodeTracker.getNeighborNodes();
+            const activeReporting = nodeTracker.getActiveReportingNodes();
+            const activeNeighbor = nodeTracker.getActiveNeighborNodes();
+
+            // Update counts
+            document.getElementById('activeReportingNodesCount').textContent = activeReporting.length;
+            document.getElementById('totalReportingNodesCount').textContent = reportingNodes.length;
+            document.getElementById('activeNeighborNodesCount').textContent = activeNeighbor.length;
+            document.getElementById('totalNeighborNodesCount').textContent = neighborNodes.length;
+
+            // Render reporting nodes
+            const reportingNodesContainer = document.getElementById('reportingNodesContainer');
+            if (reportingNodes.length === 0) {
+                reportingNodesContainer.innerHTML = '<div class="no-data">No reporting nodes yet</div>';
+            } else {
+                const reportingHtml = reportingNodes.map(({ baseCallsign, ssids, lastSeen, messageCount, activeCount }) => {
+                    const isActive = nodeTracker.isActive(lastSeen);
+                    const staleClass = isActive ? '' : 'stale';
+                    
+                    // Build SSID summary
+                    const ssidCount = ssids.length;
+                    const ssidSummary = ssidCount === 1 ? 
+                        ssids[0] : 
+                        `${ssidCount} SSIDs (${activeCount} active)`;
+                    
+                    return `
+                        <a href="/node.html?callsign=${baseCallsign}" style="text-decoration: none; color: inherit;">
+                            <div class="node-badge ${staleClass}">
+                                <div class="node-callsign">${baseCallsign}</div>
+                                <div class="node-message-count">${messageCount.toLocaleString()} messages</div>
+                                <div class="node-last-seen">${ssidSummary}</div>
+                                <div class="node-last-seen">${formatLastSeen(lastSeen)}</div>
+                            </div>
+                        </a>
+                    `;
+                }).join('');
+                reportingNodesContainer.innerHTML = reportingHtml;
+            }
+
+            // Render neighbor nodes
+            const neighborNodesContainer = document.getElementById('neighborNodesContainer');
+            if (neighborNodes.length === 0) {
+                neighborNodesContainer.innerHTML = '<div class="no-data">No neighbor nodes seen</div>';
+            } else {
+                const neighborHtml = neighborNodes.map(({ baseCallsign, ssids, lastSeen, messageCount, activeCount }) => {
+                    const isActive = nodeTracker.isActive(lastSeen);
+                    const staleClass = isActive ? '' : 'stale';
+                    
+                    // Build SSID summary
+                    const ssidCount = ssids.length;
+                    const ssidSummary = ssidCount === 1 ? 
+                        ssids[0] : 
+                        `${ssidCount} SSIDs (${activeCount} active)`;
+                    
+                    return `
+                        <a href="/node.html?callsign=${baseCallsign}" style="text-decoration: none; color: inherit;">
+                            <div class="node-badge ${staleClass}">
+                                <div class="node-callsign">${baseCallsign}</div>
+                                <div class="node-message-count">${messageCount.toLocaleString()} references</div>
+                                <div class="node-last-seen">${ssidSummary}</div>
+                                <div class="node-last-seen">${formatLastSeen(lastSeen)}</div>
+                            </div>
+                        </a>
+                    `;
+                }).join('');
+                neighborNodesContainer.innerHTML = neighborHtml;
+            }
+        }
+
         function formatBytes(bytes) {
             if (!bytes) return '0 B';
             const k = 1024;
@@ -962,7 +1039,7 @@
                 blockedIpsList.innerHTML = tableHtml;
             }
 
-            // Update active IP rates list
+            // Update active IPs list
             const activeIpsList = document.getElementById('activeIpsList');
             if (!rateLimitStats.activeIpRates || rateLimitStats.activeIpRates.length === 0) {
                 activeIpsList.innerHTML = '<div class="no-data">No active IPs</div>';
@@ -1285,74 +1362,7 @@
 
         // Update nodes UI every second
         setInterval(() => {
-            const reportingNodes = nodeTracker.getReportingNodes();
-            const neighborNodes = nodeTracker.getNeighborNodes();
-            const activeReporting = nodeTracker.getActiveReportingNodes();
-            const activeNeighbor = nodeTracker.getActiveNeighborNodes();
-
-            // Update counts
-            document.getElementById('activeReportingNodesCount').textContent = activeReporting.length;
-            document.getElementById('totalReportingNodesCount').textContent = reportingNodes.length;
-            document.getElementById('activeNeighborNodesCount').textContent = activeNeighbor.length;
-            document.getElementById('totalNeighborNodesCount').textContent = neighborNodes.length;
-
-            // Render reporting nodes
-            const reportingNodesContainer = document.getElementById('reportingNodesContainer');
-            if (reportingNodes.length === 0) {
-                reportingNodesContainer.innerHTML = '<div class="no-data">No reporting nodes yet</div>';
-            } else {
-                const reportingHtml = reportingNodes.map(({ baseCallsign, ssids, lastSeen, messageCount, activeCount }) => {
-                    const isActive = nodeTracker.isActive(lastSeen);
-                    const staleClass = isActive ? '' : 'stale';
-                    
-                    // Build SSID summary
-                    const ssidCount = ssids.length;
-                    const ssidSummary = ssidCount === 1 ? 
-                        ssids[0] : 
-                        `${ssidCount} SSIDs (${activeCount} active)`;
-                    
-                    return `
-                        <a href="/node.html?callsign=${baseCallsign}" style="text-decoration: none; color: inherit;">
-                            <div class="node-badge ${staleClass}">
-                                <div class="node-callsign">${baseCallsign}</div>
-                                <div class="node-message-count">${messageCount.toLocaleString()} messages</div>
-                                <div class="node-last-seen">${ssidSummary}</div>
-                                <div class="node-last-seen">${formatLastSeen(lastSeen)}</div>
-                            </div>
-                        </a>
-                    `;
-                }).join('');
-                reportingNodesContainer.innerHTML = reportingHtml;
-            }
-
-            // Render neighbor nodes
-            const neighborNodesContainer = document.getElementById('neighborNodesContainer');
-            if (neighborNodes.length === 0) {
-                neighborNodesContainer.innerHTML = '<div class="no-data">No neighbor nodes seen</div>';
-            } else {
-                const neighborHtml = neighborNodes.map(({ baseCallsign, ssids, lastSeen, messageCount, activeCount }) => {
-                    const isActive = nodeTracker.isActive(lastSeen);
-                    const staleClass = isActive ? '' : 'stale';
-                    
-                    // Build SSID summary
-                    const ssidCount = ssids.length;
-                    const ssidSummary = ssidCount === 1 ? 
-                        ssids[0] : 
-                        `${ssidCount} SSIDs (${activeCount} active)`;
-                    
-                    return `
-                        <a href="/node.html?callsign=${baseCallsign}" style="text-decoration: none; color: inherit;">
-                            <div class="node-badge ${staleClass}">
-                                <div class="node-callsign">${baseCallsign}</div>
-                                <div class="node-message-count">${messageCount.toLocaleString()} references</div>
-                                <div class="node-last-seen">${ssidSummary}</div>
-                                <div class="node-last-seen">${formatLastSeen(lastSeen)}</div>
-                            </div>
-                        </a>
-                    `;
-                }).join('');
-                neighborNodesContainer.innerHTML = neighborHtml;
-            }
+            updateNodesDisplay();
         }, 1000);
 
         // Update stats UI every 500ms
