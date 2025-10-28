@@ -63,18 +63,21 @@ public class IpRateInfo
 {
     public required string IpAddress { get; set; }
     public required double RequestsPerSecond { get; set; }
+    public required double AverageRequestsPerSecond { get; set; }
     public required int TotalRequests { get; set; }
     public required DateTimeOffset LastRequest { get; set; }
     public string? ReportingCallsign { get; set; }
 }
 
 /// <summary>
-/// Implementation of UDP rate limiting service
+/// Implementation of UDP rate limiting service with rolling average and burst support
 /// </summary>
 public class UdpRateLimitService : IUdpRateLimitService, IDisposable
 {
     private readonly ILogger<UdpRateLimitService> _logger;
     private readonly int _requestsPerSecond;
+    private readonly int _burstLimit;
+    private readonly TimeSpan _rollingWindowDuration;
     private readonly List<(IPAddress Network, int PrefixLength)> _blacklistedNetworks;
     private readonly ConcurrentDictionary<string, RateLimitBucket> _rateLimitBuckets;
     private readonly ConcurrentDictionary<string, BlockedIpInfo> _blockedIpHistory;
@@ -85,7 +88,7 @@ public class UdpRateLimitService : IUdpRateLimitService, IDisposable
     private IManagedMqttClient? _mqttClient;
     private const string RateLimitTopic = "metrics/ratelimit";
     private const int MaxHistorySize = 100;
-    private static readonly TimeSpan TemporaryBlockDuration = TimeSpan.FromMinutes(1); // Shortened for better UX
+    private static readonly TimeSpan TemporaryBlockDuration = TimeSpan.FromMinutes(1);
 
     private class RateLimitBucket
     {
@@ -100,6 +103,13 @@ public class UdpRateLimitService : IUdpRateLimitService, IDisposable
     {
         _logger = logger;
         _requestsPerSecond = settings.RequestsPerSecondPerIp;
+        
+        // Burst limit is 3x the sustained rate (allows short spikes)
+        _burstLimit = _requestsPerSecond * 3;
+        
+        // Rolling window for average calculation (10 seconds)
+        _rollingWindowDuration = TimeSpan.FromSeconds(10);
+        
         _blacklistedNetworks = ParseBlacklist(settings.Blacklist);
         _rateLimitBuckets = new ConcurrentDictionary<string, RateLimitBucket>();
         _blockedIpHistory = new ConcurrentDictionary<string, BlockedIpInfo>();
@@ -109,8 +119,10 @@ public class UdpRateLimitService : IUdpRateLimitService, IDisposable
         _cleanupTimer = new Timer(CleanupStaleBuckets, null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
 
         _logger.LogInformation(
-            "UDP rate limiting initialized: {RequestsPerSecond} req/s per IP, {BlacklistCount} blacklisted networks",
+            "UDP rate limiting initialized: {SustainedRate} req/s sustained (avg over {WindowSeconds}s), {BurstLimit} req/s burst, {BlacklistCount} blacklisted networks",
             _requestsPerSecond,
+            _rollingWindowDuration.TotalSeconds,
+            _burstLimit,
             _blacklistedNetworks.Count);
 
         if (_blacklistedNetworks.Count > 0)
@@ -145,7 +157,7 @@ public class UdpRateLimitService : IUdpRateLimitService, IDisposable
             return false;
         }
 
-        // Check rate limit (this is inherently temporary - sliding 1-second window)
+        // Check rate limit with rolling average and burst support
         var bucket = _rateLimitBuckets.GetOrAdd(ipKey, _ => new RateLimitBucket());
         bucket.LastAccess = DateTimeOffset.UtcNow;
         if (!string.IsNullOrWhiteSpace(reportingCallsign))
@@ -153,42 +165,93 @@ public class UdpRateLimitService : IUdpRateLimitService, IDisposable
             bucket.ReportingCallsign = reportingCallsign;
         }
 
+        bool shouldBlock = false;
+        string? blockReason = null;
+        double averageRate = 0;
+        int burstRate = 0;
+
         lock (bucket.RequestTimestamps)
         {
             var now = DateTimeOffset.UtcNow;
-            var oneSecondAgo = now.AddSeconds(-1);
+            var rollingWindowStart = now.Subtract(_rollingWindowDuration);
+            var burstWindowStart = now.AddSeconds(-1); // 1-second window for burst check
 
-            // Remove timestamps older than 1 second
-            while (bucket.RequestTimestamps.Count > 0 && bucket.RequestTimestamps.Peek() < oneSecondAgo)
+            // Remove timestamps older than the rolling window
+            while (bucket.RequestTimestamps.Count > 0 && bucket.RequestTimestamps.Peek() < rollingWindowStart)
             {
                 bucket.RequestTimestamps.Dequeue();
             }
 
-            // Check if we're over the limit
-            if (bucket.RequestTimestamps.Count >= _requestsPerSecond)
-            {
-                Interlocked.Increment(ref _totalRateLimited);
-                _logger.LogWarning("Rate limit exceeded for IP: {IpAddress} (Callsign: {Callsign}) ({Count} req/s)", 
-                    ipAddress, reportingCallsign ?? "Unknown", bucket.RequestTimestamps.Count);
-                
-                // Record the block for tracking/display purposes only
-                _ = RecordBlockedIpAsync(ipAddress, "rate_limit", reportingCallsign);
-                return false;
-            }
+            // Calculate current rates
+            var requestsInRollingWindow = bucket.RequestTimestamps.Count;
+            var requestsInLastSecond = bucket.RequestTimestamps.Count(t => t >= burstWindowStart);
+            var averageRequestsPerSecond = requestsInRollingWindow / _rollingWindowDuration.TotalSeconds;
 
-            // Add this request
-            bucket.RequestTimestamps.Enqueue(now);
-            return true;
+            averageRate = averageRequestsPerSecond;
+            burstRate = requestsInLastSecond;
+
+            // Check burst limit first (immediate spike protection)
+            if (requestsInLastSecond >= _burstLimit)
+            {
+                shouldBlock = true;
+                blockReason = "burst_limit";
+            }
+            // Check sustained average rate limit
+            else if (averageRequestsPerSecond >= _requestsPerSecond)
+            {
+                shouldBlock = true;
+                blockReason = "sustained_rate_limit";
+            }
+            else
+            {
+                // Add this request
+                bucket.RequestTimestamps.Enqueue(now);
+            }
         }
+
+        // Handle blocking outside the lock
+        if (shouldBlock)
+        {
+            Interlocked.Increment(ref _totalRateLimited);
+            
+            if (blockReason == "burst_limit")
+            {
+                _logger.LogWarning(
+                    "Burst limit exceeded for IP: {IpAddress} (Callsign: {Callsign}) - {BurstRate} req/s (limit: {BurstLimit})", 
+                    ipAddress, 
+                    reportingCallsign ?? "Unknown", 
+                    burstRate,
+                    _burstLimit);
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Sustained rate limit exceeded for IP: {IpAddress} (Callsign: {Callsign}) - {AvgRate:F2} avg req/s (limit: {SustainedLimit})", 
+                    ipAddress, 
+                    reportingCallsign ?? "Unknown", 
+                    averageRate,
+                    _requestsPerSecond);
+            }
+            
+            await RecordBlockedIpAsync(ipAddress, blockReason!, reportingCallsign, averageRate, burstRate);
+            return false;
+        }
+
+        return true;
     }
 
-    private async Task RecordBlockedIpAsync(IPAddress ipAddress, string reason, string? reportingCallsign = null)
+    private async Task RecordBlockedIpAsync(
+        IPAddress ipAddress, 
+        string reason, 
+        string? reportingCallsign = null,
+        double? averageRate = null,
+        int? burstRate = null)
     {
         var ipKey = ipAddress.ToString();
         var now = DateTimeOffset.UtcNow;
-        // Set expiry for display purposes - rate limits reset as requests age out (1 second window)
+        // Set expiry for display purposes - rate limits reset as requests age out
         // Blacklist blocks are permanent (null expiry)
-        var expiresAt = reason == "rate_limit" ? now.Add(TemporaryBlockDuration) : (DateTimeOffset?)null;
+        var expiresAt = reason != "blacklist" ? now.Add(TemporaryBlockDuration) : (DateTimeOffset?)null;
 
         // Try to get callsign from map if not provided
         if (string.IsNullOrWhiteSpace(reportingCallsign))
@@ -247,7 +310,11 @@ public class UdpRateLimitService : IUdpRateLimitService, IDisposable
                     reason,
                     timestamp = now,
                     block_count = blockedInfo.BlockCount,
-                    expires_at = expiresAt
+                    expires_at = expiresAt,
+                    average_rate = averageRate,
+                    burst_rate = burstRate,
+                    sustained_limit = _requestsPerSecond,
+                    burst_limit = _burstLimit
                 });
 
                 var message = new MqttApplicationMessageBuilder()
@@ -312,15 +379,24 @@ public class UdpRateLimitService : IUdpRateLimitService, IDisposable
             .Select(kvp =>
             {
                 var bucket = kvp.Value;
-                double rps;
+                double currentRps;
+                double avgRps;
                 int total;
                 
                 lock (bucket.RequestTimestamps)
                 {
+                    var rollingWindowStart = now.Subtract(_rollingWindowDuration);
                     var oneSecondAgo = now.AddSeconds(-1);
+                    
+                    // Current rate (last second)
                     var recentCount = bucket.RequestTimestamps.Count(t => t >= oneSecondAgo);
+                    currentRps = recentCount;
+                    
+                    // Average rate over rolling window
+                    var requestsInWindow = bucket.RequestTimestamps.Count(t => t >= rollingWindowStart);
+                    avgRps = requestsInWindow / _rollingWindowDuration.TotalSeconds;
+                    
                     total = bucket.RequestTimestamps.Count;
-                    rps = recentCount; // Requests in the last second
                 }
 
                 // Get callsign from bucket or map
@@ -333,13 +409,14 @@ public class UdpRateLimitService : IUdpRateLimitService, IDisposable
                 return new IpRateInfo
                 {
                     IpAddress = RedactIpAddress(kvp.Key),
-                    RequestsPerSecond = rps,
+                    RequestsPerSecond = currentRps,
+                    AverageRequestsPerSecond = avgRps,
                     TotalRequests = total,
                     LastRequest = bucket.LastAccess,
                     ReportingCallsign = callsign ?? "Unknown"
                 };
             })
-            .OrderByDescending(r => r.RequestsPerSecond)
+            .OrderByDescending(r => r.AverageRequestsPerSecond)
             .Take(20) // Top 20 most active IPs
             .ToList();
 
