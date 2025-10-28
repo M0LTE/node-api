@@ -38,6 +38,10 @@ builder.Services.AddSingleton<IUdpRateLimitService, UdpRateLimitService>();
 // Register GeoIP service
 builder.Services.AddSingleton<IGeoIpService, GeoIpService>();
 
+// Register RabbitMQ services for UDP datagram persistence
+builder.Services.AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>();
+builder.Services.AddHostedService<RabbitMqConsumer>();
+
 // Register network state services
 builder.Services.AddSingleton<INetworkStateService, NetworkStateService>();
 builder.Services.AddSingleton<NetworkStateUpdater>();

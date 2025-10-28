@@ -1,0 +1,212 @@
+using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
+using System.Net;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Channels;
+
+namespace node_api.Services;
+
+/// <summary>
+/// Consumes UDP datagrams from RabbitMQ and processes them
+/// This allows for future separation of the ingestion and processing services
+/// </summary>
+public sealed class RabbitMqConsumer : BackgroundService, IAsyncDisposable
+{
+    private readonly ILogger<RabbitMqConsumer> _logger;
+    private readonly IServiceProvider _serviceProvider;
+    private IConnection? _connection;
+    private IModel? _channel;
+    private readonly bool _isEnabled;
+    private const string QueueName = "udp-datagram-queue";
+    private readonly Channel<DatagramMessage> _processingChannel;
+    private Task? _processingTask;
+
+    public RabbitMqConsumer(
+        ILogger<RabbitMqConsumer> logger,
+        IServiceProvider serviceProvider)
+    {
+        _logger = logger;
+        _serviceProvider = serviceProvider;
+
+        var rabbitHost = Environment.GetEnvironmentVariable("RABBIT_HOST");
+        var rabbitUser = Environment.GetEnvironmentVariable("RABBIT_USER");
+        var rabbitPass = Environment.GetEnvironmentVariable("RABBIT_PASS");
+
+        _isEnabled = !string.IsNullOrWhiteSpace(rabbitHost) && 
+                     !string.IsNullOrWhiteSpace(rabbitUser) && 
+                     !string.IsNullOrWhiteSpace(rabbitPass);
+
+        var channelOptions = new BoundedChannelOptions(1000)
+        {
+            FullMode = BoundedChannelFullMode.Wait
+        };
+        _processingChannel = Channel.CreateBounded<DatagramMessage>(channelOptions);
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        if (!_isEnabled)
+        {
+            _logger.LogInformation("RabbitMQ consumer is disabled (RabbitMQ not configured)");
+            return;
+        }
+
+        _logger.LogInformation("Starting RabbitMQ consumer...");
+
+        // Start processing task
+        _processingTask = ProcessMessagesAsync(stoppingToken);
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                await ConnectAndConsumeAsync(stoppingToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogError(ex, "RabbitMQ consumer failed, reconnecting in 5 seconds...");
+                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+            }
+        }
+
+        _processingChannel.Writer.Complete();
+        
+        if (_processingTask != null)
+        {
+            await _processingTask;
+        }
+    }
+
+    private async Task ConnectAndConsumeAsync(CancellationToken stoppingToken)
+    {
+        var rabbitHost = Environment.GetEnvironmentVariable("RABBIT_HOST")!;
+        var rabbitUser = Environment.GetEnvironmentVariable("RABBIT_USER")!;
+        var rabbitPass = Environment.GetEnvironmentVariable("RABBIT_PASS")!;
+
+        var factory = new ConnectionFactory
+        {
+            HostName = rabbitHost,
+            UserName = rabbitUser,
+            Password = rabbitPass,
+            AutomaticRecoveryEnabled = true,
+            NetworkRecoveryInterval = TimeSpan.FromSeconds(10),
+            RequestedHeartbeat = TimeSpan.FromSeconds(60),
+            DispatchConsumersAsync = true
+        };
+
+        _connection = factory.CreateConnection();
+        _channel = _connection.CreateModel();
+
+        // Set QoS to process messages with prefetch
+        _channel.BasicQos(prefetchSize: 0, prefetchCount: 10, global: false);
+
+        var consumer = new AsyncEventingBasicConsumer(_channel);
+        
+        consumer.Received += async (sender, ea) =>
+        {
+            try
+            {
+                var body = ea.Body.ToArray();
+                var messageJson = Encoding.UTF8.GetString(body);
+                
+                var message = JsonSerializer.Deserialize<DatagramMessage>(messageJson);
+                
+                if (message != null)
+                {
+                    await _processingChannel.Writer.WriteAsync(message, stoppingToken);
+                }
+                
+                // Acknowledge the message
+                _channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing RabbitMQ message");
+                // Reject and requeue the message on error
+                _channel.BasicNack(deliveryTag: ea.DeliveryTag, multiple: false, requeue: true);
+            }
+        };
+
+        _channel.BasicConsume(
+            queue: QueueName,
+            autoAck: false,
+            consumer: consumer);
+
+        _logger.LogInformation("RabbitMQ consumer connected and listening on queue {QueueName}", QueueName);
+
+        // Keep the connection alive until cancellation
+        await Task.Delay(Timeout.Infinite, stoppingToken);
+    }
+
+    private async Task ProcessMessagesAsync(CancellationToken stoppingToken)
+    {
+        await foreach (var message in _processingChannel.Reader.ReadAllAsync(stoppingToken))
+        {
+            try
+            {
+                // Create a scope to get scoped services for processing
+                using var scope = _serviceProvider.CreateScope();
+                
+                // Decode the datagram
+                var datagram = Convert.FromBase64String(message.Datagram);
+                
+                // Parse IP address
+                if (!IPAddress.TryParse(message.SourceIp, out var ipAddress))
+                {
+                    _logger.LogWarning("Invalid source IP in RabbitMQ message: {SourceIp}", message.SourceIp);
+                    continue;
+                }
+
+                var remoteEndPoint = new IPEndPoint(ipAddress, 0);
+                
+                // Process the datagram using the same logic as direct UDP
+                // This will be done through a shared processing service
+                // For now, we'll log that we received it
+                _logger.LogInformation("Received datagram from RabbitMQ: {SourceIp}, received at {ReceivedAt}", 
+                    message.SourceIp, message.ReceivedAt);
+                
+                // TODO: Integrate with existing datagram processing pipeline
+                // This would involve calling ProcessDatagramAsync or similar logic
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing message from RabbitMQ queue");
+            }
+        }
+    }
+
+    public override void Dispose()
+    {
+        _channel?.Close();
+        _channel?.Dispose();
+        _connection?.Close();
+        _connection?.Dispose();
+        base.Dispose();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_channel != null)
+        {
+            _channel.Close();
+            _channel.Dispose();
+        }
+
+        if (_connection != null)
+        {
+            _connection.Close();
+            _connection.Dispose();
+        }
+
+        Dispose();
+        GC.SuppressFinalize(this);
+    }
+
+    private class DatagramMessage
+    {
+        public required string Datagram { get; set; }
+        public required string SourceIp { get; set; }
+        public DateTime ReceivedAt { get; set; }
+    }
+}

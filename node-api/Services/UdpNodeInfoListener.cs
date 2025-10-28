@@ -21,6 +21,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
     private readonly IUdpRateLimitService _rateLimitService;
     private readonly IGeoIpService _geoIpService;
     private readonly INetworkStateService _networkState;
+    private readonly IRabbitMqPublisher _rabbitMqPublisher;
     private readonly Channel<(UdpNodeInfoJsonDatagram Frame, IPEndPoint RemoteEndPoint)> _processingChannel;
     private readonly ChannelWriter<(UdpNodeInfoJsonDatagram Frame, IPEndPoint RemoteEndPoint)> _channelWriter;
     private readonly SemaphoreSlim _processingSemaphore;
@@ -37,13 +38,15 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
         DatagramValidationService validationService,
         IUdpRateLimitService rateLimitService,
         IGeoIpService geoIpService,
-        INetworkStateService networkState)
+        INetworkStateService networkState,
+        IRabbitMqPublisher rabbitMqPublisher)
     {
         _logger = logger;
         _validationService = validationService;
         _rateLimitService = rateLimitService;
         _geoIpService = geoIpService;
         _networkState = networkState;
+        _rabbitMqPublisher = rabbitMqPublisher;
         var channelOptions = new BoundedChannelOptions(MaxConcurrentProcessing * 2)
         {
             FullMode = BoundedChannelFullMode.Wait,
@@ -111,6 +114,20 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
             {
                 var result = await _udpClient.ReceiveAsync(stoppingToken).ConfigureAwait(false);
                 _logger.LogDebug("Received datagram from {ip}", result.RemoteEndPoint);
+                
+                // Write to RabbitMQ at the edge for robustness
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _rabbitMqPublisher.PublishDatagramAsync(result.Buffer, result.RemoteEndPoint.Address.ToString());
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to publish datagram to RabbitMQ (will still be processed locally)");
+                    }
+                }, stoppingToken);
+                
                 await ProcessDatagramAsync(result, stoppingToken).ConfigureAwait(false);
             }
         }
