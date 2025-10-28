@@ -62,7 +62,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
             while (!stoppingToken.IsCancellationRequested)
             {
                 var result = await _udpClient.ReceiveAsync(stoppingToken).ConfigureAwait(false);
-                var receivedAt = DateTime.UtcNow; // Capture arrival time immediately
+                var arrivalTime = DateTime.UtcNow; // Capture arrival time immediately
                 
                 _logger.LogDebug("Received datagram from {ip}", result.RemoteEndPoint);
                 
@@ -73,7 +73,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
                     {
                         try
                         {
-                            await _rabbitMqPublisher.PublishDatagramAsync(result.Buffer, result.RemoteEndPoint.Address.ToString(), receivedAt);
+                            await _rabbitMqPublisher.PublishDatagramAsync(result.Buffer, result.RemoteEndPoint.Address.ToString());
                         }
                         catch (Exception ex)
                         {
@@ -81,7 +81,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
                             // Fallback to direct processing if RabbitMQ publish fails
                             try
                             {
-                                await _datagramProcessor.ProcessDatagramAsync(result.Buffer, result.RemoteEndPoint.Address, receivedAt, stoppingToken);
+                                await _datagramProcessor.ProcessDatagramAsync(result.Buffer, result.RemoteEndPoint.Address, arrivalTime, stoppingToken);
                             }
                             catch (Exception processingEx)
                             {
@@ -97,7 +97,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
                     {
                         try
                         {
-                            await _datagramProcessor.ProcessDatagramAsync(result.Buffer, result.RemoteEndPoint.Address, receivedAt, stoppingToken);
+                            await _datagramProcessor.ProcessDatagramAsync(result.Buffer, result.RemoteEndPoint.Address, arrivalTime, stoppingToken);
                         }
                         catch (Exception ex)
                         {

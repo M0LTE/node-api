@@ -88,7 +88,7 @@ public sealed class RabbitMqPublisher : IRabbitMqPublisher, IDisposable
         }
     }
 
-    public Task PublishDatagramAsync(byte[] datagram, string sourceIp, DateTime receivedAt)
+    public Task PublishDatagramAsync(byte[] datagram, string sourceIp)
     {
         if (!_isAvailable || _channel == null)
         {
@@ -102,7 +102,7 @@ public sealed class RabbitMqPublisher : IRabbitMqPublisher, IDisposable
             {
                 datagram = Convert.ToBase64String(datagram),
                 sourceIp,
-                receivedAt
+                receivedAt = DateTime.UtcNow
             };
 
             var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
@@ -118,7 +118,7 @@ public sealed class RabbitMqPublisher : IRabbitMqPublisher, IDisposable
                 basicProperties: properties,
                 body: body);
 
-            _logger.LogDebug("Published datagram from {SourceIp} to RabbitMQ (received at {ReceivedAt})", sourceIp, receivedAt);
+            _logger.LogDebug("Published datagram from {SourceIp} to RabbitMQ", sourceIp);
         }
         catch (Exception ex)
         {

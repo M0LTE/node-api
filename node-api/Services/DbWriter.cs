@@ -128,41 +128,34 @@ public class DbWriter(ILogger<DbWriter> logger) : IHostedService
     private async Task SaveOutputMessage(MqttApplicationMessageReceivedEventArgs args)
     { 
         var type = args.ApplicationMessage.UserProperties.SingleOrDefault(p => p.Name == "type");
-        var receivedAtProp = args.ApplicationMessage.UserProperties.SingleOrDefault(p => p.Name == "receivedAt");
-        
-        // Parse receivedAt timestamp from MQTT user property (ISO 8601 format)
-        DateTime? receivedAt = null;
-        if (receivedAtProp != null && !string.IsNullOrEmpty(receivedAtProp.Value))
-        {
-            if (DateTime.TryParse(receivedAtProp.Value, null, System.Globalization.DateTimeStyles.RoundtripKind, out var parsed))
-            {
-                receivedAt = DateTime.SpecifyKind(parsed, DateTimeKind.Utc);
-            }
-        }
+        var arrivalTimeStr = args.ApplicationMessage.UserProperties.SingleOrDefault(p => p.Name == "arrivalTime")?.Value;
 
-        logger.LogDebug("{type}: {payload} (received at: {receivedAt})", 
-            type?.Value ?? "unknown", 
-            args.ApplicationMessage.ConvertPayloadToString(),
-            receivedAt?.ToString("O") ?? "unknown");
+        logger.LogDebug("{type}: {payload}", type?.Value ?? "unknown", args.ApplicationMessage.ConvertPayloadToString());
+
+        // Parse arrival time if available
+        DateTime? arrivalTime = null;
+        if (!string.IsNullOrWhiteSpace(arrivalTimeStr) && DateTime.TryParse(arrivalTimeStr, null, System.Globalization.DateTimeStyles.RoundtripKind, out var parsed))
+        {
+            arrivalTime = parsed.Kind == DateTimeKind.Utc ? parsed : DateTime.SpecifyKind(parsed, DateTimeKind.Utc);
+        }
 
         if (type!.Value == "L2Trace")
         {
             using var connection = Database.GetConnection();
             
-            if (receivedAt.HasValue)
+            if (arrivalTime.HasValue)
             {
-                // Use the captured arrival timestamp
                 await connection.ExecuteAsync(
                     "INSERT INTO traces (json, timestamp) VALUES (@json, @timestamp)",
                     new
                     {
                         json = args.ApplicationMessage.ConvertPayloadToString(),
-                        timestamp = receivedAt.Value
+                        timestamp = arrivalTime.Value
                     });
             }
             else
             {
-                // Fallback to current time if receivedAt is not available
+                // Fallback to database default if no arrival time
                 await connection.ExecuteAsync(
                     "INSERT INTO traces (json) VALUES (@json)",
                     new
@@ -171,27 +164,26 @@ public class DbWriter(ILogger<DbWriter> logger) : IHostedService
                     });
             }
 
-            logger.LogDebug("Inserted trace into database with timestamp {timestamp}", receivedAt?.ToString("O") ?? "default");
+            logger.LogDebug("Inserted trace into database");
         }
         else if (type!.Value != "")
         {
             var json = args.ApplicationMessage.ConvertPayloadToString();
             using var connection = Database.GetConnection();
             
-            if (receivedAt.HasValue)
+            if (arrivalTime.HasValue)
             {
-                // Use the captured arrival timestamp
                 await connection.ExecuteAsync(
                     "INSERT INTO events (json, timestamp) VALUES (@json, @timestamp)",
                     new
                     {
                         json,
-                        timestamp = receivedAt.Value
+                        timestamp = arrivalTime.Value
                     });
             }
             else
             {
-                // Fallback to current time if receivedAt is not available
+                // Fallback to database default if no arrival time
                 await connection.ExecuteAsync(
                     "INSERT INTO events (json) VALUES (@json)",
                     new
@@ -200,7 +192,7 @@ public class DbWriter(ILogger<DbWriter> logger) : IHostedService
                     });
             }
 
-            logger.LogDebug("Inserted {type} event into database with timestamp {timestamp}", type, receivedAt?.ToString("O") ?? "default");
+            logger.LogDebug("Inserted {type} event into database", type);
         }
     }
 }

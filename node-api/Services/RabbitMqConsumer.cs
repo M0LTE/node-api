@@ -168,8 +168,13 @@ public sealed class RabbitMqConsumer : BackgroundService, IAsyncDisposable
                     _logger.LogDebug("Processing datagram from RabbitMQ: {SourceIp}, received at {ReceivedAt}", 
                         message.SourceIp, message.ReceivedAt);
                     
+                    // Use the original arrival time from when it was first received
+                    var arrivalTime = message.ReceivedAt.Kind == DateTimeKind.Utc 
+                        ? message.ReceivedAt 
+                        : DateTime.SpecifyKind(message.ReceivedAt, DateTimeKind.Utc);
+                    
                     // Process using the shared datagram processor
-                    await _datagramProcessor.ProcessDatagramAsync(datagram, ipAddress, message.ReceivedAt, stoppingToken);
+                    await _datagramProcessor.ProcessDatagramAsync(datagram, ipAddress, arrivalTime, stoppingToken);
                 }
                 catch (Exception ex)
                 {

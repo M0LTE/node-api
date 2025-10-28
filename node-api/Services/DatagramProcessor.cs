@@ -22,7 +22,7 @@ public class DatagramProcessor : IDatagramProcessor
     private readonly IGeoIpService _geoIpService;
     private readonly INetworkStateService _networkState;
     private readonly IManagedMqttClient _mqttClient;
-    private readonly Channel<(UdpNodeInfoJsonDatagram Frame, IPEndPoint RemoteEndPoint, DateTime ReceivedAt)> _processingChannel;
+    private readonly Channel<(UdpNodeInfoJsonDatagram Frame, IPEndPoint RemoteEndPoint, DateTime ArrivalTime)> _processingChannel;
     private readonly SemaphoreSlim _processingSemaphore;
 
     private const string udpTopic = "in/udp";
@@ -68,7 +68,7 @@ public class DatagramProcessor : IDatagramProcessor
         _ = ProcessFramesAsync();
     }
 
-    public async Task ProcessDatagramAsync(byte[] datagram, IPAddress sourceIpAddress, DateTime receivedAt, CancellationToken cancellationToken = default)
+    public async Task ProcessDatagramAsync(byte[] datagram, IPAddress sourceIpAddress, DateTime arrivalTime, CancellationToken cancellationToken = default)
     {
         var remoteEndPoint = new IPEndPoint(sourceIpAddress, 0);
         string? json = null;
@@ -114,6 +114,7 @@ public class DatagramProcessor : IDatagramProcessor
                 .WithTopic(udpTopic)
                 .WithPayload(json!)
                 .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
+                .WithUserProperty("arrivalTime", arrivalTime.ToString("O")) // ISO 8601 format
                 .Build();
             await _mqttClient.EnqueueAsync(message);
 
@@ -131,7 +132,7 @@ public class DatagramProcessor : IDatagramProcessor
                 {
                     // Only process valid datagrams
                     _logger.LogDebug("Deserialized valid datagram from {Endpoint} as type {Type}", remoteEndPoint, frame.DatagramType);
-                    await _processingChannel.Writer.WriteAsync((frame, remoteEndPoint, receivedAt), cancellationToken).ConfigureAwait(false);
+                    await _processingChannel.Writer.WriteAsync((frame, remoteEndPoint, arrivalTime), cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
@@ -161,6 +162,7 @@ public class DatagramProcessor : IDatagramProcessor
                             errors = mappedErrors
                         }))
                         .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
+                        .WithUserProperty("arrivalTime", arrivalTime.ToString("O"))
                         .Build();
                     await _mqttClient.EnqueueAsync(validationErrorMessage);
 
@@ -177,6 +179,7 @@ public class DatagramProcessor : IDatagramProcessor
                         .WithTopic(badJsonTopic)
                         .WithPayload(JsonSerializer.SerializeToUtf8Bytes(new { error = jsonException.Message, json }))
                         .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
+                        .WithUserProperty("arrivalTime", arrivalTime.ToString("O"))
                         .Build();
 
                     await _mqttClient.EnqueueAsync(badJsonMessage);
@@ -189,6 +192,7 @@ public class DatagramProcessor : IDatagramProcessor
                         .WithTopic(badTypeTopic)
                         .WithPayload(json)
                         .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
+                        .WithUserProperty("arrivalTime", arrivalTime.ToString("O"))
                         .Build();
 
                     await _mqttClient.EnqueueAsync(unknownTypeMessage);
@@ -209,7 +213,7 @@ public class DatagramProcessor : IDatagramProcessor
     {
         try
         {
-            await foreach (var (frame, remoteEndPoint, receivedAt) in _processingChannel.Reader.ReadAllAsync())
+            await foreach (var (frame, remoteEndPoint, arrivalTime) in _processingChannel.Reader.ReadAllAsync())
             {
                 // Process frames with controlled concurrency
                 _ = Task.Run(async () =>
@@ -217,7 +221,7 @@ public class DatagramProcessor : IDatagramProcessor
                     await _processingSemaphore.WaitAsync().ConfigureAwait(false);
                     try
                     {
-                        await HandleFrame(frame, remoteEndPoint, receivedAt).ConfigureAwait(false);
+                        await HandleFrame(frame, remoteEndPoint, arrivalTime).ConfigureAwait(false);
                     }
                     finally
                     {
@@ -236,7 +240,7 @@ public class DatagramProcessor : IDatagramProcessor
         }
     }
 
-    private async Task HandleFrame(UdpNodeInfoJsonDatagram frame, IPEndPoint remoteEndPoint, DateTime receivedAt)
+    private async Task HandleFrame(UdpNodeInfoJsonDatagram frame, IPEndPoint remoteEndPoint, DateTime arrivalTime)
     {
         _logger.LogDebug("Handling frame of type {Type} from {RemoteEndPoint}", frame.DatagramType, remoteEndPoint);
 
@@ -257,13 +261,12 @@ public class DatagramProcessor : IDatagramProcessor
                 .WithPayload(payload)
                 .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
                 .WithUserProperty("type", frame.DatagramType)
-                .WithUserProperty("receivedAt", receivedAt.ToString("O")) // ISO 8601 format
+                .WithUserProperty("arrivalTime", arrivalTime.ToString("O")) // ISO 8601 format
                 .Build();
 
             await _mqttClient.EnqueueAsync(message);
 
-            _logger.LogDebug("EnqueueAsync frame of type {Type} from {RemoteEndPoint} to topic {topic} (received at {ReceivedAt})", 
-                frame.DatagramType, remoteEndPoint, topic, receivedAt);
+            _logger.LogDebug("EnqueueAsync frame of type {Type} from {RemoteEndPoint} to topic {topic}", frame.DatagramType, remoteEndPoint, topic);
         }
         catch (Exception ex)
         {
