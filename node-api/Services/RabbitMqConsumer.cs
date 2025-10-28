@@ -3,6 +3,7 @@ using RabbitMQ.Client.Events;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Channels;
 
 namespace node_api.Services;
@@ -205,8 +206,13 @@ public sealed class RabbitMqConsumer : BackgroundService, IAsyncDisposable
 
     private class DatagramMessage
     {
+        [JsonPropertyName("datagram")]
         public required string Datagram { get; set; }
+        
+        [JsonPropertyName("sourceIp")]
         public required string SourceIp { get; set; }
+        
+        [JsonPropertyName("receivedAt")]
         public DateTime ReceivedAt { get; set; }
     }
 }
