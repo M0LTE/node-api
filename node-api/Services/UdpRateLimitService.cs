@@ -95,6 +95,7 @@ public class UdpRateLimitService : IUdpRateLimitService, IDisposable
         public Queue<DateTimeOffset> RequestTimestamps { get; } = new();
         public DateTimeOffset LastAccess { get; set; }
         public string? ReportingCallsign { get; set; }
+        public long TotalRequestCount { get; set; }
     }
 
     public UdpRateLimitService(
@@ -206,6 +207,7 @@ public class UdpRateLimitService : IUdpRateLimitService, IDisposable
             {
                 // Add this request
                 bucket.RequestTimestamps.Enqueue(now);
+                bucket.TotalRequestCount++;
             }
         }
 
@@ -396,7 +398,7 @@ public class UdpRateLimitService : IUdpRateLimitService, IDisposable
                     var requestsInWindow = bucket.RequestTimestamps.Count(t => t >= rollingWindowStart);
                     avgRps = requestsInWindow / _rollingWindowDuration.TotalSeconds;
                     
-                    total = bucket.RequestTimestamps.Count;
+                    total = (int)bucket.TotalRequestCount;
                 }
 
                 // Get callsign from bucket or map
