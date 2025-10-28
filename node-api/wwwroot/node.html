@@ -371,6 +371,11 @@
                 this.lastL2Trace = null;
                 this.l2Traces = []; // Store all L2 traces
                 this.maxTraces = 500; // Limit to prevent memory issues
+                this.ipAddressObfuscated = null;
+                this.geoIpCountryCode = null;
+                this.geoIpCountryName = null;
+                this.geoIpCity = null;
+                this.lastIpUpdate = null;
             }
 
             updateFromNodeUp(data) {
@@ -608,6 +613,11 @@
                         nodeData.lastSeen = node.lastSeen ? new Date(node.lastSeen) : null;
                         nodeData.l2TraceCount = node.l2TraceCount || 0;
                         nodeData.lastL2Trace = node.lastL2Trace ? new Date(node.lastL2Trace) : null;
+                        nodeData.ipAddressObfuscated = node.ipAddressObfuscated;
+                        nodeData.geoIpCountryCode = node.geoIpCountryCode;
+                        nodeData.geoIpCountryName = node.geoIpCountryName;
+                        nodeData.geoIpCity = node.geoIpCity;
+                        nodeData.lastIpUpdate = node.lastIpUpdate;
                     });
                 }
 
