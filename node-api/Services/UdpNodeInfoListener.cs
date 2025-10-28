@@ -19,6 +19,8 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
     private readonly ILogger<UdpNodeInfoListener> _logger;
     private readonly DatagramValidationService _validationService;
     private readonly IUdpRateLimitService _rateLimitService;
+    private readonly IGeoIpService _geoIpService;
+    private readonly INetworkStateService _networkState;
     private readonly Channel<(UdpNodeInfoJsonDatagram Frame, IPEndPoint RemoteEndPoint)> _processingChannel;
     private readonly ChannelWriter<(UdpNodeInfoJsonDatagram Frame, IPEndPoint RemoteEndPoint)> _channelWriter;
     private readonly SemaphoreSlim _processingSemaphore;
@@ -33,11 +35,15 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
     public UdpNodeInfoListener(
         ILogger<UdpNodeInfoListener> logger,
         DatagramValidationService validationService,
-        IUdpRateLimitService rateLimitService)
+        IUdpRateLimitService rateLimitService,
+        IGeoIpService geoIpService,
+        INetworkStateService networkState)
     {
         _logger = logger;
         _validationService = validationService;
         _rateLimitService = rateLimitService;
+        _geoIpService = geoIpService;
+        _networkState = networkState;
         var channelOptions = new BoundedChannelOptions(MaxConcurrentProcessing * 2)
         {
             FullMode = BoundedChannelFullMode.Wait,
@@ -309,6 +315,9 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
         {
             var frame = wrappedFrame.Datagram;
 
+            // Update IP address and GeoIP information for reporting nodes
+            UpdateNodeIpAddress(frame, remoteEndPoint.Address);
+
             // Network state is now updated by MqttStateSubscriber listening to out/# topics
             // This handler just publishes to MQTT
 
@@ -330,6 +339,50 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error handling frame from {RemoteEndPoint}", remoteEndPoint);
+        }
+    }
+
+    private void UpdateNodeIpAddress(UdpNodeInfoJsonDatagram frame, IPAddress ipAddress)
+    {
+        try
+        {
+            // Extract reporting callsign from various frame types
+            string? reportingCallsign = frame switch
+            {
+                L2Trace trace => trace.ReportFrom,
+                NodeUpEvent nodeUp => nodeUp.NodeCall,
+                NodeStatusReportEvent nodeStatus => nodeStatus.NodeCall,
+                NodeDownEvent nodeDown => nodeDown.NodeCall,
+                LinkUpEvent linkUp => linkUp.Node,
+                Models.LinkStatus linkStatus => linkStatus.Node,
+                LinkDisconnectionEvent linkDown => linkDown.Node,
+                CircuitUpEvent circuitUp => circuitUp.Node,
+                Models.CircuitStatus circuitStatus => circuitStatus.Node,
+                CircuitDisconnectionEvent circuitDown => circuitDown.Node,
+                _ => null
+            };
+
+            if (string.IsNullOrWhiteSpace(reportingCallsign))
+                return;
+
+            var node = _networkState.GetOrCreateNode(reportingCallsign);
+            
+            // Update IP address (obfuscated)
+            node.IpAddressObfuscated = _geoIpService.ObfuscateIpAddress(ipAddress);
+            node.LastIpUpdate = DateTime.UtcNow;
+
+            // Update GeoIP information if available
+            var geoInfo = _geoIpService.GetGeoIpInfo(ipAddress);
+            if (geoInfo != null)
+            {
+                node.GeoIpCountryCode = geoInfo.CountryCode;
+                node.GeoIpCountryName = geoInfo.CountryName;
+                node.GeoIpCity = geoInfo.City;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error updating IP address for frame");
         }
     }
 

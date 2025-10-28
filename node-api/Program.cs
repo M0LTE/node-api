@@ -35,6 +35,9 @@ var rateLimitSettings = builder.Configuration.GetSection("UdpRateLimit").Get<Udp
 builder.Services.AddSingleton(rateLimitSettings);
 builder.Services.AddSingleton<IUdpRateLimitService, UdpRateLimitService>();
 
+// Register GeoIP service
+builder.Services.AddSingleton<IGeoIpService, GeoIpService>();
+
 // Register network state services
 builder.Services.AddSingleton<INetworkStateService, NetworkStateService>();
 builder.Services.AddSingleton<NetworkStateUpdater>();
