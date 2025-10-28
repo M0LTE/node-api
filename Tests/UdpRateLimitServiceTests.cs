@@ -45,17 +45,18 @@ public class UdpRateLimitServiceTests
         var service = new UdpRateLimitService(CreateLogger(), settings);
         var ip = IPAddress.Parse("192.168.1.1");
 
-        // Act - Make 5 allowed requests
-        for (int i = 0; i < 5; i++)
+        // Act - Burst limit is 15 (3x sustained rate of 5)
+        // Make 15 allowed requests
+        for (int i = 0; i < 15; i++)
         {
-            (await service.ShouldAllowRequestAsync(ip)).Should().BeTrue();
+            (await service.ShouldAllowRequestAsync(ip)).Should().BeTrue($"request {i + 1} should be allowed (within burst limit)");
         }
 
-        // 6th request should be blocked
+        // 16th request should be blocked (exceeds burst limit)
         var result = await service.ShouldAllowRequestAsync(ip);
 
         // Assert
-        result.Should().BeFalse();
+        result.Should().BeFalse("request exceeds burst limit of 15");
     }
 
     [Fact]
@@ -70,19 +71,23 @@ public class UdpRateLimitServiceTests
         var service = new UdpRateLimitService(CreateLogger(), settings);
         var ip = IPAddress.Parse("192.168.1.1");
 
-        // Act - Fill the bucket
-        (await service.ShouldAllowRequestAsync(ip)).Should().BeTrue();
-        (await service.ShouldAllowRequestAsync(ip)).Should().BeTrue();
-        (await service.ShouldAllowRequestAsync(ip)).Should().BeFalse(); // Over limit
+        // Act - Burst limit is 6 (3x sustained rate of 2)
+        // Fill the burst limit
+        for (int i = 0; i < 6; i++)
+        {
+            (await service.ShouldAllowRequestAsync(ip)).Should().BeTrue($"request {i + 1} should be allowed");
+        }
+        
+        (await service.ShouldAllowRequestAsync(ip)).Should().BeFalse("request exceeds burst limit");
 
-        // Wait for rate limit window to pass
+        // Wait for burst window to reset (slightly over 1 second)
         await Task.Delay(1100);
 
         // Should allow new requests now
         var result = await service.ShouldAllowRequestAsync(ip);
 
         // Assert
-        result.Should().BeTrue();
+        result.Should().BeTrue("burst window has reset");
     }
 
     [Fact]
@@ -98,16 +103,19 @@ public class UdpRateLimitServiceTests
         var ip1 = IPAddress.Parse("192.168.1.1");
         var ip2 = IPAddress.Parse("192.168.1.2");
 
-        // Act - Max out ip1
-        (await service.ShouldAllowRequestAsync(ip1)).Should().BeTrue();
-        (await service.ShouldAllowRequestAsync(ip1)).Should().BeTrue();
-        (await service.ShouldAllowRequestAsync(ip1)).Should().BeFalse();
+        // Act - Burst limit is 6 (3x sustained rate of 2)
+        // Max out ip1's burst limit
+        for (int i = 0; i < 6; i++)
+        {
+            (await service.ShouldAllowRequestAsync(ip1)).Should().BeTrue($"ip1 request {i + 1} should be allowed");
+        }
+        (await service.ShouldAllowRequestAsync(ip1)).Should().BeFalse("ip1 exceeds burst limit");
 
-        // ip2 should still be allowed
+        // ip2 should still be allowed (independent tracking)
         var result = await service.ShouldAllowRequestAsync(ip2);
 
         // Assert
-        result.Should().BeTrue();
+        result.Should().BeTrue("ip2 has independent rate limit");
     }
 
     [Fact]
@@ -289,10 +297,12 @@ public class UdpRateLimitServiceTests
         await service.ShouldAllowRequestAsync(IPAddress.Parse("192.168.1.100")); // Blacklisted
         await service.ShouldAllowRequestAsync(IPAddress.Parse("192.168.1.100")); // Blacklisted again
         
+        // Burst limit is 6 (3x sustained rate of 2)
         var ip1 = IPAddress.Parse("192.168.1.1");
-        await service.ShouldAllowRequestAsync(ip1); // Allowed
-        await service.ShouldAllowRequestAsync(ip1); // Allowed
-        await service.ShouldAllowRequestAsync(ip1); // Rate limited
+        for (int i = 0; i < 7; i++) // 6 allowed, 1 blocked
+        {
+            await service.ShouldAllowRequestAsync(ip1);
+        }
 
         var ip2 = IPAddress.Parse("192.168.1.2");
         await service.ShouldAllowRequestAsync(ip2); // Allowed
@@ -301,7 +311,7 @@ public class UdpRateLimitServiceTests
 
         // Assert
         stats.TotalBlacklisted.Should().Be(2);
-        stats.TotalRateLimited.Should().Be(1);
+        stats.TotalRateLimited.Should().Be(1, "one request was blocked by burst limit");
         stats.ActiveIpAddresses.Should().Be(2); // ip1 and ip2
     }
 
@@ -313,17 +323,18 @@ public class UdpRateLimitServiceTests
         var service = new UdpRateLimitService(CreateLogger(), settings);
         var ip = IPAddress.Parse("192.168.1.1");
 
-        // Act - Make 10 requests (should all succeed)
-        for (int i = 0; i < 10; i++)
+        // Act - Burst limit is 30 (3x sustained rate of 10)
+        // Make 30 requests (should all succeed)
+        for (int i = 0; i < 30; i++)
         {
-            (await service.ShouldAllowRequestAsync(ip)).Should().BeTrue($"request {i + 1} should be allowed");
+            (await service.ShouldAllowRequestAsync(ip)).Should().BeTrue($"request {i + 1} should be allowed (within burst limit)");
         }
 
-        // 11th request should be blocked
+        // 31st request should be blocked (exceeds burst limit)
         var result = await service.ShouldAllowRequestAsync(ip);
 
         // Assert
-        result.Should().BeFalse();
+        result.Should().BeFalse("request exceeds burst limit of 30");
     }
 
     [Fact]

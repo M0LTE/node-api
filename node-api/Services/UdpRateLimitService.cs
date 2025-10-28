@@ -183,7 +183,7 @@ public class UdpRateLimitService : IUdpRateLimitService, IDisposable
                 bucket.RequestTimestamps.Dequeue();
             }
 
-            // Calculate current rates
+            // Calculate current rates BEFORE adding this request
             var requestsInRollingWindow = bucket.RequestTimestamps.Count;
             var requestsInLastSecond = bucket.RequestTimestamps.Count(t => t >= burstWindowStart);
             var averageRequestsPerSecond = requestsInRollingWindow / _rollingWindowDuration.TotalSeconds;
