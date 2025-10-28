@@ -128,33 +128,79 @@ public class DbWriter(ILogger<DbWriter> logger) : IHostedService
     private async Task SaveOutputMessage(MqttApplicationMessageReceivedEventArgs args)
     { 
         var type = args.ApplicationMessage.UserProperties.SingleOrDefault(p => p.Name == "type");
+        var receivedAtProp = args.ApplicationMessage.UserProperties.SingleOrDefault(p => p.Name == "receivedAt");
+        
+        // Parse receivedAt timestamp from MQTT user property (ISO 8601 format)
+        DateTime? receivedAt = null;
+        if (receivedAtProp != null && !string.IsNullOrEmpty(receivedAtProp.Value))
+        {
+            if (DateTime.TryParse(receivedAtProp.Value, null, System.Globalization.DateTimeStyles.RoundtripKind, out var parsed))
+            {
+                receivedAt = DateTime.SpecifyKind(parsed, DateTimeKind.Utc);
+            }
+        }
 
-        logger.LogDebug("{type}: {payload}", type?.Value ?? "unknown", args.ApplicationMessage.ConvertPayloadToString());
+        logger.LogDebug("{type}: {payload} (received at: {receivedAt})", 
+            type?.Value ?? "unknown", 
+            args.ApplicationMessage.ConvertPayloadToString(),
+            receivedAt?.ToString("O") ?? "unknown");
 
         if (type!.Value == "L2Trace")
         {
             using var connection = Database.GetConnection();
-            await connection.ExecuteAsync(
-                "INSERT INTO traces (json) VALUES (@json)",
-                new
-                {
-                    json = args.ApplicationMessage.ConvertPayloadToString()
-                });
+            
+            if (receivedAt.HasValue)
+            {
+                // Use the captured arrival timestamp
+                await connection.ExecuteAsync(
+                    "INSERT INTO traces (json, timestamp) VALUES (@json, @timestamp)",
+                    new
+                    {
+                        json = args.ApplicationMessage.ConvertPayloadToString(),
+                        timestamp = receivedAt.Value
+                    });
+            }
+            else
+            {
+                // Fallback to current time if receivedAt is not available
+                await connection.ExecuteAsync(
+                    "INSERT INTO traces (json) VALUES (@json)",
+                    new
+                    {
+                        json = args.ApplicationMessage.ConvertPayloadToString()
+                    });
+            }
 
-            logger.LogDebug("Inserted trace into database");
+            logger.LogDebug("Inserted trace into database with timestamp {timestamp}", receivedAt?.ToString("O") ?? "default");
         }
         else if (type!.Value != "")
         {
             var json = args.ApplicationMessage.ConvertPayloadToString();
             using var connection = Database.GetConnection();
-            await connection.ExecuteAsync(
-                "INSERT INTO events (json) VALUES (@json)",
-                new
-                {
-                    json
-                });
+            
+            if (receivedAt.HasValue)
+            {
+                // Use the captured arrival timestamp
+                await connection.ExecuteAsync(
+                    "INSERT INTO events (json, timestamp) VALUES (@json, @timestamp)",
+                    new
+                    {
+                        json,
+                        timestamp = receivedAt.Value
+                    });
+            }
+            else
+            {
+                // Fallback to current time if receivedAt is not available
+                await connection.ExecuteAsync(
+                    "INSERT INTO events (json) VALUES (@json)",
+                    new
+                    {
+                        json
+                    });
+            }
 
-            logger.LogDebug("Inserted {type} event into database", type);
+            logger.LogDebug("Inserted {type} event into database with timestamp {timestamp}", type, receivedAt?.ToString("O") ?? "default");
         }
     }
 }

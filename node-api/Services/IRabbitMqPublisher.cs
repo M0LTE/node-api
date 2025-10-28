@@ -10,7 +10,8 @@ public interface IRabbitMqPublisher
     /// </summary>
     /// <param name="datagram">The raw datagram bytes</param>
     /// <param name="sourceIp">The IP address the datagram was received from</param>
-    Task PublishDatagramAsync(byte[] datagram, string sourceIp);
+    /// <param name="receivedAt">The UTC timestamp when the datagram arrived at the server</param>
+    Task PublishDatagramAsync(byte[] datagram, string sourceIp, DateTime receivedAt);
     
     /// <summary>
     /// Check if RabbitMQ is available/configured
