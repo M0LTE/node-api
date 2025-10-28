@@ -35,6 +35,7 @@ public interface IUdpRateLimitService
 /// </summary>
 public class RateLimitStats
 {
+    public DateTimeOffset ServerTime { get; set; } = DateTimeOffset.UtcNow;
     public int TotalBlacklisted { get; set; }
     public int TotalRateLimited { get; set; }
     public int ActiveIpAddresses { get; set; }
@@ -344,6 +345,7 @@ public class UdpRateLimitService : IUdpRateLimitService, IDisposable
 
         return new RateLimitStats
         {
+            ServerTime = now,
             TotalBlacklisted = (int)Interlocked.Read(ref _totalBlacklisted),
             TotalRateLimited = (int)Interlocked.Read(ref _totalRateLimited),
             ActiveIpAddresses = _rateLimitBuckets.Count,

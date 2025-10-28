@@ -727,6 +727,14 @@
                 const response = await fetch('/api/diagnostics/ratelimit/stats');
                 if (response.ok) {
                     rateLimitStats = await response.json();
+                    
+                    // Store server time offset for accurate time calculations
+                    if (rateLimitStats.serverTime) {
+                        const serverTime = new Date(rateLimitStats.serverTime).getTime();
+                        const clientTime = Date.now();
+                        window.serverTimeOffset = serverTime - clientTime;
+                    }
+                    
                     updateRateLimitDisplay();
                 }
             } catch (err) {
@@ -836,7 +844,16 @@
         });
 
         function formatLastSeen(timestamp) {
-            const seconds = Math.floor((Date.now() - timestamp) / 1000);
+            // Use server time if available to avoid clock skew issues
+            const now = window.serverTimeOffset 
+                ? Date.now() + window.serverTimeOffset 
+                : Date.now();
+            
+            const seconds = Math.floor((now - timestamp) / 1000);
+            
+            // Handle future timestamps (clock skew) - shouldn't happen with server time, but just in case
+            if (seconds < 0) return 'just now';
+            
             if (seconds < 60) return `${seconds}s ago`;
             if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
             if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
