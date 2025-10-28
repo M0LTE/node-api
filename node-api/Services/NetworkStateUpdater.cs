@@ -154,7 +154,7 @@ public class NetworkStateUpdater : IHostedService
                 : evt.Remote;
         }
 
-        _logger.LogInformation("Updated link state from LinkUpEvent: {Key} ({Local} <-> {Remote})", link.CanonicalKey, evt.Local, evt.Remote);
+        _logger.LogDebug("Updated link state from LinkUpEvent: {Key} ({Local} <-> {Remote})", link.CanonicalKey, evt.Local, evt.Remote);
     }
 
     public void UpdateFromLinkStatus(Models.LinkStatus evt)
@@ -202,7 +202,7 @@ public class NetworkStateUpdater : IHostedService
                 : evt.Remote;
         }
 
-        _logger.LogInformation("Updated link state from LinkStatus: {Key} ({Local} <-> {Remote})", link.CanonicalKey, evt.Local, evt.Remote);
+        _logger.LogDebug("Updated link state from LinkStatus: {Key} ({Local} <-> {Remote})", link.CanonicalKey, evt.Local, evt.Remote);
     }
 
     public void UpdateFromLinkDownEvent(LinkDisconnectionEvent evt)
@@ -262,7 +262,7 @@ public class NetworkStateUpdater : IHostedService
                 : evt.Remote;
         }
 
-        _logger.LogInformation("Updated circuit state from CircuitUpEvent: {Key} ({Local} <-> {Remote})", circuit.CanonicalKey, evt.Local, evt.Remote);
+        _logger.LogDebug("Updated circuit state from CircuitUpEvent: {Key} ({Local} <-> {Remote})", circuit.CanonicalKey, evt.Local, evt.Remote);
     }
 
     public void UpdateFromCircuitStatus(Models.CircuitStatus evt)
@@ -298,7 +298,7 @@ public class NetworkStateUpdater : IHostedService
                 : evt.Remote;
         }
 
-        _logger.LogInformation("Updated circuit state from CircuitStatus: {Key} ({Local} <-> {Remote})", circuit.CanonicalKey, evt.Local, evt.Remote);
+        _logger.LogDebug("Updated circuit state from CircuitStatus: {Key} ({Local} <-> {Remote})", circuit.CanonicalKey, evt.Local, evt.Remote);
     }
 
     public void UpdateFromCircuitDownEvent(CircuitDisconnectionEvent evt)
