@@ -7,7 +7,6 @@ using node_api.Models;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.Json;
-using PerfCounter = System.Diagnostics.PerformanceCounter;
 
 namespace node_api.Services;
 
@@ -23,8 +22,10 @@ public class SystemMetricsPublisher : BackgroundService
     private readonly DateTime _startTime;
     private readonly DateTime _systemStartTime;
     private const string MetricsTopic = "metrics/system";
-    private PerfCounter? _cpuCounter;
-    private PerfCounter? _availableMemoryCounter;
+    
+    // Linux CPU tracking
+    private long _previousTotalCpuTime;
+    private long _previousIdleCpuTime;
 
     public SystemMetricsPublisher(ILogger<SystemMetricsPublisher> logger)
     {
@@ -32,20 +33,16 @@ public class SystemMetricsPublisher : BackgroundService
         _startTime = DateTime.UtcNow;
         _systemStartTime = DateTime.UtcNow - TimeSpan.FromMilliseconds(Environment.TickCount64);
 
-        // Initialize performance counters (Windows only)
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        // Initialize Linux CPU tracking
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
             try
             {
-                _cpuCounter = new PerfCounter("Processor", "% Processor Time", "_Total");
-                _availableMemoryCounter = new PerfCounter("Memory", "Available MBytes");
-                
-                // Prime the CPU counter (first call returns 0)
-                _cpuCounter.NextValue();
+                ReadLinuxCpuStats(out _previousTotalCpuTime, out _previousIdleCpuTime);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to initialize performance counters. CPU and memory metrics will be unavailable.");
+                _logger.LogWarning(ex, "Failed to initialize Linux CPU tracking");
             }
         }
     }
@@ -90,9 +87,6 @@ public class SystemMetricsPublisher : BackgroundService
             await _mqttClient.StopAsync();
             _mqttClient.Dispose();
         }
-
-        _cpuCounter?.Dispose();
-        _availableMemoryCounter?.Dispose();
     }
 
     private async Task InitializeMqttClientAsync(CancellationToken ct)
@@ -259,17 +253,19 @@ public class SystemMetricsPublisher : BackgroundService
             long? availableMemory = null;
             decimal? cpuUsage = null;
 
-            // Windows-specific metrics
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && _cpuCounter != null && _availableMemoryCounter != null)
+            // Linux metrics (production environment)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 try
                 {
-                    cpuUsage = Math.Round((decimal)_cpuCounter.NextValue(), 2);
-                    availableMemory = (long)_availableMemoryCounter.NextValue() * 1024 * 1024; // Convert MB to bytes
+                    cpuUsage = GetLinuxCpuUsage();
+                    var memInfo = GetLinuxMemoryInfo();
+                    totalMemory = memInfo.Total;
+                    availableMemory = memInfo.Available;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogDebug(ex, "Failed to read performance counters");
+                    _logger.LogDebug(ex, "Failed to read Linux /proc stats");
                 }
             }
 
@@ -301,6 +297,90 @@ public class SystemMetricsPublisher : BackgroundService
             _logger.LogWarning(ex, "Failed to collect system metrics");
             return null;
         }
+    }
+
+    private decimal? GetLinuxCpuUsage()
+    {
+        try
+        {
+            ReadLinuxCpuStats(out var totalCpuTime, out var idleCpuTime);
+
+            var totalDelta = totalCpuTime - _previousTotalCpuTime;
+            var idleDelta = idleCpuTime - _previousIdleCpuTime;
+
+            _previousTotalCpuTime = totalCpuTime;
+            _previousIdleCpuTime = idleCpuTime;
+
+            if (totalDelta <= 0)
+            {
+                return null;
+            }
+
+            var usage = 100.0m * (1.0m - ((decimal)idleDelta / (decimal)totalDelta));
+            return Math.Round(usage, 2);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static void ReadLinuxCpuStats(out long totalCpuTime, out long idleCpuTime)
+    {
+        var lines = File.ReadAllLines("/proc/stat");
+        var cpuLine = lines.FirstOrDefault(l => l.StartsWith("cpu "));
+        
+        if (cpuLine == null)
+        {
+            throw new InvalidOperationException("Could not find CPU line in /proc/stat");
+        }
+
+        var parts = cpuLine.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        
+        // CPU line format: cpu user nice system idle iowait irq softirq steal guest guest_nice
+        // We need at least: user, nice, system, idle
+        if (parts.Length < 5)
+        {
+            throw new InvalidOperationException("Unexpected /proc/stat format");
+        }
+
+        var user = long.Parse(parts[1]);
+        var nice = long.Parse(parts[2]);
+        var system = long.Parse(parts[3]);
+        var idle = long.Parse(parts[4]);
+        var iowait = parts.Length > 5 ? long.Parse(parts[5]) : 0;
+        var irq = parts.Length > 6 ? long.Parse(parts[6]) : 0;
+        var softirq = parts.Length > 7 ? long.Parse(parts[7]) : 0;
+        var steal = parts.Length > 8 ? long.Parse(parts[8]) : 0;
+
+        totalCpuTime = user + nice + system + idle + iowait + irq + softirq + steal;
+        idleCpuTime = idle + iowait;
+    }
+
+    private static (long Total, long Available) GetLinuxMemoryInfo()
+    {
+        var lines = File.ReadAllLines("/proc/meminfo");
+        var memInfo = lines
+            .Select(line => line.Split(':', StringSplitOptions.TrimEntries))
+            .Where(parts => parts.Length == 2)
+            .ToDictionary(
+                parts => parts[0],
+                parts => long.Parse(parts[1].Split(' ')[0]) * 1024 // Convert KB to bytes
+            );
+
+        var total = memInfo.GetValueOrDefault("MemTotal", 0);
+        var available = memInfo.GetValueOrDefault("MemAvailable", 0);
+
+        // Fallback if MemAvailable is not present (older kernels)
+        if (available == 0)
+        {
+            var free = memInfo.GetValueOrDefault("MemFree", 0);
+            var buffers = memInfo.GetValueOrDefault("Buffers", 0);
+            var cached = memInfo.GetValueOrDefault("Cached", 0);
+            available = free + buffers + cached;
+        }
+
+        return (total, available);
     }
 
     private ApplicationMetrics CollectApplicationMetrics()
