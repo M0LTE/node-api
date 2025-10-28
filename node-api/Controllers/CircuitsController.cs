@@ -19,14 +19,18 @@ public class CircuitsController : ControllerBase
     }
 
     /// <summary>
-    /// Get all circuits currently known to the system
+    /// Get all circuits currently known to the system (excluding TEST callsigns)
     /// </summary>
     [HttpGet]
     public IActionResult GetAllCircuits()
     {
-        var circuits = _networkState.GetAllCircuits();
-        _logger.LogInformation("GetAllCircuits called, returning {Count} circuits", circuits.Count);
-        return Ok(circuits.Values);
+        var circuits = _networkState.GetAllCircuits()
+            .Values
+            .Where(c => !ContainsTestCallsign(c.Endpoint1) && 
+                       !ContainsTestCallsign(c.Endpoint2));
+        
+        _logger.LogInformation("GetAllCircuits called, returning {Count} circuits", circuits.Count());
+        return Ok(circuits);
     }
 
     /// <summary>
@@ -42,21 +46,30 @@ public class CircuitsController : ControllerBase
             return NotFound(new { message = $"Circuit {canonicalKey} not found" });
         }
 
+        // Don't filter TEST when explicitly requested by canonical key
         return Ok(circuit);
     }
 
     /// <summary>
-    /// Get all circuits involving a specific callsign
+    /// Get all circuits involving a specific callsign (excludes TEST unless explicitly requesting TEST)
     /// </summary>
     [HttpGet("node/{callsign}")]
     public IActionResult GetCircuitsForNode(string callsign)
     {
         var circuits = _networkState.GetCircuitsForNode(callsign);
+        
+        // Don't filter if explicitly requesting TEST callsign
+        if (!ContainsTestCallsign(callsign))
+        {
+            circuits = circuits.Where(c => !ContainsTestCallsign(c.Endpoint1) && 
+                                          !ContainsTestCallsign(c.Endpoint2));
+        }
+        
         return Ok(circuits);
     }
 
     /// <summary>
-    /// Get all circuits involving any SSID of a base callsign
+    /// Get all circuits involving any SSID of a base callsign (excludes TEST unless explicitly requesting TEST)
     /// </summary>
     [HttpGet("base/{baseCallsign}")]
     public IActionResult GetCircuitsForBaseCallsign(string baseCallsign)
@@ -64,10 +77,27 @@ public class CircuitsController : ControllerBase
         var nodes = _networkState.GetNodesByBaseCallsign(baseCallsign);
         var allCircuits = nodes
             .SelectMany(node => _networkState.GetCircuitsForNode(node.Callsign))
-            .DistinctBy(circuit => circuit.CanonicalKey)
+            .DistinctBy(circuit => circuit.CanonicalKey);
+        
+        // Don't filter if explicitly requesting TEST base callsign
+        if (!baseCallsign.Equals("TEST", StringComparison.OrdinalIgnoreCase))
+        {
+            allCircuits = allCircuits.Where(c => !ContainsTestCallsign(c.Endpoint1) && 
+                                                !ContainsTestCallsign(c.Endpoint2));
+        }
+        
+        allCircuits = allCircuits
             .OrderByDescending(circuit => circuit.Status == Models.NetworkState.CircuitStatus.Active)
             .ThenByDescending(circuit => circuit.LastUpdate);
         
         return Ok(allCircuits);
+    }
+
+    private bool ContainsTestCallsign(string address)
+    {
+        // Circuit addresses can be complex like "G8PZT@G8PZT:14c0" or "G8PZT-4:0001"
+        // Extract the callsign part before @ or :
+        var callsignPart = address.Split('@', ':')[0];
+        return _networkState.IsTestCallsign(callsignPart);
     }
 }

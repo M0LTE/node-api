@@ -107,6 +107,13 @@ Solution:
 - Service handles burst traffic
 - Service handles malformed JSON gracefully
 
+**Note on TEST Callsigns**: The UDP tests use TEST callsigns (e.g., "TEST", "TEST-1"). These are:
+- ? **Still processed** by the UDP listener, validation, MQTT publishing, and database storage
+- ? **Available via explicit API requests** (e.g., `/api/nodes/TEST`, `/api/traces?reportFrom=TEST`)
+- ? **Filtered from general listings** (e.g., `/api/nodes`, `/api/links`, `/api/circuits` won't include TEST by default)
+
+This filtering is **intentional** to keep production monitoring clean while allowing testing to work normally.
+
 ### ? MQTT Tests (Only test MQTT broker)
 - MQTT broker is accessible (doesn't require running service)
 - Can subscribe to input topics (`in/udp`)
@@ -177,9 +184,10 @@ Add to your CI/CD pipeline:
 ### ? All Tests Pass
 Your service is working correctly:
 - HTTP API is accessible
-- UDP listener is running
+- UDP listener is running and processing TEST datagrams
 - MQTT broker is reachable
 - Service handles valid and invalid input correctly
+- TEST data is properly filtered from general API responses
 
 ### ? HTTP Tests Fail with "Connection refused"
 **The service is not running!**
@@ -192,6 +200,7 @@ Your service is working correctly:
 - Check `UdpHost` in config
 - Look at service logs for errors
 - Ensure service is actually running
+- Verify TEST callsigns are still being processed (check logs/MQTT)
 
 ### ? MQTT Tests Fail
 - Verify MQTT broker is accessible
@@ -228,6 +237,24 @@ $udp.Send($bytes, $bytes.Length, "localhost", 13579)
 $udp.Close()
 ```
 
+### Verify TEST Data Processing
+
+After sending a TEST datagram, you can verify it was processed:
+
+```bash
+# Check MQTT for the TEST event (shows UDP listener received it)
+mosquitto_sub -h node-api.packet.oarc.uk -t "out/NodeUpEvent" -v -C 1
+
+# Query API for TEST node explicitly (shows it was stored)
+curl http://localhost:5000/api/nodes/TEST
+
+# Query traces from TEST (shows traces were stored)
+curl "http://localhost:5000/api/traces?reportFrom=TEST&limit=5"
+
+# General node list won't include TEST (this is expected)
+curl http://localhost:5000/api/nodes  # TEST filtered out
+```
+
 ### Monitor MQTT Messages
 
 ```bash
@@ -254,6 +281,35 @@ mosquitto_sub -h node-api.packet.oarc.uk -t "in/udp" -v
 | **Network Required** | No | Yes |
 | **External Services** | Mocked | Real (MQTT, UDP) |
 | **Speed** | Fast (seconds) | Slower (network calls) |
+| **TEST Callsigns** | Used internally | Used and verified |
+
+## TEST Callsign Behavior
+
+The smoke tests use TEST callsigns extensively. Here's how they behave:
+
+### ? What Works
+- **UDP datagrams**: TEST callsigns accepted and processed normally
+- **Validation**: TEST datagrams validated like any other
+- **MQTT publishing**: TEST events published to MQTT topics
+- **Database storage**: TEST data persisted to database
+- **Explicit queries**: Can request TEST data directly:
+  - `/api/nodes/TEST` - Get specific TEST node
+  - `/api/nodes/base/TEST` - Get all TEST-X nodes
+  - `/api/traces?reportFrom=TEST` - Get TEST traces
+  - `/api/links/node/TEST` - Get TEST links
+  - `/api/circuits/node/TEST` - Get TEST circuits
+
+### ? What's Filtered
+- **General listings**: TEST excluded from default responses:
+  - `/api/nodes` - Won't include TEST nodes
+  - `/api/links` - Won't include links involving TEST
+  - `/api/circuits` - Won't include circuits involving TEST
+  - `/api/traces` - Won't include TEST traces unless `reportFrom=TEST` specified
+
+This design allows:
+- ? **Testing to work normally** - Send TEST datagrams, verify processing
+- ? **Production monitoring to stay clean** - No TEST clutter in dashboards
+- ? **Explicit verification** - Can still check TEST data when needed
 
 ## Pro Tips
 
@@ -320,6 +376,12 @@ curl https://node-api.packet.oarc.uk/
 mosquitto_sub -h node-api.packet.oarc.uk -t "test" -d
 ```
 
+### "TEST data not appearing"
+This is expected behavior:
+- ? **TEST data IS processed** - Check MQTT topics, service logs, or explicit API queries
+- ? **TEST data NOT in general listings** - This is intentional to keep production clean
+- ?? **To verify TEST data**: Use explicit queries like `/api/nodes/TEST` or `/api/traces?reportFrom=TEST`
+
 ## Support
 
 - Check service logs for detailed error information
@@ -327,3 +389,4 @@ mosquitto_sub -h node-api.packet.oarc.uk -t "test" -d
 - See the individual test files for what each test validates
 - **Remember: The service must be running for most tests to pass!**
 - **Configuration is in `appsettings.json` - that's the only place to look!**
+- **TEST callsigns are processed but filtered from general API responses by design**

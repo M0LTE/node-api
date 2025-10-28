@@ -2,12 +2,24 @@ using Dapper;
 using node_api.Controllers;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace node_api.Services;
 
-public class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger) : ITraceRepository
+public partial class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger) : ITraceRepository
 {
     private const int SlowQueryThresholdMs = 5000;
+
+    [GeneratedRegex(@"^TEST(-([0-9]|1[0-5]))?$", RegexOptions.IgnoreCase)]
+    private static partial Regex TestCallsignRegex();
+
+    private static bool IsTestCallsign(string? callsign)
+    {
+        if (string.IsNullOrWhiteSpace(callsign))
+            return false;
+
+        return TestCallsignRegex().IsMatch(callsign);
+    }
 
     public async Task<(IReadOnlyList<TracesController.TraceDto> Data, string? NextCursor, CountResult TotalCount)> GetTracesAsync(
         string? source,
@@ -24,6 +36,19 @@ public class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger) : ITrace
         var where = new List<string> { "1=1" };
         var p = new DynamicParameters();
 
+        // Exclude TEST callsigns from reportFrom unless explicitly requested
+        if (!string.IsNullOrWhiteSpace(reportFrom))
+        {
+            where.Add("`reportFrom_idx` = @reportFrom");
+            p.Add("reportFrom", reportFrom);
+        }
+        else
+        {
+            // Exclude TEST and TEST-0 through TEST-15
+            where.Add("`reportFrom_idx` NOT REGEXP @testPattern");
+            p.Add("testPattern", "^TEST(-([0-9]|1[0-5]))?$");
+        }
+
         if (!string.IsNullOrWhiteSpace(source))
         {
             where.Add("`srce_idx` = @source");
@@ -39,12 +64,6 @@ public class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger) : ITrace
         {
             where.Add("`type_idx` = @type");
             p.Add("type", type);
-        }
-
-        if (!string.IsNullOrWhiteSpace(reportFrom))
-        {
-            where.Add("`reportFrom_idx` = @reportFrom");
-            p.Add("reportFrom", reportFrom);
         }
 
         if (from.HasValue)

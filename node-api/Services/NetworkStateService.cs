@@ -1,5 +1,6 @@
 using node_api.Models.NetworkState;
 using System.Collections.Concurrent;
+using System.Text.RegularExpressions;
 
 namespace node_api.Services;
 
@@ -30,18 +31,30 @@ public interface INetworkStateService
     // Utility
     string GetCanonicalLinkKey(string local, string remote);
     string GetCanonicalCircuitKey(string local, string remote);
+    bool IsTestCallsign(string callsign);
 }
 
-public class NetworkStateService : INetworkStateService
+public partial class NetworkStateService : INetworkStateService
 {
     private readonly ConcurrentDictionary<string, NodeState> _nodes = new();
     private readonly ConcurrentDictionary<string, LinkState> _links = new();
     private readonly ConcurrentDictionary<string, CircuitState> _circuits = new();
     private readonly ILogger<NetworkStateService> _logger;
 
+    [GeneratedRegex(@"^TEST(-([0-9]|1[0-5]))?$", RegexOptions.IgnoreCase)]
+    private static partial Regex TestCallsignRegex();
+
     public NetworkStateService(ILogger<NetworkStateService> logger)
     {
         _logger = logger;
+    }
+
+    public bool IsTestCallsign(string callsign)
+    {
+        if (string.IsNullOrWhiteSpace(callsign))
+            return false;
+
+        return TestCallsignRegex().IsMatch(callsign);
     }
 
     public NodeState GetOrCreateNode(string callsign)
