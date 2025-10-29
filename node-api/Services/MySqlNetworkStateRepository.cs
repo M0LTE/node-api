@@ -8,7 +8,7 @@ namespace node_api.Services;
 /// MySQL-backed repository for persisting network state.
 /// All operations are idempotent to support multi-instance deployments.
 /// </summary>
-public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> logger)
+public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> logger, QueryFrequencyTracker tracker)
 {
     private const int SlowQueryThresholdMs = 1000;
 
@@ -96,7 +96,8 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                     node.LastIpUpdate
                 }, cancellationToken: ct),
                 logger,
-                SlowQueryThresholdMs);
+                SlowQueryThresholdMs,
+                tracker);
         }
         catch (Exception ex)
         {
@@ -136,7 +137,8 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                 conn,
                 new CommandDefinition(sql, new { callsign }, cancellationToken: ct),
                 logger,
-                SlowQueryThresholdMs);
+                SlowQueryThresholdMs,
+                tracker);
 
             return row != null ? MapToNodeState(row) : null;
         }
@@ -177,7 +179,8 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                 conn,
                 new CommandDefinition(sql, cancellationToken: ct),
                 logger,
-                SlowQueryThresholdMs);
+                SlowQueryThresholdMs,
+                tracker);
 
             return rows.Select(MapToNodeState).ToList();
         }
@@ -390,7 +393,8 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                     Ep2LastUpdate = ep2?.LastUpdate
                 }, cancellationToken: ct),
                 logger,
-                SlowQueryThresholdMs);
+                SlowQueryThresholdMs,
+                tracker);
         }
         catch (Exception ex)
         {
@@ -415,7 +419,8 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                 conn,
                 new CommandDefinition(sql, new { canonicalKey }, cancellationToken: ct),
                 logger,
-                SlowQueryThresholdMs);
+                SlowQueryThresholdMs,
+                tracker);
 
             return row != null ? MapToLinkState(row) : null;
         }
@@ -439,7 +444,8 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                 conn,
                 new CommandDefinition(sql, cancellationToken: ct),
                 logger,
-                SlowQueryThresholdMs);
+                SlowQueryThresholdMs,
+                tracker);
 
             return rows.Select(MapToLinkState).ToList();
         }
@@ -677,7 +683,8 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                     Ep2LastUpdate = ep2?.LastUpdate
                 }, cancellationToken: ct),
                 logger,
-                SlowQueryThresholdMs);
+                SlowQueryThresholdMs,
+                tracker);
         }
         catch (Exception ex)
         {
@@ -702,7 +709,8 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                 conn,
                 new CommandDefinition(sql, new { canonicalKey }, cancellationToken: ct),
                 logger,
-                SlowQueryThresholdMs);
+                SlowQueryThresholdMs,
+                tracker);
 
             return row != null ? MapToCircuitState(row) : null;
         }
@@ -726,7 +734,8 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                 conn,
                 new CommandDefinition(sql, cancellationToken: ct),
                 logger,
-                SlowQueryThresholdMs);
+                SlowQueryThresholdMs,
+                tracker);
 
             return rows.Select(MapToCircuitState).ToList();
         }

@@ -268,4 +268,15 @@ public class DiagnosticsController : ControllerBase
         var stats = rateLimitService.GetStats();
         return Ok(stats);
     }
+
+    /// <summary>
+    /// Gets database query frequency statistics showing which queries are being called how often per hour
+    /// </summary>
+    [HttpGet("db/query-frequency")]
+    [Produces("application/json")]
+    public IActionResult GetQueryFrequencyStats([FromServices] Services.QueryFrequencyTracker tracker)
+    {
+        var stats = tracker.GetStats();
+        return Ok(stats);
+    }
 }
