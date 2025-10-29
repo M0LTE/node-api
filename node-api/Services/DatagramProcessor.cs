@@ -20,7 +20,6 @@ public class DatagramProcessor : IDatagramProcessor
     private readonly DatagramValidationService _validationService;
     private readonly IUdpRateLimitService _rateLimitService;
     private readonly IGeoIpService _geoIpService;
-    private readonly INetworkStateService _networkState;
     private readonly IManagedMqttClient _mqttClient;
     private readonly Channel<(UdpNodeInfoJsonDatagram Frame, IPEndPoint RemoteEndPoint, DateTime ArrivalTime)> _processingChannel;
     private readonly SemaphoreSlim _processingSemaphore;
@@ -44,14 +43,12 @@ public class DatagramProcessor : IDatagramProcessor
         DatagramValidationService validationService,
         IUdpRateLimitService rateLimitService,
         IGeoIpService geoIpService,
-        INetworkStateService networkState,
         IManagedMqttClient mqttClient)
     {
         _logger = logger;
         _validationService = validationService;
         _rateLimitService = rateLimitService;
         _geoIpService = geoIpService;
-        _networkState = networkState;
         _mqttClient = mqttClient;
 
         var channelOptions = new BoundedChannelOptions(MaxConcurrentProcessing * 2)
@@ -246,8 +243,9 @@ public class DatagramProcessor : IDatagramProcessor
 
         try
         {
-            // Update IP address and GeoIP information for reporting nodes
-            UpdateNodeIpAddress(frame, remoteEndPoint.Address);
+            // IP address information will be added as user properties to MQTT message
+            // This allows downstream subscribers (like MqttStateSubscriber) to update state if needed
+            // without modifying in-memory state multiple times for the same event
 
             // Network state is now updated by MqttStateSubscriber listening to out/# topics
             // This handler just publishes to MQTT
@@ -256,13 +254,37 @@ public class DatagramProcessor : IDatagramProcessor
 
             var topic = outTopicPrefix + "/" + frame.DatagramType;
 
-            var message = new MqttApplicationMessageBuilder()
+            var messageBuilder = new MqttApplicationMessageBuilder()
                 .WithTopic(topic)
                 .WithPayload(payload)
                 .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
                 .WithUserProperty("type", frame.DatagramType)
-                .WithUserProperty("arrivalTime", arrivalTime.ToString("O")) // ISO 8601 format
-                .Build();
+                .WithUserProperty("arrivalTime", arrivalTime.ToString("O")); // ISO 8601 format
+
+            // Add IP address information as user properties for downstream processing
+            var reportingCallsign = ExtractReportingCallsign(frame);
+            if (!string.IsNullOrWhiteSpace(reportingCallsign))
+            {
+                messageBuilder.WithUserProperty("sourceIp", remoteEndPoint.Address.ToString());
+
+                // Add obfuscated IP
+                var obfuscatedIp = _geoIpService.ObfuscateIpAddress(remoteEndPoint.Address);
+                messageBuilder.WithUserProperty("ipObfuscated", obfuscatedIp);
+
+                // Add GeoIP info if available
+                var geoInfo = _geoIpService.GetGeoIpInfo(remoteEndPoint.Address);
+                if (geoInfo != null)
+                {
+                    if (!string.IsNullOrWhiteSpace(geoInfo.CountryCode))
+                        messageBuilder.WithUserProperty("geoCountryCode", geoInfo.CountryCode);
+                    if (!string.IsNullOrWhiteSpace(geoInfo.CountryName))
+                        messageBuilder.WithUserProperty("geoCountryName", geoInfo.CountryName);
+                    if (!string.IsNullOrWhiteSpace(geoInfo.City))
+                        messageBuilder.WithUserProperty("geoCity", geoInfo.City);
+                }
+            }
+
+            var message = messageBuilder.Build();
 
             await _mqttClient.EnqueueAsync(message);
 
@@ -274,47 +296,21 @@ public class DatagramProcessor : IDatagramProcessor
         }
     }
 
-    private void UpdateNodeIpAddress(UdpNodeInfoJsonDatagram frame, IPAddress ipAddress)
+    private static string? ExtractReportingCallsign(UdpNodeInfoJsonDatagram frame)
     {
-        try
+        return frame switch
         {
-            // Extract reporting callsign from various frame types
-            string? reportingCallsign = frame switch
-            {
-                L2Trace trace => trace.ReportFrom,
-                NodeUpEvent nodeUp => nodeUp.NodeCall,
-                NodeStatusReportEvent nodeStatus => nodeStatus.NodeCall,
-                NodeDownEvent nodeDown => nodeDown.NodeCall,
-                LinkUpEvent linkUp => linkUp.Node,
-                Models.LinkStatus linkStatus => linkStatus.Node,
-                LinkDisconnectionEvent linkDown => linkDown.Node,
-                CircuitUpEvent circuitUp => circuitUp.Node,
-                Models.CircuitStatus circuitStatus => circuitStatus.Node,
-                CircuitDisconnectionEvent circuitDown => circuitDown.Node,
-                _ => null
-            };
-
-            if (string.IsNullOrWhiteSpace(reportingCallsign))
-                return;
-
-            var node = _networkState.GetOrCreateNode(reportingCallsign);
-
-            // Update IP address (obfuscated)
-            node.IpAddressObfuscated = _geoIpService.ObfuscateIpAddress(ipAddress);
-            node.LastIpUpdate = DateTime.UtcNow;
-
-            // Update GeoIP information if available
-            var geoInfo = _geoIpService.GetGeoIpInfo(ipAddress);
-            if (geoInfo != null)
-            {
-                node.GeoIpCountryCode = geoInfo.CountryCode;
-                node.GeoIpCountryName = geoInfo.CountryName;
-                node.GeoIpCity = geoInfo.City;
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Error updating IP address for frame");
-        }
+            L2Trace trace => trace.ReportFrom,
+            NodeUpEvent nodeUp => nodeUp.NodeCall,
+            NodeStatusReportEvent nodeStatus => nodeStatus.NodeCall,
+            NodeDownEvent nodeDown => nodeDown.NodeCall,
+            LinkUpEvent linkUp => linkUp.Node,
+            Models.LinkStatus linkStatus => linkStatus.Node,
+            LinkDisconnectionEvent linkDown => linkDown.Node,
+            CircuitUpEvent circuitUp => circuitUp.Node,
+            Models.CircuitStatus circuitStatus => circuitStatus.Node,
+            CircuitDisconnectionEvent circuitDown => circuitDown.Node,
+            _ => null
+        };
     }
 }

@@ -84,6 +84,13 @@ public class MqttStateSubscriber : BackgroundService
 
             _logger.LogDebug("Received message on topic {Topic}", topic);
 
+            // Extract IP address information from user properties if available
+            var userProps = args.ApplicationMessage.UserProperties;
+            var ipObfuscated = userProps.FirstOrDefault(p => p.Name == "ipObfuscated")?.Value;
+            var geoCountryCode = userProps.FirstOrDefault(p => p.Name == "geoCountryCode")?.Value;
+            var geoCountryName = userProps.FirstOrDefault(p => p.Name == "geoCountryName")?.Value;
+            var geoCity = userProps.FirstOrDefault(p => p.Name == "geoCity")?.Value;
+
             // Parse and route to appropriate handler based on topic
             switch (topic)
             {
@@ -92,6 +99,7 @@ public class MqttStateSubscriber : BackgroundService
                     if (nodeUp != null)
                     {
                         _networkStateUpdater.UpdateFromNodeUpEvent(nodeUp);
+                        UpdateNodeIpInfo(nodeUp.NodeCall, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
                     }
                     break;
 
@@ -100,6 +108,7 @@ public class MqttStateSubscriber : BackgroundService
                     if (nodeStatus != null)
                     {
                         _networkStateUpdater.UpdateFromNodeStatus(nodeStatus);
+                        UpdateNodeIpInfo(nodeStatus.NodeCall, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
                     }
                     break;
 
@@ -108,6 +117,7 @@ public class MqttStateSubscriber : BackgroundService
                     if (nodeDown != null)
                     {
                         _networkStateUpdater.UpdateFromNodeDownEvent(nodeDown);
+                        UpdateNodeIpInfo(nodeDown.NodeCall, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
                     }
                     break;
 
@@ -116,6 +126,10 @@ public class MqttStateSubscriber : BackgroundService
                     if (l2Trace != null)
                     {
                         _networkStateUpdater.UpdateFromL2Trace(l2Trace);
+                        if (l2Trace.ReportFrom != null)
+                        {
+                            UpdateNodeIpInfo(l2Trace.ReportFrom, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
+                        }
                     }
                     break;
 
@@ -124,6 +138,7 @@ public class MqttStateSubscriber : BackgroundService
                     if (linkUp != null)
                     {
                         _networkStateUpdater.UpdateFromLinkUpEvent(linkUp);
+                        UpdateNodeIpInfo(linkUp.Node, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
                     }
                     break;
 
@@ -132,6 +147,7 @@ public class MqttStateSubscriber : BackgroundService
                     if (linkStatus != null)
                     {
                         _networkStateUpdater.UpdateFromLinkStatus(linkStatus);
+                        UpdateNodeIpInfo(linkStatus.Node, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
                     }
                     break;
 
@@ -140,6 +156,7 @@ public class MqttStateSubscriber : BackgroundService
                     if (linkDown != null)
                     {
                         _networkStateUpdater.UpdateFromLinkDownEvent(linkDown);
+                        UpdateNodeIpInfo(linkDown.Node, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
                     }
                     break;
 
@@ -148,6 +165,7 @@ public class MqttStateSubscriber : BackgroundService
                     if (circuitUp != null)
                     {
                         _networkStateUpdater.UpdateFromCircuitUpEvent(circuitUp);
+                        UpdateNodeIpInfo(circuitUp.Node, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
                     }
                     break;
 
@@ -156,6 +174,7 @@ public class MqttStateSubscriber : BackgroundService
                     if (circuitStatus != null)
                     {
                         _networkStateUpdater.UpdateFromCircuitStatus(circuitStatus);
+                        UpdateNodeIpInfo(circuitStatus.Node, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
                     }
                     break;
 
@@ -164,6 +183,7 @@ public class MqttStateSubscriber : BackgroundService
                     if (circuitDown != null)
                     {
                         _networkStateUpdater.UpdateFromCircuitDownEvent(circuitDown);
+                        UpdateNodeIpInfo(circuitDown.Node, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
                     }
                     break;
 
@@ -182,6 +202,18 @@ public class MqttStateSubscriber : BackgroundService
         }
 
         return Task.CompletedTask;
+    }
+
+    private void UpdateNodeIpInfo(string callsign, string? ipObfuscated, string? geoCountryCode, string? geoCountryName, string? geoCity)
+    {
+        if (string.IsNullOrWhiteSpace(callsign))
+            return;
+
+        // Only update if we have IP information to set
+        if (string.IsNullOrWhiteSpace(ipObfuscated))
+            return;
+
+        _networkStateUpdater.UpdateNodeIpInfo(callsign, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)

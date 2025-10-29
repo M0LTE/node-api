@@ -48,7 +48,6 @@ builder.Services.AddSingleton<IDatagramProcessor>(serviceProvider =>
     var validationService = serviceProvider.GetRequiredService<DatagramValidationService>();
     var rateLimitService = serviceProvider.GetRequiredService<IUdpRateLimitService>();
     var geoIpService = serviceProvider.GetRequiredService<IGeoIpService>();
-    var networkState = serviceProvider.GetRequiredService<INetworkStateService>();
     var mqttProvider = serviceProvider.GetRequiredService<IMqttClientProvider>();
     
     // Initialize MQTT client synchronously (it will be used immediately)
@@ -59,7 +58,7 @@ builder.Services.AddSingleton<IDatagramProcessor>(serviceProvider =>
     // Pass MQTT client to rate limit service so it can publish events
     rateLimitService.SetMqttClient(mqttClient);
     
-    return new DatagramProcessor(logger, validationService, rateLimitService, geoIpService, networkState, mqttClient);
+    return new DatagramProcessor(logger, validationService, rateLimitService, geoIpService, mqttClient);
 });
 
 // Register RabbitMQ services for UDP datagram persistence

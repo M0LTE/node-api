@@ -327,4 +327,23 @@ public class NetworkStateUpdater : IHostedService
             _logger.LogDebug("Updated circuit state from CircuitDownEvent: {Key}", circuit.CanonicalKey);
         }
     }
+
+    public void UpdateNodeIpInfo(string callsign, string ipObfuscated, string? geoCountryCode, string? geoCountryName, string? geoCity)
+    {
+        var node = _networkState.GetOrCreateNode(callsign);
+        
+        node.IpAddressObfuscated = ipObfuscated;
+        node.LastIpUpdate = DateTime.UtcNow;
+        
+        if (!string.IsNullOrWhiteSpace(geoCountryCode))
+            node.GeoIpCountryCode = geoCountryCode;
+        
+        if (!string.IsNullOrWhiteSpace(geoCountryName))
+            node.GeoIpCountryName = geoCountryName;
+        
+        if (!string.IsNullOrWhiteSpace(geoCity))
+            node.GeoIpCity = geoCity;
+
+        _logger.LogDebug("Updated IP info for node: {Callsign}", callsign);
+    }
 }
