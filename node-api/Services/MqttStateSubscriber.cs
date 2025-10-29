@@ -7,21 +7,32 @@ using System.Text.Json;
 namespace node_api.Services;
 
 /// <summary>
-/// Subscribes to MQTT topics and updates the network state based on published events.
+/// Subscribes to MQTT topics and:
+/// 1. Updates the network state based on published events
+/// 2. Persists traces, events, and errors to the database
 /// This keeps the server-side state synchronized with the network events.
 /// </summary>
 public class MqttStateSubscriber : BackgroundService
 {
     private readonly ILogger<MqttStateSubscriber> _logger;
     private readonly NetworkStateUpdater _networkStateUpdater;
+    private readonly MySqlTraceRepository _traceRepository;
+    private readonly MySqlEventRepository _eventRepository;
+    private readonly MySqlErroredMessageRepository _erroredMessageRepository;
     private IManagedMqttClient? _mqttClient;
 
     public MqttStateSubscriber(
         ILogger<MqttStateSubscriber> logger,
-        NetworkStateUpdater networkStateUpdater)
+        NetworkStateUpdater networkStateUpdater,
+        MySqlTraceRepository traceRepository,
+        MySqlEventRepository eventRepository,
+        MySqlErroredMessageRepository erroredMessageRepository)
     {
         _logger = logger;
         _networkStateUpdater = networkStateUpdater;
+        _traceRepository = traceRepository;
+        _eventRepository = eventRepository;
+        _erroredMessageRepository = erroredMessageRepository;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -47,7 +58,7 @@ public class MqttStateSubscriber : BackgroundService
         
         _logger.LogInformation("MQTT state subscriber connecting to broker...");
 
-        // Subscribe to all output topics that we care about
+        // Subscribe to all output topics for state updates
         await _mqttClient.SubscribeAsync(new[]
         {
             new MqttTopicFilterBuilder().WithTopic("out/NodeUpEvent").Build(),
@@ -62,7 +73,10 @@ public class MqttStateSubscriber : BackgroundService
             new MqttTopicFilterBuilder().WithTopic("out/CircuitDownEvent").Build(),
         });
 
-        _logger.LogInformation("MQTT state subscriber subscribed to out/# topics");
+        // Subscribe to error topics for database persistence
+        await _mqttClient.SubscribeAsync("in/udp/errored/#");
+
+        _logger.LogInformation("MQTT state subscriber subscribed to out/# and in/udp/errored/# topics");
 
         // Keep the service running
         try
@@ -75,7 +89,7 @@ public class MqttStateSubscriber : BackgroundService
         }
     }
 
-    private Task OnMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs args)
+    private async Task OnMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs args)
     {
         try
         {
@@ -84,12 +98,27 @@ public class MqttStateSubscriber : BackgroundService
 
             _logger.LogDebug("Received message on topic {Topic}", topic);
 
-            // Extract IP address information from user properties if available
+            // Handle error messages (database persistence only)
+            if (topic.StartsWith("in/udp/errored/"))
+            {
+                await HandleErrorMessageAsync(topic, payload);
+                return;
+            }
+
+            // Extract metadata from user properties
             var userProps = args.ApplicationMessage.UserProperties;
             var ipObfuscated = userProps.FirstOrDefault(p => p.Name == "ipObfuscated")?.Value;
             var geoCountryCode = userProps.FirstOrDefault(p => p.Name == "geoCountryCode")?.Value;
             var geoCountryName = userProps.FirstOrDefault(p => p.Name == "geoCountryName")?.Value;
             var geoCity = userProps.FirstOrDefault(p => p.Name == "geoCity")?.Value;
+            var arrivalTimeStr = userProps.FirstOrDefault(p => p.Name == "arrivalTime")?.Value;
+
+            // Parse arrival time
+            DateTime? arrivalTime = null;
+            if (!string.IsNullOrWhiteSpace(arrivalTimeStr) && DateTime.TryParse(arrivalTimeStr, null, System.Globalization.DateTimeStyles.RoundtripKind, out var parsed))
+            {
+                arrivalTime = parsed.Kind == DateTimeKind.Utc ? parsed : DateTime.SpecifyKind(parsed, DateTimeKind.Utc);
+            }
 
             // Parse and route to appropriate handler based on topic
             switch (topic)
@@ -100,6 +129,7 @@ public class MqttStateSubscriber : BackgroundService
                     {
                         _networkStateUpdater.UpdateFromNodeUpEvent(nodeUp);
                         UpdateNodeIpInfo(nodeUp.NodeCall, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
+                        await _eventRepository.InsertEventAsync(payload, arrivalTime);
                     }
                     break;
 
@@ -109,6 +139,7 @@ public class MqttStateSubscriber : BackgroundService
                     {
                         _networkStateUpdater.UpdateFromNodeStatus(nodeStatus);
                         UpdateNodeIpInfo(nodeStatus.NodeCall, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
+                        await _eventRepository.InsertEventAsync(payload, arrivalTime);
                     }
                     break;
 
@@ -118,6 +149,7 @@ public class MqttStateSubscriber : BackgroundService
                     {
                         _networkStateUpdater.UpdateFromNodeDownEvent(nodeDown);
                         UpdateNodeIpInfo(nodeDown.NodeCall, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
+                        await _eventRepository.InsertEventAsync(payload, arrivalTime);
                     }
                     break;
 
@@ -130,6 +162,7 @@ public class MqttStateSubscriber : BackgroundService
                         {
                             UpdateNodeIpInfo(l2Trace.ReportFrom, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
                         }
+                        await _traceRepository.InsertTraceAsync(payload, arrivalTime);
                     }
                     break;
 
@@ -139,6 +172,7 @@ public class MqttStateSubscriber : BackgroundService
                     {
                         _networkStateUpdater.UpdateFromLinkUpEvent(linkUp);
                         UpdateNodeIpInfo(linkUp.Node, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
+                        await _eventRepository.InsertEventAsync(payload, arrivalTime);
                     }
                     break;
 
@@ -148,6 +182,7 @@ public class MqttStateSubscriber : BackgroundService
                     {
                         _networkStateUpdater.UpdateFromLinkStatus(linkStatus);
                         UpdateNodeIpInfo(linkStatus.Node, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
+                        await _eventRepository.InsertEventAsync(payload, arrivalTime);
                     }
                     break;
 
@@ -157,6 +192,7 @@ public class MqttStateSubscriber : BackgroundService
                     {
                         _networkStateUpdater.UpdateFromLinkDownEvent(linkDown);
                         UpdateNodeIpInfo(linkDown.Node, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
+                        await _eventRepository.InsertEventAsync(payload, arrivalTime);
                     }
                     break;
 
@@ -166,6 +202,7 @@ public class MqttStateSubscriber : BackgroundService
                     {
                         _networkStateUpdater.UpdateFromCircuitUpEvent(circuitUp);
                         UpdateNodeIpInfo(circuitUp.Node, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
+                        await _eventRepository.InsertEventAsync(payload, arrivalTime);
                     }
                     break;
 
@@ -175,6 +212,7 @@ public class MqttStateSubscriber : BackgroundService
                     {
                         _networkStateUpdater.UpdateFromCircuitStatus(circuitStatus);
                         UpdateNodeIpInfo(circuitStatus.Node, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
+                        await _eventRepository.InsertEventAsync(payload, arrivalTime);
                     }
                     break;
 
@@ -184,6 +222,7 @@ public class MqttStateSubscriber : BackgroundService
                     {
                         _networkStateUpdater.UpdateFromCircuitDownEvent(circuitDown);
                         UpdateNodeIpInfo(circuitDown.Node, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
+                        await _eventRepository.InsertEventAsync(payload, arrivalTime);
                     }
                     break;
 
@@ -200,8 +239,42 @@ public class MqttStateSubscriber : BackgroundService
         {
             _logger.LogError(ex, "Error processing message from topic {Topic}", args.ApplicationMessage.Topic);
         }
+    }
 
-        return Task.CompletedTask;
+    private async Task HandleErrorMessageAsync(string topic, string payload)
+    {
+        try
+        {
+            var reason = topic.Split('/').Last();
+
+            if (reason == "validation")
+            {
+                _logger.LogDebug("Processing validation error");
+                
+                var validationError = JsonSerializer.Deserialize<ValidationError>(payload);
+                if (validationError != null)
+                {
+                    await _erroredMessageRepository.InsertErroredMessageAsync(
+                        reason: reason,
+                        datagram: validationError.Datagram,
+                        type: validationError.Type,
+                        errors: string.Join("; ", validationError.Errors.Select(e => $"{e.Property}: {e.Error}")));
+                }
+            }
+            else
+            {
+                _logger.LogDebug("Processing generic errored message");
+                await _erroredMessageRepository.InsertErroredMessageAsync(
+                    reason: reason,
+                    json: payload);
+            }
+
+            _logger.LogDebug("Saved errored message to database: {Reason}", reason);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save errored message to database");
+        }
     }
 
     private void UpdateNodeIpInfo(string callsign, string? ipObfuscated, string? geoCountryCode, string? geoCountryName, string? geoCity)
@@ -227,5 +300,18 @@ public class MqttStateSubscriber : BackgroundService
         }
 
         await base.StopAsync(cancellationToken);
+    }
+
+    private class ValidationError
+    {
+        public required string Datagram { get; init; }
+        public required string Type { get; init; }
+        public required List<ValidationErrorDetail> Errors { get; init; }
+
+        public record ValidationErrorDetail
+        {
+            public required string Property { get; init; }
+            public required string Error { get; init; }
+        }
     }
 }

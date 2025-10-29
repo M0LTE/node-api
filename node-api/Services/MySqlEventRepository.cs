@@ -9,6 +9,41 @@ public class MySqlEventRepository(ILogger<MySqlEventRepository> logger, QueryFre
 {
     private const int SlowQueryThresholdMs = 5000;
 
+    public async Task InsertEventAsync(string json, DateTime? timestamp = null, CancellationToken ct = default)
+    {
+        try
+        {
+            using var conn = Database.GetConnection(open: false);
+            await conn.OpenAsync(ct);
+
+            if (timestamp.HasValue)
+            {
+                const string sql = "INSERT INTO events (json, timestamp) VALUES (@json, @timestamp)";
+                await QueryLogger.ExecuteWithLoggingAsync(
+                    conn,
+                    new CommandDefinition(sql, new { json, timestamp = timestamp.Value }, cancellationToken: ct),
+                    logger,
+                    SlowQueryThresholdMs,
+                    tracker);
+            }
+            else
+            {
+                const string sql = "INSERT INTO events (json) VALUES (@json)";
+                await QueryLogger.ExecuteWithLoggingAsync(
+                    conn,
+                    new CommandDefinition(sql, new { json }, cancellationToken: ct),
+                    logger,
+                    SlowQueryThresholdMs,
+                    tracker);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to insert event");
+            throw;
+        }
+    }
+
     public async Task<(IReadOnlyList<EventsController.EventDto> Data, string? NextCursor, CountResult TotalCount)> GetEventsAsync(
         string? node,
         string? type,

@@ -85,6 +85,7 @@ builder.Services.AddSingleton<QueryFrequencyTracker>();
 // Register repositories
 builder.Services.AddSingleton<ITraceRepository, MySqlTraceRepository>();
 builder.Services.AddSingleton<IEventRepository, MySqlEventRepository>();
+builder.Services.AddSingleton<MySqlErroredMessageRepository>();
 
 // Register FluentValidation validators
 builder.Services.AddSingleton<IValidator<L2Trace>, L2TraceValidator>();
@@ -101,10 +102,6 @@ builder.Services.AddSingleton<IValidator<CircuitStatus>, CircuitStatusValidator>
 // Register validation service
 builder.Services.AddSingleton<DatagramValidationService>();
 
-if (Environment.MachineName != "PRECISION3660")
-{
-    builder.Services.AddHostedService<DbWriter>();
-}
 builder.Services.AddHostedService<UdpNodeInfoListener>();
 
 var app = builder.Build();
