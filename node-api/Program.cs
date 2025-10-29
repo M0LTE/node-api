@@ -83,8 +83,10 @@ builder.Services.AddHostedService<SystemMetricsPublisher>();
 builder.Services.AddSingleton<QueryFrequencyTracker>();
 
 // Register repositories
-builder.Services.AddSingleton<ITraceRepository, MySqlTraceRepository>();
-builder.Services.AddSingleton<IEventRepository, MySqlEventRepository>();
+builder.Services.AddSingleton<MySqlTraceRepository>();
+builder.Services.AddSingleton<ITraceRepository>(sp => sp.GetRequiredService<MySqlTraceRepository>());
+builder.Services.AddSingleton<MySqlEventRepository>();
+builder.Services.AddSingleton<IEventRepository>(sp => sp.GetRequiredService<MySqlEventRepository>());
 builder.Services.AddSingleton<MySqlErroredMessageRepository>();
 
 // Register FluentValidation validators
