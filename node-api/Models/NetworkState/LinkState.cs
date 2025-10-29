@@ -8,12 +8,91 @@ public class LinkState
     public required string CanonicalKey { get; init; }
     public required string Endpoint1 { get; init; } // Always the lexically smaller callsign
     public required string Endpoint2 { get; init; } // Always the lexically larger callsign
-    public LinkStatus Status { get; set; } = LinkStatus.Active;
-    public DateTime ConnectedAt { get; set; }
-    public DateTime? DisconnectedAt { get; set; }
-    public DateTime LastUpdate { get; set; }
-    public string? Initiator { get; set; }
+    
+    private LinkStatus _status = LinkStatus.Active;
+    public LinkStatus Status
+    {
+        get => _status;
+        set
+        {
+            if (_status != value)
+            {
+                _status = value;
+                MarkDirty();
+            }
+        }
+    }
+    
+    private DateTime _connectedAt;
+    public DateTime ConnectedAt
+    {
+        get => _connectedAt;
+        set
+        {
+            if (_connectedAt != value)
+            {
+                _connectedAt = value;
+                MarkDirty();
+            }
+        }
+    }
+    
+    private DateTime? _disconnectedAt;
+    public DateTime? DisconnectedAt
+    {
+        get => _disconnectedAt;
+        set
+        {
+            if (_disconnectedAt != value)
+            {
+                _disconnectedAt = value;
+                MarkDirty();
+            }
+        }
+    }
+    
+    private DateTime _lastUpdate;
+    public DateTime LastUpdate
+    {
+        get => _lastUpdate;
+        set
+        {
+            if (_lastUpdate != value)
+            {
+                _lastUpdate = value;
+                MarkDirty();
+            }
+        }
+    }
+    
+    private string? _initiator;
+    public string? Initiator
+    {
+        get => _initiator;
+        set
+        {
+            if (_initiator != value)
+            {
+                _initiator = value;
+                MarkDirty();
+            }
+        }
+    }
+    
     public Dictionary<string, LinkEndpointState> Endpoints { get; init; } = new();
+    
+    // Dirty tracking for persistence optimization
+    public bool IsDirty { get; private set; }
+    
+    public void MarkDirty()
+    {
+        IsDirty = true;
+    }
+    
+    public void MarkClean()
+    {
+        IsDirty = false;
+    }
 }
 
 public class LinkEndpointState

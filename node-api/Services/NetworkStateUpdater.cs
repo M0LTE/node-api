@@ -146,6 +146,7 @@ public class NetworkStateUpdater : IHostedService
         };
         
         link.Endpoints[evt.Node] = endpoint;
+        link.MarkDirty(); // Explicitly mark dirty when modifying Endpoints
 
         if (link.Initiator == null)
         {
@@ -194,6 +195,7 @@ public class NetworkStateUpdater : IHostedService
         };
         
         link.Endpoints[evt.Node] = endpoint;
+        link.MarkDirty(); // Explicitly mark dirty when modifying Endpoints
 
         if (link.Initiator == null)
         {
@@ -224,6 +226,7 @@ public class NetworkStateUpdater : IHostedService
                 endpoint.FramesResent = evt.FramesResent;
                 endpoint.Reason = evt.Reason;
                 endpoint.LastUpdate = DateTime.UtcNow;
+                link.MarkDirty(); // Explicitly mark dirty when modifying endpoint
             }
 
             _logger.LogDebug("Updated link state from LinkDownEvent: {Key}", link.CanonicalKey);
@@ -254,6 +257,7 @@ public class NetworkStateUpdater : IHostedService
         };
         
         circuit.Endpoints[evt.Node] = endpoint;
+        circuit.MarkDirty(); // Explicitly mark dirty when modifying Endpoints
 
         if (circuit.Initiator == null)
         {
@@ -290,6 +294,7 @@ public class NetworkStateUpdater : IHostedService
         };
         
         circuit.Endpoints[evt.Node] = endpoint;
+        circuit.MarkDirty(); // Explicitly mark dirty when modifying Endpoints
 
         if (circuit.Initiator == null)
         {
@@ -322,6 +327,7 @@ public class NetworkStateUpdater : IHostedService
                 endpoint.BytesReceived = evt.BytesReceived;
                 endpoint.Reason = evt.Reason;
                 endpoint.LastUpdate = DateTime.UtcNow;
+                circuit.MarkDirty(); // Explicitly mark dirty when modifying endpoint
             }
 
             _logger.LogDebug("Updated circuit state from CircuitDownEvent: {Key}", circuit.CanonicalKey);

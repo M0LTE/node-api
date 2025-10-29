@@ -28,6 +28,14 @@ public interface INetworkStateService
     IReadOnlyDictionary<string, CircuitState> GetAllCircuits();
     IEnumerable<CircuitState> GetCircuitsForNode(string callsign);
     
+    // Dirty tracking operations
+    IEnumerable<NodeState> GetDirtyNodes();
+    IEnumerable<LinkState> GetDirtyLinks();
+    IEnumerable<CircuitState> GetDirtyCircuits();
+    void MarkNodeClean(NodeState node);
+    void MarkLinkClean(LinkState link);
+    void MarkCircuitClean(CircuitState circuit);
+    
     // Utility
     string GetCanonicalLinkKey(string local, string remote);
     string GetCanonicalCircuitKey(string local, string remote);
@@ -62,12 +70,14 @@ public partial class NetworkStateService : INetworkStateService
         return _nodes.GetOrAdd(callsign, cs =>
         {
             _logger.LogDebug("Creating new node state for {Callsign}", cs);
-            return new NodeState
+            var node = new NodeState
             {
                 Callsign = cs,
                 FirstSeen = DateTime.UtcNow,
                 LastSeen = DateTime.UtcNow
             };
+            node.MarkDirty();
+            return node;
         });
     }
 
@@ -108,7 +118,7 @@ public partial class NetworkStateService : INetworkStateService
         {
             _logger.LogDebug("Creating new link state for {Key}", key);
             var sorted = new[] { local, remote }.OrderBy(x => x).ToArray();
-            return new LinkState
+            var link = new LinkState
             {
                 CanonicalKey = key,
                 Endpoint1 = sorted[0],
@@ -116,6 +126,8 @@ public partial class NetworkStateService : INetworkStateService
                 ConnectedAt = DateTime.UtcNow,
                 LastUpdate = DateTime.UtcNow
             };
+            link.MarkDirty();
+            return link;
         });
     }
 
@@ -151,7 +163,7 @@ public partial class NetworkStateService : INetworkStateService
         {
             _logger.LogDebug("Creating new circuit state for {Key}", key);
             var sorted = new[] { local, remote }.OrderBy(x => x).ToArray();
-            return new CircuitState
+            var circuit = new CircuitState
             {
                 CanonicalKey = key,
                 Endpoint1 = sorted[0],
@@ -159,6 +171,8 @@ public partial class NetworkStateService : INetworkStateService
                 ConnectedAt = DateTime.UtcNow,
                 LastUpdate = DateTime.UtcNow
             };
+            circuit.MarkDirty();
+            return circuit;
         });
     }
 
@@ -178,5 +192,35 @@ public partial class NetworkStateService : INetworkStateService
         return _circuits.Values.Where(circuit =>
             circuit.Endpoint1.Equals(callsign, StringComparison.OrdinalIgnoreCase) ||
             circuit.Endpoint2.Equals(callsign, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public IEnumerable<NodeState> GetDirtyNodes()
+    {
+        return _nodes.Values.Where(n => n.IsDirty);
+    }
+
+    public IEnumerable<LinkState> GetDirtyLinks()
+    {
+        return _links.Values.Where(l => l.IsDirty);
+    }
+
+    public IEnumerable<CircuitState> GetDirtyCircuits()
+    {
+        return _circuits.Values.Where(c => c.IsDirty);
+    }
+
+    public void MarkNodeClean(NodeState node)
+    {
+        node.MarkClean();
+    }
+
+    public void MarkLinkClean(LinkState link)
+    {
+        link.MarkClean();
+    }
+
+    public void MarkCircuitClean(CircuitState circuit)
+    {
+        circuit.MarkClean();
     }
 }

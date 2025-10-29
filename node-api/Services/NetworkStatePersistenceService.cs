@@ -6,6 +6,7 @@ namespace node_api.Services;
 /// Background service that periodically persists network state to MySQL.
 /// Runs every N seconds to sync in-memory state to database.
 /// If database is unavailable, gracefully falls back to in-memory-only mode.
+/// Only persists entities that have changed since last persist (dirty tracking).
 /// </summary>
 public class NetworkStatePersistenceService : BackgroundService
 {
@@ -98,6 +99,7 @@ public class NetworkStatePersistenceService : BackgroundService
             {
                 var existingNode = _networkState.GetOrCreateNode(node.Callsign);
                 CopyNodeState(node, existingNode);
+                _networkState.MarkNodeClean(existingNode); // Mark as clean since we just loaded it
                 nodeCount++;
             }
 
@@ -108,6 +110,7 @@ public class NetworkStatePersistenceService : BackgroundService
             {
                 var existingLink = _networkState.GetOrCreateLink(link.Endpoint1, link.Endpoint2);
                 CopyLinkState(link, existingLink);
+                _networkState.MarkLinkClean(existingLink); // Mark as clean since we just loaded it
                 linkCount++;
             }
 
@@ -118,6 +121,7 @@ public class NetworkStatePersistenceService : BackgroundService
             {
                 var existingCircuit = _networkState.GetOrCreateCircuit(circuit.Endpoint1, circuit.Endpoint2);
                 CopyCircuitState(circuit, existingCircuit);
+                _networkState.MarkCircuitClean(existingCircuit); // Mark as clean since we just loaded it
                 circuitCount++;
             }
 
@@ -144,27 +148,30 @@ public class NetworkStatePersistenceService : BackgroundService
 
         try
         {
-            // Persist all nodes
-            var nodes = _networkState.GetAllNodes();
-            foreach (var node in nodes.Values)
+            // Persist only dirty nodes
+            var dirtyNodes = _networkState.GetDirtyNodes().ToList();
+            foreach (var node in dirtyNodes)
             {
                 await _repository.UpsertNodeAsync(node, ct);
+                _networkState.MarkNodeClean(node);
                 nodeCount++;
             }
 
-            // Persist all links
-            var links = _networkState.GetAllLinks();
-            foreach (var link in links.Values)
+            // Persist only dirty links
+            var dirtyLinks = _networkState.GetDirtyLinks().ToList();
+            foreach (var link in dirtyLinks)
             {
                 await _repository.UpsertLinkAsync(link, ct);
+                _networkState.MarkLinkClean(link);
                 linkCount++;
             }
 
-            // Persist all circuits
-            var circuits = _networkState.GetAllCircuits();
-            foreach (var circuit in circuits.Values)
+            // Persist only dirty circuits
+            var dirtyCircuits = _networkState.GetDirtyCircuits().ToList();
+            foreach (var circuit in dirtyCircuits)
             {
                 await _repository.UpsertCircuitAsync(circuit, ct);
+                _networkState.MarkCircuitClean(circuit);
                 circuitCount++;
             }
 
@@ -172,9 +179,13 @@ public class NetworkStatePersistenceService : BackgroundService
             
             if (nodeCount > 0 || linkCount > 0 || circuitCount > 0)
             {
-                _logger.LogDebug(
-                    "Persisted {NodeCount} nodes, {LinkCount} links, {CircuitCount} circuits in {ElapsedMs}ms",
+                _logger.LogInformation(
+                    "Persisted {NodeCount} dirty nodes, {LinkCount} dirty links, {CircuitCount} dirty circuits in {ElapsedMs}ms",
                     nodeCount, linkCount, circuitCount, sw.ElapsedMilliseconds);
+            }
+            else
+            {
+                _logger.LogDebug("No dirty entities to persist");
             }
             
             // If we successfully persisted and database was previously unavailable, mark it as available
