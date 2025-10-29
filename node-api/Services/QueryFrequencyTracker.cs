@@ -81,6 +81,18 @@ public class QueryFrequencyTracker
             .ToList();
     }
     
+    /// <summary>
+    /// Gets all query statistics with server time for clock synchronization
+    /// </summary>
+    public QueryFrequencyResponse GetStatsWithServerTime()
+    {
+        return new QueryFrequencyResponse
+        {
+            ServerTime = DateTime.UtcNow,
+            Queries = GetStats()
+        };
+    }
+    
     private static string GetKey(string methodName, string queryText)
     {
         // Use first 100 chars of query to differentiate similar queries while keeping key manageable
@@ -134,6 +146,12 @@ public class QueryFrequencyTracker
         public long TotalCount { get; set; }
         public DateTime LastSeen { get; set; }
         public ConcurrentDictionary<DateTime, int> HourlyBuckets { get; set; } = new();
+    }
+    
+    public class QueryFrequencyResponse
+    {
+        public DateTime ServerTime { get; set; }
+        public required IReadOnlyList<QueryStatsDto> Queries { get; set; }
     }
     
     public class QueryStatsDto

@@ -238,6 +238,7 @@
 
     <script>
         let queryData = [];
+        let serverTimeOffset = 0; // Offset between server time and client time
 
         async function fetchQueryData() {
             try {
@@ -245,7 +246,16 @@
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
-                queryData = await response.json();
+                const data = await response.json();
+                
+                // Calculate server time offset for accurate time calculations
+                if (data.serverTime) {
+                    const serverTime = new Date(data.serverTime).getTime();
+                    const clientTime = Date.now();
+                    serverTimeOffset = serverTime - clientTime;
+                }
+                
+                queryData = data.queries || [];
                 updateDisplay();
             } catch (error) {
                 console.error('Error fetching query data:', error);
@@ -369,9 +379,14 @@
         }
 
         function formatLastSeen(date) {
-            const now = new Date();
-            const diff = now - date;
+            // Use server time offset for accurate time calculations
+            const now = Date.now() + serverTimeOffset;
+            const diff = now - date.getTime();
             const seconds = Math.floor(diff / 1000);
+            
+            // Handle future timestamps (shouldn't happen with server time, but just in case)
+            if (seconds < 0) return 'just now';
+            
             const minutes = Math.floor(seconds / 60);
             const hours = Math.floor(minutes / 60);
             const days = Math.floor(hours / 24);

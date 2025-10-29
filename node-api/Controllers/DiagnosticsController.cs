@@ -270,13 +270,23 @@ public class DiagnosticsController : ControllerBase
     }
 
     /// <summary>
+    /// Gets current server time for clock synchronization
+    /// </summary>
+    [HttpGet("server-time")]
+    [Produces("application/json")]
+    public IActionResult GetServerTime()
+    {
+        return Ok(new { serverTime = DateTime.UtcNow });
+    }
+
+    /// <summary>
     /// Gets database query frequency statistics showing which queries are being called how often per hour
     /// </summary>
     [HttpGet("db/query-frequency")]
     [Produces("application/json")]
     public IActionResult GetQueryFrequencyStats([FromServices] Services.QueryFrequencyTracker tracker)
     {
-        var stats = tracker.GetStats();
+        var stats = tracker.GetStatsWithServerTime();
         return Ok(stats);
     }
 }

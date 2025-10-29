@@ -127,8 +127,10 @@ public class QueryFrequencyTrackerTests : IClassFixture<TestWebApplicationFactor
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var stats = await response.Content.ReadFromJsonAsync<List<QueryFrequencyTracker.QueryStatsDto>>();
-        stats.Should().NotBeNull();
+        var result = await response.Content.ReadFromJsonAsync<QueryFrequencyTracker.QueryFrequencyResponse>();
+        result.Should().NotBeNull();
+        result!.ServerTime.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        result.Queries.Should().NotBeNull();
     }
 
     [Fact]
@@ -170,5 +172,74 @@ public class QueryFrequencyTrackerTests : IClassFixture<TestWebApplicationFactor
         stats[0].TotalCount.Should().Be(3); // Method2
         stats[1].TotalCount.Should().Be(2); // Method3
         stats[2].TotalCount.Should().Be(1); // Method1
+    }
+
+    [Fact]
+    public void GetStatsWithServerTime_Should_Include_Server_Time()
+    {
+        // Arrange
+        var tracker = new QueryFrequencyTracker();
+        tracker.RecordQuery("TestMethod", "SELECT * FROM test");
+        var beforeCall = DateTime.UtcNow;
+
+        // Act
+        var response = tracker.GetStatsWithServerTime();
+        var afterCall = DateTime.UtcNow;
+
+        // Assert
+        response.Should().NotBeNull();
+        response.ServerTime.Should().BeOnOrAfter(beforeCall);
+        response.ServerTime.Should().BeOnOrBefore(afterCall);
+        response.Queries.Should().NotBeNull();
+        response.Queries.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public void GetStatsWithServerTime_Should_Return_Same_Stats_As_GetStats()
+    {
+        // Arrange
+        var tracker = new QueryFrequencyTracker();
+        tracker.RecordQuery("Method1", "Query1");
+        tracker.RecordQuery("Method2", "Query2");
+        tracker.RecordQuery("Method2", "Query2");
+
+        // Act
+        var statsOnly = tracker.GetStats();
+        var response = tracker.GetStatsWithServerTime();
+
+        // Assert
+        response.Queries.Should().HaveCount(statsOnly.Count);
+        response.Queries.Should().BeEquivalentTo(statsOnly, options => options
+            .WithStrictOrdering());
+    }
+
+    [Fact]
+    public void GetStatsWithServerTime_ServerTime_Should_Be_Utc()
+    {
+        // Arrange
+        var tracker = new QueryFrequencyTracker();
+
+        // Act
+        var response = tracker.GetStatsWithServerTime();
+
+        // Assert
+        response.ServerTime.Kind.Should().Be(DateTimeKind.Utc);
+    }
+
+    [Fact]
+    public async Task DiagnosticsEndpoint_Should_Return_Query_Stats_With_Server_Time()
+    {
+        // Arrange - The endpoint should return the new format with serverTime
+
+        // Act
+        var response = await _client.GetAsync("/api/diagnostics/db/query-frequency");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<QueryFrequencyTracker.QueryFrequencyResponse>();
+        result.Should().NotBeNull();
+        result!.ServerTime.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        result.ServerTime.Kind.Should().Be(DateTimeKind.Utc);
+        result.Queries.Should().NotBeNull();
     }
 }

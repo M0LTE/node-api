@@ -28,8 +28,10 @@ public class QueryFrequencyDiagnosticsIntegrationTests : IClassFixture<TestWebAp
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var stats = await response.Content.ReadFromJsonAsync<List<QueryFrequencyTracker.QueryStatsDto>>();
-        stats.Should().NotBeNull();
+        var result = await response.Content.ReadFromJsonAsync<QueryFrequencyTracker.QueryFrequencyResponse>();
+        result.Should().NotBeNull();
+        result!.ServerTime.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        result.Queries.Should().NotBeNull();
         // Note: Stats might be empty or have some data depending on what other tests have done
     }
 
@@ -54,13 +56,15 @@ public class QueryFrequencyDiagnosticsIntegrationTests : IClassFixture<TestWebAp
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var stats = await response.Content.ReadFromJsonAsync<List<QueryFrequencyTracker.QueryStatsDto>>();
-        stats.Should().NotBeNull();
+        var result = await response.Content.ReadFromJsonAsync<QueryFrequencyTracker.QueryFrequencyResponse>();
+        result.Should().NotBeNull();
+        result!.ServerTime.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        result.Queries.Should().NotBeNull();
 
         // If there are stats, verify structure
-        if (stats!.Count > 0)
+        if (result.Queries.Count > 0)
         {
-            var stat = stats[0];
+            var stat = result.Queries[0];
             stat.MethodName.Should().NotBeNullOrEmpty();
             stat.QueryText.Should().NotBeNullOrEmpty();
             stat.TotalCount.Should().BeGreaterThan(0);
@@ -79,8 +83,8 @@ public class QueryFrequencyDiagnosticsIntegrationTests : IClassFixture<TestWebAp
     {
         // Arrange - Get initial stats
         var initialResponse = await _client.GetAsync("/api/diagnostics/db/query-frequency");
-        var initialStats = await initialResponse.Content.ReadFromJsonAsync<List<QueryFrequencyTracker.QueryStatsDto>>();
-        var initialTotalQueries = initialStats?.Sum(s => s.TotalCount) ?? 0;
+        var initialResult = await initialResponse.Content.ReadFromJsonAsync<QueryFrequencyTracker.QueryFrequencyResponse>();
+        var initialTotalQueries = initialResult?.Queries.Sum(s => s.TotalCount) ?? 0;
 
         // Act - Make several requests that will trigger DB queries
         for (int i = 0; i < 3; i++)
@@ -90,8 +94,8 @@ public class QueryFrequencyDiagnosticsIntegrationTests : IClassFixture<TestWebAp
 
         // Get updated stats
         var updatedResponse = await _client.GetAsync("/api/diagnostics/db/query-frequency");
-        var updatedStats = await updatedResponse.Content.ReadFromJsonAsync<List<QueryFrequencyTracker.QueryStatsDto>>();
-        var updatedTotalQueries = updatedStats?.Sum(s => s.TotalCount) ?? 0;
+        var updatedResult = await updatedResponse.Content.ReadFromJsonAsync<QueryFrequencyTracker.QueryFrequencyResponse>();
+        var updatedTotalQueries = updatedResult?.Queries.Sum(s => s.TotalCount) ?? 0;
 
         // Assert - Total count should be same or higher (in test environment with mocks, it might not increase)
         // In a real environment with actual DB repositories, this would increase
@@ -106,14 +110,15 @@ public class QueryFrequencyDiagnosticsIntegrationTests : IClassFixture<TestWebAp
 
         // Act
         var response = await _client.GetAsync("/api/diagnostics/db/query-frequency");
-        var stats = await response.Content.ReadFromJsonAsync<List<QueryFrequencyTracker.QueryStatsDto>>();
+        var result = await response.Content.ReadFromJsonAsync<QueryFrequencyTracker.QueryFrequencyResponse>();
 
         // Assert
-        stats.Should().NotBeNull();
-        if (stats!.Count > 0)
+        result.Should().NotBeNull();
+        result!.Queries.Should().NotBeNull();
+        if (result.Queries.Count > 0)
         {
             // Should have at least one stat with a method name
-            stats.Should().Contain(s => !string.IsNullOrEmpty(s.MethodName));
+            result.Queries.Should().Contain(s => !string.IsNullOrEmpty(s.MethodName));
         }
     }
 
@@ -126,16 +131,17 @@ public class QueryFrequencyDiagnosticsIntegrationTests : IClassFixture<TestWebAp
 
         // Act
         var response = await _client.GetAsync("/api/diagnostics/db/query-frequency");
-        var stats = await response.Content.ReadFromJsonAsync<List<QueryFrequencyTracker.QueryStatsDto>>();
+        var result = await response.Content.ReadFromJsonAsync<QueryFrequencyTracker.QueryFrequencyResponse>();
 
         // Assert
-        stats.Should().NotBeNull();
-        if (stats!.Count > 1)
+        result.Should().NotBeNull();
+        result!.Queries.Should().NotBeNull();
+        if (result.Queries.Count > 1)
         {
             // Verify descending order
-            for (int i = 0; i < stats.Count - 1; i++)
+            for (int i = 0; i < result.Queries.Count - 1; i++)
             {
-                stats[i].TotalCount.Should().BeGreaterOrEqualTo(stats[i + 1].TotalCount);
+                result.Queries[i].TotalCount.Should().BeGreaterOrEqualTo(result.Queries[i + 1].TotalCount);
             }
         }
     }

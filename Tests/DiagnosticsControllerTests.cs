@@ -881,4 +881,85 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
     }
 
     #endregion
+
+    #region Server Time Tests
+
+    [Fact]
+    public async Task ServerTime_Endpoint_Should_Return_Current_Time()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/diagnostics/server-time");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<ServerTimeResponse>();
+        result.Should().NotBeNull();
+        result!.ServerTime.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(2));
+    }
+
+    [Fact]
+    public async Task ServerTime_Endpoint_Should_Return_Utc_Time()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/diagnostics/server-time");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<ServerTimeResponse>();
+        result.Should().NotBeNull();
+        result!.ServerTime.Kind.Should().Be(DateTimeKind.Utc);
+    }
+
+    [Fact]
+    public async Task ServerTime_Endpoint_Should_Have_Correct_Content_Type()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/diagnostics/server-time");
+
+        // Assert
+        response.Content.Headers.ContentType?.MediaType.Should().Be("application/json");
+    }
+
+    [Fact]
+    public async Task ServerTime_Endpoint_Should_Support_CORS()
+    {
+        // Arrange
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/diagnostics/server-time");
+        request.Headers.Add("Origin", "https://example.com");
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        response.Headers.Should().ContainKey("Access-Control-Allow-Origin");
+    }
+
+    [Fact]
+    public async Task ServerTime_Endpoint_Should_Be_Consistent_Across_Multiple_Calls()
+    {
+        // Arrange - Make multiple calls and ensure times are sequential
+        var times = new List<DateTime>();
+
+        // Act
+        for (int i = 0; i < 3; i++)
+        {
+            var response = await _client.GetAsync("/api/diagnostics/server-time");
+            var result = await response.Content.ReadFromJsonAsync<ServerTimeResponse>();
+            times.Add(result!.ServerTime);
+            await Task.Delay(10); // Small delay between calls
+        }
+
+        // Assert
+        times.Should().HaveCount(3);
+        times[0].Should().BeBefore(times[2]); // First call should be before last call
+    }
+
+    // Helper class for deserializing server time response
+    private class ServerTimeResponse
+    {
+        [System.Text.Json.Serialization.JsonPropertyName("serverTime")]
+        public DateTime ServerTime { get; set; }
+    }
+
+    #endregion
 }

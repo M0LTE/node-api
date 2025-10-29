@@ -569,6 +569,25 @@
         const mqttUrl = 'wss://node-api.packet.oarc.uk:443/mqtt/';
         const statusElement = document.getElementById('mqttStatus');
         let initialStateLoaded = false;
+        let serverTimeOffset = 0; // Offset between server time and client time
+
+        // Fetch server time for accurate time calculations
+        async function fetchServerTime() {
+            try {
+                const response = await fetch('/api/diagnostics/server-time');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.serverTime) {
+                        const serverTime = new Date(data.serverTime).getTime();
+                        const clientTime = Date.now();
+                        serverTimeOffset = serverTime - clientTime;
+                        console.log(`Server time offset: ${serverTimeOffset}ms`);
+                    }
+                }
+            } catch (err) {
+                console.error('Error fetching server time:', err);
+            }
+        }
 
         // Helper function to check if a callsign matches our base
         function matchesBaseCallsign(callsign) {
@@ -666,8 +685,12 @@
 
         // Load initial state before connecting to MQTT
         if (nodeCallsign) {
+            fetchServerTime(); // Fetch server time first for clock sync
             loadInitialState();
         }
+
+        // Periodically refresh server time (every 5 minutes)
+        setInterval(fetchServerTime, 300000);
 
         // Connect to MQTT broker
         const client = mqtt.connect(mqttUrl);
@@ -784,7 +807,13 @@
 
         function formatLastSeen(date) {
             if (!date) return 'Never';
-            const seconds = Math.floor((Date.now() - date) / 1000);
+            // Use server time offset for accurate time calculations
+            const now = (Date.now() + serverTimeOffset);
+            const seconds = Math.floor((now - date.getTime()) / 1000);
+            
+            // Handle future timestamps (shouldn't happen with server time, but just in case)
+            if (seconds < 0) return 'just now';
+            
             if (seconds < 60) return 'Just now';
             if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
             if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
@@ -1008,128 +1037,11 @@
                 `);
             }
             
-            if (infoCards.length > 0) {
-                nodeInfoContainer.style.display = 'grid';
-                nodeInfoContainer.innerHTML = infoCards.join('');
-            } else {
-                nodeInfoContainer.style.display = 'none';
-            }
+            nodeInfoContainer.innerHTML = infoCards.join('');
         }
 
-        // Update UI every second
-        setInterval(() => {
-            if (!initialStateLoaded || allSsids.size === 0) return;
-
-            // Build SSID tabs
-            const ssidTabsContainer = document.getElementById('ssidTabs');
-            const tabsHtml = document.querySelector('#ssidTabs > div');
-            
-            if (allSsids.size > 0) {
-                ssidTabsContainer.style.display = 'block';
-                
-                // Generate tabs for all SSIDs (no SSID, then 0-15)
-                const ssidList = [baseCallsign]; // Base callsign with no SSID
-                for (let i = 0; i <= 15; i++) {
-                    ssidList.push(`${baseCallsign}-${i}`);
-                }
-                
-                const tabs = ssidList.map(ssid => {
-                    const hasData = allSsids.has(ssid);
-                    const nodeData = allSsids.get(ssid);
-                    const isActive = currentSelectedSsid === ssid;
-                    const hasActivity = hasData && nodeData.lastSeen;
-                    
-                    if (!hasData && !isActive) return ''; // Don't show inactive SSIDs unless they're selected
-                    
-                    const tabClass = `ssid-tab ${isActive ? 'active' : ''} ${hasActivity ? 'has-activity' : ''}`;
-                    const activityDot = hasActivity ? '<span class="activity-dot"></span>' : '';
-                    
-                    // Remove onclick, use data attribute and event delegation instead
-                    return `<div class="${tabClass}" data-ssid="${ssid}">
-                        ${ssid}${activityDot}
-                    </div>`;
-                }).filter(t => t).join('');
-                
-                tabsHtml.innerHTML = tabs;
-            }
-
-            // Update the UI for the current SSID
-            updateUIForCurrentSsid();
-
-            // Update links table - show links for ALL SSIDs of this base callsign
-            const allLinks = Array.from(allSsids.keys())
-                .flatMap(ssid => linkTracker.getLinksForNode(ssid));
-            
-            // Deduplicate links by canonical key
-            const uniqueLinks = Array.from(new Map(allLinks.map(link => [link.canonicalKey, link])).values())
-                .sort((a, b) => {
-                    if (a.status === 'active' && b.status !== 'active') return -1;
-                    if (a.status !== 'active' && b.status === 'active') return 1;
-                    return b.lastUpdate - a.lastUpdate;
-                });
-            
-            const linksContainer = document.getElementById('linksContainer');
-            
-            if (uniqueLinks.length === 0) {
-                linksContainer.innerHTML = '<div class="no-data">No links found</div>';
-            } else {
-                const html = `
-                    <table class="links-table">
-                        <thead>
-                            <tr>
-                                <th title="Green=Active, Red=Disconnected">St</th>
-                                <th>Local SSID</th>
-                                <th>Remote Node</th>
-                                <th>Initiator</th>
-                                <th>Up Time</th>
-                                <th>TX/RX<br><span style="font-weight: normal; font-size: 11px;">(frames)</span></th>
-                                <th>Resent<br><span style="font-weight: normal; font-size: 11px;">(frames)</span></th>
-                                <th>Queue<br><span style="font-weight: normal; font-size: 11px;">(frames)</span></th>
-                                <th>RTT<br><span style="font-weight: normal; font-size: 11px;">(ms)</span></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${uniqueLinks.map(link => {
-                                // Determine which endpoint is ours
-                                const localCallsign = matchesBaseCallsign(link.endpoint1) ? link.endpoint1 : link.endpoint2;
-                                const remoteNode = matchesBaseCallsign(link.endpoint1) ? link.endpoint2 : link.endpoint1;
-                                const localStats = link.endpoints[localCallsign];
-                                const statusClass = link.status === 'active' ? 'active' : 'disconnected';
-                                const statusTitle = link.status === 'active' ? 'Active' : 'Disconnected';
-                                
-                                let initiatorClass = 'direction-badge ';
-                                const initiator = link.initiator || '-';
-                                if (matchesBaseCallsign(initiator)) {
-                                    initiatorClass += 'direction-outgoing';
-                                } else {
-                                    initiatorClass += 'direction-incoming';
-                                }
-                                
-                                const uptime = Math.max(
-                                    ...Object.values(link.endpoints).map(ep => ep.upForSecs || 0)
-                                );
-                                
-                                return `
-                                    <tr>
-                                        <td title="${statusTitle}" style="text-align: center;"><span class="status-indicator ${statusClass}"></span></td>
-                                        <td class="callsign"><a href="/node.html?callsign=${localCallsign}" style="color: #0066cc; text-decoration: none;">${localCallsign}</a></td>
-                                        <td class="callsign"><a href="/node.html?callsign=${remoteNode}" style="color: #0066cc; text-decoration: none;">${remoteNode}</a></td>
-                                        <td><span class="${initiatorClass}">${initiator}</span></td>
-                                        <td>${formatDuration(uptime)}</td>
-                                        <td class="metric">${localStats?.framesSent || '-'} / ${localStats?.framesReceived || '-'}</td>
-                                        <td class="metric">${localStats?.framesResent || '-'}</td>
-                                        <td class="metric">${localStats?.framesQueued || '-'}</td>
-                                        <td class="metric">${localStats?.l2RttMs ? localStats.l2RttMs + 'ms' : '-'}</td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                `;
-
-                linksContainer.innerHTML = html;
-            }
-        }, 1000);
+        // Initial UI update
+        updateUIForCurrentSsid();
     </script>
 </body>
 </html>
