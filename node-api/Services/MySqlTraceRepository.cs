@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 
 namespace node_api.Services;
 
-public partial class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger) : ITraceRepository
+public partial class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger, QueryFrequencyTracker tracker) : ITraceRepository
 {
     private const int SlowQueryThresholdMs = 5000;
 
@@ -109,7 +109,8 @@ public partial class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger) 
                 _conn, 
                 new CommandDefinition(sql, p, cancellationToken: ct),
                 logger,
-                SlowQueryThresholdMs)).ToList();
+                SlowQueryThresholdMs,
+                tracker)).ToList();
 
             // Materialize JSON column to JsonElement
             var data = new List<TracesController.TraceDto>(rows.Count);
@@ -132,7 +133,7 @@ public partial class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger) 
 
             // Optional total count (expensive operation, only when requested)
             var countResult = includeTotalCount 
-                ? await GetTotalCountAsync(where, p, logger, ct)
+                ? await GetTotalCountAsync(where, p, ct)
                 : CountResult.NotRequested;
 
             return (data, next, countResult);
@@ -143,10 +144,9 @@ public partial class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger) 
         }
     }
 
-    private static async Task<CountResult> GetTotalCountAsync(
+    private async Task<CountResult> GetTotalCountAsync(
         List<string> where, 
         DynamicParameters p, 
-        ILogger logger, 
         CancellationToken ct)
     {
         // Build count query without cursor filter and without LIMIT
@@ -166,7 +166,8 @@ public partial class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger) 
                 countConn,
                 new CommandDefinition(countSql, p, cancellationToken: ct),
                 logger,
-                SlowQueryThresholdMs);
+                SlowQueryThresholdMs,
+                tracker);
             
             return CountResult.Success(count);
         }

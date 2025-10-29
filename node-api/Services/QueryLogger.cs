@@ -1,6 +1,7 @@
 using Dapper;
 using System.Data;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 namespace node_api.Services;
@@ -17,11 +18,16 @@ internal static partial class QueryLogger
         IDbConnection connection,
         CommandDefinition command,
         ILogger logger,
-        int slowQueryThresholdMs)
+        int slowQueryThresholdMs,
+        QueryFrequencyTracker? tracker = null,
+        [CallerMemberName] string callerMethod = "")
     {
         var sw = Stopwatch.StartNew();
         try
         {
+            var sanitizedQuery = SanitizeSql(command.CommandText);
+            tracker?.RecordQuery(callerMethod, sanitizedQuery);
+            
             var result = await connection.QueryAsync<T>(command);
             sw.Stop();
 
@@ -49,11 +55,16 @@ internal static partial class QueryLogger
         IDbConnection connection,
         CommandDefinition command,
         ILogger logger,
-        int slowQueryThresholdMs)
+        int slowQueryThresholdMs,
+        QueryFrequencyTracker? tracker = null,
+        [CallerMemberName] string callerMethod = "")
     {
         var sw = Stopwatch.StartNew();
         try
         {
+            var sanitizedQuery = SanitizeSql(command.CommandText);
+            tracker?.RecordQuery(callerMethod, sanitizedQuery);
+            
             var result = await connection.QuerySingleOrDefaultAsync<T>(command);
             sw.Stop();
 
@@ -81,11 +92,16 @@ internal static partial class QueryLogger
         IDbConnection connection,
         CommandDefinition command,
         ILogger logger,
-        int slowQueryThresholdMs)
+        int slowQueryThresholdMs,
+        QueryFrequencyTracker? tracker = null,
+        [CallerMemberName] string callerMethod = "")
     {
         var sw = Stopwatch.StartNew();
         try
         {
+            var sanitizedQuery = SanitizeSql(command.CommandText);
+            tracker?.RecordQuery(callerMethod, sanitizedQuery);
+            
             var result = await connection.ExecuteScalarAsync<T>(command);
             sw.Stop();
 
@@ -113,11 +129,16 @@ internal static partial class QueryLogger
         IDbConnection connection,
         CommandDefinition command,
         ILogger logger,
-        int slowQueryThresholdMs)
+        int slowQueryThresholdMs,
+        QueryFrequencyTracker? tracker = null,
+        [CallerMemberName] string callerMethod = "")
     {
         var sw = Stopwatch.StartNew();
         try
         {
+            var sanitizedQuery = SanitizeSql(command.CommandText);
+            tracker?.RecordQuery(callerMethod, sanitizedQuery);
+            
             var result = await connection.ExecuteAsync(command);
             sw.Stop();
 
