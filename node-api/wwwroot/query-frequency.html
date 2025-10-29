@@ -219,15 +219,11 @@
         <div class="summary-stats">
             <div class="summary-card">
                 <div class="summary-number" id="totalQueries">0</div>
-                <div class="summary-label">Total Queries Tracked</div>
-            </div>
-            <div class="summary-card">
-                <div class="summary-number" id="uniqueQueries">0</div>
-                <div class="summary-label">Unique Query Types</div>
+                <div class="summary-label">Unique Query Patterns</div>
             </div>
             <div class="summary-card">
                 <div class="summary-number" id="totalCount">0</div>
-                <div class="summary-label">Total Query Executions</div>
+                <div class="summary-label">Total Executions (24h)</div>
             </div>
         </div>
     </div>
@@ -264,7 +260,6 @@
             const totalCount = queryData.reduce((sum, q) => sum + q.totalCount, 0);
             
             document.getElementById('totalQueries').textContent = totalQueries;
-            document.getElementById('uniqueQueries').textContent = totalQueries;
             document.getElementById('totalCount').textContent = totalCount.toLocaleString();
 
             // Update query table
