@@ -265,15 +265,15 @@ public class SystemMetricsTests
         // SystemMetricsPublisher performs the following queries:
         // 1. SHOW GLOBAL STATUS - for database performance metrics
         // 2. SHOW GLOBAL VARIABLES WHERE Variable_name IN ('version', 'innodb_buffer_pool_size') - for config info
-        // 3. SELECT SUM(data_length), SUM(index_length) FROM information_schema.TABLES - for database sizes
+        // 3. SELECT SUM(data_length) as data_size, SUM(index_length) as index_size FROM information_schema.TABLES - for database sizes
         //
-        // All three queries use QueryLogger.QueryWithLoggingAsync or QueryLogger.QuerySingleOrDefaultWithLoggingAsync
-        // with the QueryFrequencyTracker parameter, ensuring they are tracked.
+        // All three queries use QueryLogger with the QueryFrequencyTracker parameter, ensuring they are tracked.
+        // The queries are normalized by QueryLogger.SanitizeSql which removes newlines and extra whitespace.
         
         // Arrange
         var tracker = new node_api.Services.QueryFrequencyTracker();
         
-        // Act - Simulate recording the queries that SystemMetricsPublisher makes
+        // Act - Simulate recording the queries that SystemMetricsPublisher makes (after sanitization)
         tracker.RecordQuery("CollectDatabaseMetricsAsync", "SHOW GLOBAL STATUS");
         tracker.RecordQuery("CollectDatabaseMetricsAsync", "SHOW GLOBAL VARIABLES WHERE Variable_name IN ('version', 'innodb_buffer_pool_size')");
         tracker.RecordQuery("CollectDatabaseMetricsAsync", "SELECT SUM(data_length) as data_size, SUM(index_length) as index_size FROM information_schema.TABLES");
