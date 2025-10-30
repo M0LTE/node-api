@@ -1,6 +1,7 @@
 using MQTTnet;
 using MQTTnet.Client;
 using MQTTnet.Extensions.ManagedClient;
+using MQTTnet.Formatter;
 using node_api.Models;
 using System.Text.Json;
 
@@ -47,6 +48,7 @@ public class MqttStateSubscriber : BackgroundService
                 .WithTcpServer("node-api.packet.oarc.uk", 1883)
                 .WithClientId($"node-api-state-subscriber-{Environment.MachineName}-{Guid.NewGuid()}")
                 .WithCleanSession(false) // Persist session to avoid missing messages during reconnect
+                .WithProtocolVersion(MqttProtocolVersion.V500) // Enable MQTT v5 for user properties support
                 .Build())
             .Build();
 
@@ -106,7 +108,14 @@ public class MqttStateSubscriber : BackgroundService
             }
 
             // Extract metadata from user properties
+            // All our published messages should have user properties (we use MQTT v5)
             var userProps = args.ApplicationMessage.UserProperties;
+            if (userProps == null)
+            {
+                _logger.LogError("Received message on topic {Topic} without user properties. This should not happen with MQTT v5. Check broker protocol version.", topic);
+                return;
+            }
+
             var ipObfuscated = userProps.FirstOrDefault(p => p.Name == "ipObfuscated")?.Value;
             var geoCountryCode = userProps.FirstOrDefault(p => p.Name == "geoCountryCode")?.Value;
             var geoCountryName = userProps.FirstOrDefault(p => p.Name == "geoCountryName")?.Value;
