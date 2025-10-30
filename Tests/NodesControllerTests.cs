@@ -38,6 +38,7 @@ public class NodesControllerTests
         _networkState.IsTestCallsign("TEST-5").Returns(true);
         _networkState.IsTestCallsign("M0LTE").Returns(false);
         _networkState.IsTestCallsign("G8PZT").Returns(false);
+        _networkState.IsHiddenCallsign(Arg.Any<string>()).Returns(false);
 
         // Act
         var result = _controller.GetAllNodes();
@@ -128,6 +129,8 @@ public class NodesControllerTests
 
         _networkState.GetNodesByBaseCallsign("M0LTE").Returns(nodes.Take(3));
         _networkState.IsTestCallsign(Arg.Any<string>()).Returns(false);
+        _networkState.IsHiddenCallsign("M0LTE").Returns(false);
+        _networkState.IsHiddenCallsign(Arg.Any<string>()).Returns(false);
 
         // Act
         var result = _controller.GetNodesByBaseCallsign("M0LTE");
@@ -151,6 +154,7 @@ public class NodesControllerTests
 
         _networkState.GetNodesByBaseCallsign("TEST").Returns(nodes);
         _networkState.IsTestCallsign(Arg.Any<string>()).Returns(true);
+        _networkState.IsHiddenCallsign(Arg.Any<string>()).Returns(false);
 
         // Act
         var result = _controller.GetNodesByBaseCallsign("TEST");
@@ -172,6 +176,8 @@ public class NodesControllerTests
 
         _networkState.GetNodesByBaseCallsign("m0lte").Returns(nodes);
         _networkState.IsTestCallsign(Arg.Any<string>()).Returns(false);
+        _networkState.IsHiddenCallsign("m0lte").Returns(false);
+        _networkState.IsHiddenCallsign(Arg.Any<string>()).Returns(false);
 
         // Act
         var result = _controller.GetNodesByBaseCallsign("m0lte");
@@ -196,5 +202,82 @@ public class NodesControllerTests
         var okResult = Assert.IsType<OkObjectResult>(result);
         var returnedNodes = Assert.IsAssignableFrom<IEnumerable<NodeState>>(okResult.Value);
         Assert.Empty(returnedNodes);
+    }
+
+    [Fact]
+    public void GetAllNodes_ExcludesHiddenCallsigns()
+    {
+        // Arrange
+        var nodes = new Dictionary<string, NodeState>
+        {
+            ["M0LTE"] = new NodeState { Callsign = "M0LTE", Alias = "Tom" },
+            ["M2"] = new NodeState { Callsign = "M2", Alias = "Hidden" },
+            ["M2-5"] = new NodeState { Callsign = "M2-5", Alias = "Hidden SSID" }
+        };
+
+        _networkState.GetAllNodes().Returns(nodes);
+        _networkState.IsTestCallsign(Arg.Any<string>()).Returns(false);
+        _networkState.IsHiddenCallsign("M2").Returns(true);
+        _networkState.IsHiddenCallsign("M2-5").Returns(true);
+        _networkState.IsHiddenCallsign("M0LTE").Returns(false);
+
+        // Act
+        var result = _controller.GetAllNodes();
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnedNodes = Assert.IsAssignableFrom<IEnumerable<NodeState>>(okResult.Value);
+        Assert.Single(returnedNodes);
+        Assert.Contains(returnedNodes, n => n.Callsign == "M0LTE");
+        Assert.DoesNotContain(returnedNodes, n => n.Callsign == "M2");
+        Assert.DoesNotContain(returnedNodes, n => n.Callsign == "M2-5");
+    }
+
+    [Fact]
+    public void GetNodesByBaseCallsign_ExcludesHiddenCallsigns()
+    {
+        // Arrange
+        var nodes = new[]
+        {
+            new NodeState { Callsign = "M0LTE", Alias = "Tom" },
+            new NodeState { Callsign = "M0LTE-1", Alias = "Tom Mobile" }
+        };
+
+        _networkState.GetNodesByBaseCallsign("M0LTE").Returns(nodes);
+        _networkState.IsTestCallsign(Arg.Any<string>()).Returns(false);
+        _networkState.IsHiddenCallsign("M0LTE").Returns(false);
+        _networkState.IsHiddenCallsign(Arg.Any<string>()).Returns(false);
+
+        // Act
+        var result = _controller.GetNodesByBaseCallsign("M0LTE");
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnedNodes = Assert.IsAssignableFrom<IEnumerable<NodeState>>(okResult.Value);
+        Assert.Equal(2, returnedNodes.Count());
+    }
+
+    [Fact]
+    public void GetNodesByBaseCallsign_IncludesHiddenNodes_WhenExplicitlyRequestingHiddenBase()
+    {
+        // Arrange
+        var nodes = new[]
+        {
+            new NodeState { Callsign = "M2", Alias = "Hidden" },
+            new NodeState { Callsign = "M2-1", Alias = "Hidden SSID 1" },
+            new NodeState { Callsign = "M2-5", Alias = "Hidden SSID 5" }
+        };
+
+        _networkState.GetNodesByBaseCallsign("M2").Returns(nodes);
+        _networkState.IsTestCallsign(Arg.Any<string>()).Returns(false);
+        _networkState.IsHiddenCallsign("M2").Returns(true);
+
+        // Act
+        var result = _controller.GetNodesByBaseCallsign("M2");
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnedNodes = Assert.IsAssignableFrom<IEnumerable<NodeState>>(okResult.Value);
+        Assert.Equal(3, returnedNodes.Count());
     }
 }
