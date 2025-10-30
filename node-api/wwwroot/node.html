@@ -1145,7 +1145,7 @@
             
             const html = traces.map(trace => {
                 const ts = formatTimestamp(trace.timestamp);
-                const type = trace.data.l2type || '?';
+                const type = trace.data.l2Type || '?';
                 const src = trace.data.srce || '?';
                 const dst = trace.data.dest || '?';
                 
