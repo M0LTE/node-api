@@ -456,6 +456,29 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
         }
     }
 
+    public async Task DeleteLinkAsync(string canonicalKey, CancellationToken ct = default)
+    {
+        const string sql = "DELETE FROM `links` WHERE `canonical_key` = @canonicalKey";
+
+        try
+        {
+            using var conn = Database.GetConnection(open: false);
+            await conn.OpenAsync(ct);
+
+            await QueryLogger.ExecuteWithLoggingAsync(
+                conn,
+                new CommandDefinition(sql, new { canonicalKey }, cancellationToken: ct),
+                logger,
+                SlowQueryThresholdMs,
+                tracker);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to delete link {CanonicalKey}", canonicalKey);
+            throw;
+        }
+    }
+
     private static LinkState MapToLinkState(LinkRow row)
     {
         var endpoints = new Dictionary<string, LinkEndpointState>();
@@ -742,6 +765,29 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to get all circuits");
+            throw;
+        }
+    }
+
+    public async Task DeleteCircuitAsync(string canonicalKey, CancellationToken ct = default)
+    {
+        const string sql = "DELETE FROM `circuits` WHERE `canonical_key` = @canonicalKey";
+
+        try
+        {
+            using var conn = Database.GetConnection(open: false);
+            await conn.OpenAsync(ct);
+
+            await QueryLogger.ExecuteWithLoggingAsync(
+                conn,
+                new CommandDefinition(sql, new { canonicalKey }, cancellationToken: ct),
+                logger,
+                SlowQueryThresholdMs,
+                tracker);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to delete circuit {CanonicalKey}", canonicalKey);
             throw;
         }
     }

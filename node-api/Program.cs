@@ -73,6 +73,9 @@ builder.Services.AddSingleton<NetworkStateUpdater>();
 builder.Services.AddSingleton<MySqlNetworkStateRepository>();
 builder.Services.AddHostedService<NetworkStatePersistenceService>();
 
+// Register state cleanup service to remove stale disconnected links and circuits
+builder.Services.AddHostedService<StateCleanupService>();
+
 // Register MQTT subscriber to populate network state from MQTT events
 builder.Services.AddHostedService<MqttStateSubscriber>();
 
