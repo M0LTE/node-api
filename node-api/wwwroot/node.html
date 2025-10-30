@@ -677,6 +677,12 @@
                 }
                 
                 initialStateLoaded = true;
+                
+                // Trigger immediate UI update after data loads
+                updateUIForCurrentSsid();
+                updateSSIDTabs();
+                updateLinksDisplay();
+                updateTraceDisplay();
             } catch (err) {
                 console.error('Error loading initial state:', err);
                 initialStateLoaded = true; // Allow UI to proceed even if loading fails
@@ -686,7 +692,7 @@
         // Load initial state before connecting to MQTT
         if (nodeCallsign) {
             fetchServerTime(); // Fetch server time first for clock sync
-            loadInitialState();
+            loadInitialState(); // This is async, UI will update when it completes
         }
 
         // Periodically refresh server time (every 5 minutes)
@@ -917,6 +923,11 @@
                 </div>
             `;
 
+            // Show node info grid if we have data
+            if (allSsids.size > 0) {
+                document.getElementById('nodeInfo').style.display = 'grid';
+            }
+
             // Update node info - show all available fields
             const nodeInfoContainer = document.getElementById('nodeInfo');
             const infoCards = [];
@@ -1040,8 +1051,123 @@
             nodeInfoContainer.innerHTML = infoCards.join('');
         }
 
-        // Initial UI update
-        updateUIForCurrentSsid();
+        // Update SSID tabs display
+        function updateSSIDTabs() {
+            if (allSsids.size <= 1) return;
+
+            const tabsContainer = document.getElementById('ssidTabs');
+            const tabsInner = tabsContainer.querySelector('div');
+            
+            if (!tabsInner) return;
+            
+            // Show tabs container if we have multiple SSIDs
+            tabsContainer.style.display = allSsids.size > 1 ? 'block' : 'none';
+            
+            // Sort SSIDs
+            const sortedSsids = Array.from(allSsids.keys()).sort();
+            
+            const tabsHtml = sortedSsids.map(ssid => {
+                const nodeData = allSsids.get(ssid);
+                const isActive = ssid === currentSelectedSsid;
+                const hasActivity = nodeData.lastSeen && (Date.now() - nodeData.lastSeen.getTime()) < 300000; // 5 min
+                
+                return `
+                    <div class="ssid-tab ${isActive ? 'active' : ''} ${hasActivity ? 'has-activity' : ''}" 
+                         data-ssid="${ssid}">
+                        ${ssid}
+                        ${hasActivity ? '<span class="activity-dot"></span>' : ''}
+                    </div>
+                `;
+            }).join('');
+            
+            tabsInner.innerHTML = tabsHtml;
+        }
+
+        // Update links display
+        function updateLinksDisplay() {
+            const links = linkTracker.getLinksForNode(currentSelectedSsid);
+            const linksContainer = document.getElementById('linksContainer');
+            
+            if (links.length === 0) {
+                linksContainer.innerHTML = '<div class="no-data">No links for this callsign</div>';
+                return;
+            }
+
+            const html = `
+                <table class="links-table">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Local</th>
+                            <th>Remote</th>
+                            <th>Direction</th>
+                            <th>Frames Sent</th>
+                            <th>Frames Received</th>
+                            <th>RTT (ms)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${links.map(link => {
+                            const statusClass = link.status === 'active' ? 'active' : 'disconnected';
+                            const ep = link.endpoints[Object.keys(link.endpoints)[0]];
+                            
+                            return `
+                                <tr>
+                                    <td><span class="status-indicator ${statusClass}"></span></td>
+                                    <td class="callsign">${link.endpoint1}</td>
+                                    <td class="callsign">${link.endpoint2}</td>
+                                    <td><span class="direction-badge direction-${ep?.direction || 'unknown'}">${ep?.direction || '?'}</span></td>
+                                    <td class="metric">${ep?.framesSent ?? '-'}</td>
+                                    <td class="metric">${ep?.framesReceived ?? '-'}</td>
+                                    <td class="metric">${ep?.l2RttMs ?? '-'}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            linksContainer.innerHTML = html;
+        }
+
+        // Update trace display
+        function updateTraceDisplay() {
+            const currentSsidData = allSsids.get(currentSelectedSsid);
+            if (!currentSsidData || currentSsidData.l2Traces.length === 0) {
+                document.getElementById('downloadButton').disabled = true;
+                return;
+            }
+            
+            document.getElementById('downloadButton').disabled = false;
+            
+            const traceWindow = document.getElementById('traceWindow');
+            const traces = currentSsidData.l2Traces.slice(0, 100); // Show only last 100
+            
+            const html = traces.map(trace => {
+                const ts = formatTimestamp(trace.timestamp);
+                const type = trace.data.l2type || '?';
+                const src = trace.data.srce || '?';
+                const dst = trace.data.dest || '?';
+                
+                return `
+                    <div class="trace-line">
+                        <span class="trace-timestamp">${ts}</span>
+                        <span class="trace-type">${type.padEnd(6)}</span>
+                        <span class="trace-data">${src} → ${dst}</span>
+                    </div>
+                `;
+            }).join('');
+            
+            traceWindow.innerHTML = html || '<div style="color: #666; text-align: center; padding: 20px;">No traces yet...</div>';
+        }
+
+        // Update UI every second to reflect MQTT updates
+        setInterval(() => {
+            updateUIForCurrentSsid();
+            updateLinksDisplay();
+            updateTraceDisplay();
+            updateSSIDTabs();
+        }, 1000);
     </script>
 </body>
 </html>
