@@ -138,7 +138,7 @@ public class StateCleanupService : BackgroundService
             }
             else
             {
-                _logger.LogDebug("Cleanup completed in {ElapsedMs}ms: No stale entities found", sw.ElapsedMilliseconds);
+                _logger.LogInformation("Cleanup completed in {ElapsedMs}ms: No stale entities found", sw.ElapsedMilliseconds);
             }
         }
         catch (Exception ex)
