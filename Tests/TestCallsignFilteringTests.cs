@@ -1,5 +1,6 @@
 using node_api.Services;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Configuration;
 using node_api.Models.NetworkState;
 
 namespace Tests;
@@ -10,7 +11,11 @@ public class TestCallsignFilteringTests
 
     public TestCallsignFilteringTests()
     {
-        _networkState = new NetworkStateService(NullLogger<NetworkStateService>.Instance);
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>())
+            .Build();
+        
+        _networkState = new NetworkStateService(NullLogger<NetworkStateService>.Instance, configuration);
     }
 
     #region IsTestCallsign Tests

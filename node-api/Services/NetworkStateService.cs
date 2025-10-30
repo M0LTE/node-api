@@ -1,6 +1,7 @@
 using node_api.Models.NetworkState;
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Configuration;
 
 namespace node_api.Services;
 
@@ -40,6 +41,7 @@ public interface INetworkStateService
     string GetCanonicalLinkKey(string local, string remote);
     string GetCanonicalCircuitKey(string local, string remote);
     bool IsTestCallsign(string callsign);
+    bool IsHiddenCallsign(string callsign);
 }
 
 public partial class NetworkStateService : INetworkStateService
@@ -48,13 +50,24 @@ public partial class NetworkStateService : INetworkStateService
     private readonly ConcurrentDictionary<string, LinkState> _links = new();
     private readonly ConcurrentDictionary<string, CircuitState> _circuits = new();
     private readonly ILogger<NetworkStateService> _logger;
+    private readonly HashSet<string> _hiddenCallsigns;
 
     [GeneratedRegex(@"^TEST(-([0-9]|1[0-5]))?$", RegexOptions.IgnoreCase)]
     private static partial Regex TestCallsignRegex();
 
-    public NetworkStateService(ILogger<NetworkStateService> logger)
+    public NetworkStateService(ILogger<NetworkStateService> logger, IConfiguration configuration)
     {
         _logger = logger;
+        
+        // Load hidden callsigns from configuration
+        var hiddenCallsigns = configuration.GetSection("HiddenCallsigns").Get<string[]>() ?? [];
+        _hiddenCallsigns = new HashSet<string>(hiddenCallsigns, StringComparer.OrdinalIgnoreCase);
+        
+        if (_hiddenCallsigns.Count > 0)
+        {
+            _logger.LogInformation("Loaded {Count} hidden callsigns: {Callsigns}", 
+                _hiddenCallsigns.Count, string.Join(", ", _hiddenCallsigns));
+        }
     }
 
     public bool IsTestCallsign(string callsign)
@@ -63,6 +76,19 @@ public partial class NetworkStateService : INetworkStateService
             return false;
 
         return TestCallsignRegex().IsMatch(callsign);
+    }
+
+    public bool IsHiddenCallsign(string callsign)
+    {
+        if (string.IsNullOrWhiteSpace(callsign))
+            return false;
+
+        // Extract base callsign (without SSID)
+        var parts = callsign.Split('-');
+        var baseCallsign = parts[0];
+
+        // Check if base callsign is in hidden list
+        return _hiddenCallsigns.Contains(baseCallsign);
     }
 
     public NodeState GetOrCreateNode(string callsign)

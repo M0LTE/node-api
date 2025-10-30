@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using NSubstitute;
 using node_api.Models.NetworkState;
 using node_api.Services;
@@ -20,7 +21,11 @@ public class StateCleanupServiceTests
     public StateCleanupServiceTests()
     {
         var networkStateLogger = Substitute.For<ILogger<NetworkStateService>>();
-        _networkState = new NetworkStateService(networkStateLogger);
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>())
+            .Build();
+        
+        _networkState = new NetworkStateService(networkStateLogger, configuration);
         _logger = Substitute.For<ILogger<StateCleanupService>>();
         _repository = new TestableRepository();
     }

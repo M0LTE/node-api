@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using NSubstitute;
 using node_api.Models.NetworkState;
 using node_api.Services;
@@ -14,7 +15,13 @@ public class NetworkStateServiceTests
     public NetworkStateServiceTests()
     {
         _logger = Substitute.For<ILogger<NetworkStateService>>();
-        _service = new NetworkStateService(_logger);
+        
+        // Use in-memory configuration
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>())
+            .Build();
+        
+        _service = new NetworkStateService(_logger, configuration);
     }
 
     #region Node Tests

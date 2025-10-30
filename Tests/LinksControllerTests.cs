@@ -52,6 +52,7 @@ public class LinksControllerTests
         _networkState.IsTestCallsign("TEST-5").Returns(true);
         _networkState.IsTestCallsign("M0LTE").Returns(false);
         _networkState.IsTestCallsign("G8PZT").Returns(false);
+        _networkState.IsHiddenCallsign(Arg.Any<string>()).Returns(false);
 
         // Act
         var result = _controller.GetAllLinks();
@@ -122,6 +123,9 @@ public class LinksControllerTests
         _networkState.IsTestCallsign("M0LTE").Returns(false);
         _networkState.IsTestCallsign("TEST").Returns(true);
         _networkState.IsTestCallsign("G8PZT").Returns(false);
+        _networkState.IsHiddenCallsign("M0LTE").Returns(false);
+        _networkState.IsHiddenCallsign("TEST").Returns(false);
+        _networkState.IsHiddenCallsign("G8PZT").Returns(false);
 
         // Act
         var result = _controller.GetLinksForNode("M0LTE");
@@ -157,6 +161,7 @@ public class LinksControllerTests
         _networkState.IsTestCallsign("TEST").Returns(true);
         _networkState.IsTestCallsign("TEST-5").Returns(true);
         _networkState.IsTestCallsign("M0LTE").Returns(false);
+        _networkState.IsHiddenCallsign("TEST").Returns(false);
 
         // Act
         var result = _controller.GetLinksForNode("TEST");
@@ -201,6 +206,8 @@ public class LinksControllerTests
         _networkState.GetLinksForNode("M0LTE").Returns([links[0]]);
         _networkState.GetLinksForNode("M0LTE-1").Returns([links[1]]);
         _networkState.IsTestCallsign(Arg.Any<string>()).Returns(false);
+        _networkState.IsHiddenCallsign("M0LTE").Returns(false);
+        _networkState.IsHiddenCallsign(Arg.Any<string>()).Returns(false);
 
         // Act
         var result = _controller.GetLinksForBaseCallsign("M0LTE");
@@ -327,6 +334,7 @@ public class LinksControllerTests
         _networkState.GetNodesByBaseCallsign("TEST").Returns(nodes);
         _networkState.GetLinksForNode("TEST").Returns(links);
         _networkState.IsTestCallsign(Arg.Any<string>()).Returns(true);
+        _networkState.IsHiddenCallsign(Arg.Any<string>()).Returns(false);
 
         // Act
         var result = _controller.GetLinksForBaseCallsign("TEST");
@@ -335,5 +343,117 @@ public class LinksControllerTests
         var okResult = Assert.IsType<OkObjectResult>(result);
         var returnedLinks = Assert.IsAssignableFrom<IEnumerable<LinkState>>(okResult.Value);
         Assert.Single(returnedLinks);
+    }
+
+    [Fact]
+    public void GetAllLinks_ExcludesHiddenCallsigns()
+    {
+        // Arrange
+        var links = new Dictionary<string, LinkState>
+        {
+            ["G8PZT<->M0LTE"] = new LinkState 
+            { 
+                CanonicalKey = "G8PZT<->M0LTE",
+                Endpoint1 = "G8PZT",
+                Endpoint2 = "M0LTE"
+            },
+            ["M0LTE<->M2"] = new LinkState 
+            { 
+                CanonicalKey = "M0LTE<->M2",
+                Endpoint1 = "M0LTE",
+                Endpoint2 = "M2"
+            },
+            ["M2<->M2-5"] = new LinkState 
+            { 
+                CanonicalKey = "M2<->M2-5",
+                Endpoint1 = "M2",
+                Endpoint2 = "M2-5"
+            }
+        };
+
+        _networkState.GetAllLinks().Returns(links);
+        _networkState.IsTestCallsign(Arg.Any<string>()).Returns(false);
+        _networkState.IsHiddenCallsign("M2").Returns(true);
+        _networkState.IsHiddenCallsign("M2-5").Returns(true);
+        _networkState.IsHiddenCallsign("M0LTE").Returns(false);
+        _networkState.IsHiddenCallsign("G8PZT").Returns(false);
+
+        // Act
+        var result = _controller.GetAllLinks();
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnedLinks = Assert.IsAssignableFrom<IEnumerable<LinkState>>(okResult.Value);
+        Assert.Single(returnedLinks);
+        Assert.Contains(returnedLinks, l => l.CanonicalKey == "G8PZT<->M0LTE");
+    }
+
+    [Fact]
+    public void GetLinksForNode_ExcludesHiddenCallsigns()
+    {
+        // Arrange
+        var links = new[]
+        {
+            new LinkState 
+            { 
+                CanonicalKey = "G8PZT<->M0LTE",
+                Endpoint1 = "G8PZT",
+                Endpoint2 = "M0LTE"
+            },
+            new LinkState 
+            { 
+                CanonicalKey = "M0LTE<->M2",
+                Endpoint1 = "M0LTE",
+                Endpoint2 = "M2"
+            }
+        };
+
+        _networkState.GetLinksForNode("M0LTE").Returns(links);
+        _networkState.IsTestCallsign(Arg.Any<string>()).Returns(false);
+        _networkState.IsHiddenCallsign("M0LTE").Returns(false);
+        _networkState.IsHiddenCallsign("M2").Returns(true);
+        _networkState.IsHiddenCallsign("G8PZT").Returns(false);
+
+        // Act
+        var result = _controller.GetLinksForNode("M0LTE");
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnedLinks = Assert.IsAssignableFrom<IEnumerable<LinkState>>(okResult.Value);
+        Assert.Single(returnedLinks);
+        Assert.Contains(returnedLinks, l => l.CanonicalKey == "G8PZT<->M0LTE");
+    }
+
+    [Fact]
+    public void GetLinksForNode_IncludesHiddenLinks_WhenRequestingHiddenCallsign()
+    {
+        // Arrange
+        var links = new[]
+        {
+            new LinkState 
+            { 
+                CanonicalKey = "M0LTE<->M2",
+                Endpoint1 = "M0LTE",
+                Endpoint2 = "M2"
+            },
+            new LinkState 
+            { 
+                CanonicalKey = "M2<->M2-5",
+                Endpoint1 = "M2",
+                Endpoint2 = "M2-5"
+            }
+        };
+
+        _networkState.GetLinksForNode("M2").Returns(links);
+        _networkState.IsTestCallsign(Arg.Any<string>()).Returns(false);
+        _networkState.IsHiddenCallsign("M2").Returns(true);
+
+        // Act
+        var result = _controller.GetLinksForNode("M2");
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnedLinks = Assert.IsAssignableFrom<IEnumerable<LinkState>>(okResult.Value);
+        Assert.Equal(2, returnedLinks.Count());
     }
 }

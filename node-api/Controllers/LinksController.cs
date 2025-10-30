@@ -19,7 +19,7 @@ public class LinksController : ControllerBase
     }
 
     /// <summary>
-    /// Get all links currently known to the system (excluding TEST callsigns)
+    /// Get all links currently known to the system (excluding TEST and hidden callsigns)
     /// </summary>
     [HttpGet]
     public IActionResult GetAllLinks()
@@ -27,7 +27,9 @@ public class LinksController : ControllerBase
         var links = _networkState.GetAllLinks()
             .Values
             .Where(l => !_networkState.IsTestCallsign(l.Endpoint1) && 
-                       !_networkState.IsTestCallsign(l.Endpoint2));
+                       !_networkState.IsTestCallsign(l.Endpoint2) &&
+                       !_networkState.IsHiddenCallsign(l.Endpoint1) &&
+                       !_networkState.IsHiddenCallsign(l.Endpoint2));
         
         _logger.LogInformation("GetAllLinks called, returning {Count} links", links.Count());
         return Ok(links);
@@ -51,25 +53,27 @@ public class LinksController : ControllerBase
     }
 
     /// <summary>
-    /// Get all links involving a specific callsign (excludes TEST unless explicitly requesting TEST)
+    /// Get all links involving a specific callsign (excludes TEST and hidden unless explicitly requesting them)
     /// </summary>
     [HttpGet("node/{callsign}")]
     public IActionResult GetLinksForNode(string callsign)
     {
         var links = _networkState.GetLinksForNode(callsign);
         
-        // Don't filter if explicitly requesting TEST callsign
-        if (!_networkState.IsTestCallsign(callsign))
+        // Don't filter if explicitly requesting TEST or hidden callsign
+        if (!_networkState.IsTestCallsign(callsign) && !_networkState.IsHiddenCallsign(callsign))
         {
             links = links.Where(l => !_networkState.IsTestCallsign(l.Endpoint1) && 
-                                    !_networkState.IsTestCallsign(l.Endpoint2));
+                                    !_networkState.IsTestCallsign(l.Endpoint2) &&
+                                    !_networkState.IsHiddenCallsign(l.Endpoint1) &&
+                                    !_networkState.IsHiddenCallsign(l.Endpoint2));
         }
         
         return Ok(links);
     }
 
     /// <summary>
-    /// Get all links involving any SSID of a base callsign (excludes TEST unless explicitly requesting TEST)
+    /// Get all links involving any SSID of a base callsign (excludes TEST and hidden unless explicitly requesting them)
     /// </summary>
     [HttpGet("base/{baseCallsign}")]
     public IActionResult GetLinksForBaseCallsign(string baseCallsign)
@@ -79,11 +83,14 @@ public class LinksController : ControllerBase
             .SelectMany(node => _networkState.GetLinksForNode(node.Callsign))
             .DistinctBy(link => link.CanonicalKey);
         
-        // Don't filter if explicitly requesting TEST base callsign
-        if (!baseCallsign.Equals("TEST", StringComparison.OrdinalIgnoreCase))
+        // Don't filter if explicitly requesting TEST or hidden base callsign
+        if (!baseCallsign.Equals("TEST", StringComparison.OrdinalIgnoreCase) && 
+            !_networkState.IsHiddenCallsign(baseCallsign))
         {
             allLinks = allLinks.Where(l => !_networkState.IsTestCallsign(l.Endpoint1) && 
-                                          !_networkState.IsTestCallsign(l.Endpoint2));
+                                          !_networkState.IsTestCallsign(l.Endpoint2) &&
+                                          !_networkState.IsHiddenCallsign(l.Endpoint1) &&
+                                          !_networkState.IsHiddenCallsign(l.Endpoint2));
         }
         
         allLinks = allLinks
