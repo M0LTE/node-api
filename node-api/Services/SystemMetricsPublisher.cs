@@ -17,7 +17,9 @@ namespace node_api.Services;
 public class SystemMetricsPublisher : BackgroundService
 {
     private readonly ILogger<SystemMetricsPublisher> _logger;
+    private readonly QueryFrequencyTracker _tracker;
     private const int PublishIntervalSeconds = 10;
+    private const int SlowQueryThresholdMs = 1000;
     private IManagedMqttClient? _mqttClient;
     private readonly DateTime _startTime;
     private readonly DateTime _systemStartTime;
@@ -27,9 +29,10 @@ public class SystemMetricsPublisher : BackgroundService
     private long _previousTotalCpuTime;
     private long _previousIdleCpuTime;
 
-    public SystemMetricsPublisher(ILogger<SystemMetricsPublisher> logger)
+    public SystemMetricsPublisher(ILogger<SystemMetricsPublisher> logger, QueryFrequencyTracker tracker)
     {
         _logger = logger;
+        _tracker = tracker;
         _startTime = DateTime.UtcNow;
         _systemStartTime = DateTime.UtcNow - TimeSpan.FromMilliseconds(Environment.TickCount64);
 
@@ -146,12 +149,20 @@ public class SystemMetricsPublisher : BackgroundService
             await conn.OpenAsync(ct);
 
             // Fetch global status variables
-            var statusVars = (await conn.QueryAsync<StatusVariable>(
-                "SHOW GLOBAL STATUS")).ToDictionary(x => x.Variable_name, x => x.Value);
+            var statusVars = (await QueryLogger.QueryWithLoggingAsync<StatusVariable>(
+                conn,
+                new CommandDefinition("SHOW GLOBAL STATUS", cancellationToken: ct),
+                _logger,
+                SlowQueryThresholdMs,
+                _tracker)).ToDictionary(x => x.Variable_name, x => x.Value);
 
             // Fetch global variables for configuration info
-            var globalVars = (await conn.QueryAsync<StatusVariable>(
-                "SHOW GLOBAL VARIABLES WHERE Variable_name IN ('version', 'innodb_buffer_pool_size')")).ToDictionary(x => x.Variable_name, x => x.Value);
+            var globalVars = (await QueryLogger.QueryWithLoggingAsync<StatusVariable>(
+                conn,
+                new CommandDefinition("SHOW GLOBAL VARIABLES WHERE Variable_name IN ('version', 'innodb_buffer_pool_size')", cancellationToken: ct),
+                _logger,
+                SlowQueryThresholdMs,
+                _tracker)).ToDictionary(x => x.Variable_name, x => x.Value);
 
             // Calculate database sizes
             var sizeQuery = @"
@@ -160,7 +171,12 @@ public class SystemMetricsPublisher : BackgroundService
                     SUM(index_length) as index_size
                 FROM information_schema.TABLES";
             
-            var sizes = await conn.QuerySingleOrDefaultAsync<DatabaseSize>(sizeQuery);
+            var sizes = await QueryLogger.QuerySingleOrDefaultWithLoggingAsync<DatabaseSize>(
+                conn,
+                new CommandDefinition(sizeQuery, cancellationToken: ct),
+                _logger,
+                SlowQueryThresholdMs,
+                _tracker);
 
             // Calculate metrics
             long? uptime = statusVars.TryGetValue("Uptime", out var uptimeStr) && long.TryParse(uptimeStr, out var u) ? u : null;
