@@ -120,6 +120,25 @@ public class NetworkStateUpdater : IHostedService
                 node.Status = NodeStatus.Online;
             }
         }
+
+        // Update link RF status if isRF information is available
+        // Only update when we have definitive information (not null)
+        if (trace.IsRF.HasValue && trace.Source != null && trace.Destination != null)
+        {
+            var canonicalKey = _networkState.GetCanonicalLinkKey(trace.Source, trace.Destination);
+            var link = _networkState.GetLink(canonicalKey);
+            
+            // Only update if link exists and we don't already know the RF status
+            // or if the RF status has changed
+            if (link != null && link.IsRF != trace.IsRF)
+            {
+                link.IsRF = trace.IsRF;
+                _logger.LogDebug(
+                    "Updated link RF status from L2Trace: {Link} is {RFStatus}",
+                    canonicalKey,
+                    trace.IsRF.Value ? "RF" : "not RF");
+            }
+        }
     }
 
     public void UpdateFromLinkUpEvent(LinkUpEvent evt)

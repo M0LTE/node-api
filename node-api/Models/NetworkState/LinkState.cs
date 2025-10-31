@@ -79,6 +79,24 @@ public class LinkState
         }
     }
     
+    private bool? _isRF;
+    /// <summary>
+    /// Indicates whether this link uses RF (true), internet/ethernet (false), or is unknown (null).
+    /// Updated from L2Trace events that include the isRF property.
+    /// </summary>
+    public bool? IsRF
+    {
+        get => _isRF;
+        set
+        {
+            if (_isRF != value)
+            {
+                _isRF = value;
+                MarkDirty();
+            }
+        }
+    }
+    
     public Dictionary<string, LinkEndpointState> Endpoints { get; init; } = new();
     
     // Dirty tracking for persistence optimization

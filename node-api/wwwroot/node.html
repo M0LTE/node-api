@@ -463,7 +463,8 @@
                         status: 'active',
                         connectedAt: data.time ? new Date(data.time * 1000) : new Date(),
                         lastUpdate: new Date(),
-                        endpoints: {}
+                        endpoints: {},
+                        isRF: null // Unknown initially
                     };
                     this.links.set(canonicalKey, link);
                 }
@@ -656,6 +657,7 @@
                             disconnectedAt: link.disconnectedAt ? new Date(link.disconnectedAt) : null,
                             lastUpdate: new Date(link.lastUpdate),
                             initiator: link.initiator,
+                            isRF: link.isRF, // Load RF status from API
                             endpoints: Object.fromEntries(
                                 Object.entries(link.endpoints).map(([key, ep]) => [
                                     key,
@@ -1101,6 +1103,7 @@
                             <th>Local</th>
                             <th>Remote</th>
                             <th>Direction</th>
+                            <th>RF</th>
                             <th>Frames Sent</th>
                             <th>Frames Received</th>
                             <th>RTT (ms)</th>
@@ -1111,12 +1114,24 @@
                             const statusClass = link.status === 'active' ? 'active' : 'disconnected';
                             const ep = link.endpoints[Object.keys(link.endpoints)[0]];
                             
+                            // Determine RF status
+                            let rfStatus = '?';
+                            let rfTitle = 'Unknown';
+                            if (link.isRF === true) {
+                                rfStatus = '📡';
+                                rfTitle = 'RF Link (Radio Frequency)';
+                            } else if (link.isRF === false) {
+                                rfStatus = '🌐';
+                                rfTitle = 'Internet/Ethernet Link';
+                            }
+                            
                             return `
                                 <tr>
                                     <td><span class="status-indicator ${statusClass}"></span></td>
                                     <td class="callsign">${link.endpoint1}</td>
                                     <td class="callsign">${link.endpoint2}</td>
                                     <td><span class="direction-badge direction-${ep?.direction || 'unknown'}">${ep?.direction || '?'}</span></td>
+                                    <td title="${rfTitle}" style="text-align: center; font-size: 18px;">${rfStatus}</td>
                                     <td class="metric">${ep?.framesSent ?? '-'}</td>
                                     <td class="metric">${ep?.framesReceived ?? '-'}</td>
                                     <td class="metric">${ep?.l2RttMs ?? '-'}</td>

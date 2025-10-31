@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS `links` (
     `disconnected_at` DATETIME(6) NULL,
     `last_update` DATETIME(6) NOT NULL,
     `initiator` VARCHAR(20) NULL,
+    `is_rf` BOOLEAN NULL COMMENT 'Whether this link uses RF (true), internet (false), or unknown (NULL)',
     -- Endpoint 1 state
     `ep1_node` VARCHAR(20) NULL,
     `ep1_link_id` INT NULL,
@@ -85,7 +86,8 @@ CREATE TABLE IF NOT EXISTS `links` (
     INDEX `idx_endpoint1` (`endpoint1`),
     INDEX `idx_endpoint2` (`endpoint2`),
     INDEX `idx_status` (`status`),
-    INDEX `idx_last_update` (`last_update`)
+    INDEX `idx_last_update` (`last_update`),
+    INDEX `idx_is_rf` (`is_rf`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Circuits table - stores current state of all NetROM Layer 4 circuits

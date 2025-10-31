@@ -263,7 +263,7 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
         const string sql = @"
             INSERT INTO `links` (
                 `canonical_key`, `endpoint1`, `endpoint2`, `status`,
-                `connected_at`, `disconnected_at`, `last_update`, `initiator`,
+                `connected_at`, `disconnected_at`, `last_update`, `initiator`, `is_rf`,
                 `ep1_node`, `ep1_link_id`, `ep1_direction`, `ep1_port`, `ep1_remote`, `ep1_local`,
                 `ep1_frames_sent`, `ep1_frames_received`, `ep1_frames_resent`, `ep1_frames_queued`,
                 `ep1_frames_queued_peak`, `ep1_bytes_sent`, `ep1_bytes_received`,
@@ -276,7 +276,7 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                 `ep2_up_for_secs`, `ep2_last_update`
             ) VALUES (
                 @CanonicalKey, @Endpoint1, @Endpoint2, @Status,
-                @ConnectedAt, @DisconnectedAt, @LastUpdate, @Initiator,
+                @ConnectedAt, @DisconnectedAt, @LastUpdate, @Initiator, @IsRF,
                 @Ep1Node, @Ep1LinkId, @Ep1Direction, @Ep1Port, @Ep1Remote, @Ep1Local,
                 @Ep1FramesSent, @Ep1FramesReceived, @Ep1FramesResent, @Ep1FramesQueued,
                 @Ep1FramesQueuedPeak, @Ep1BytesSent, @Ep1BytesReceived,
@@ -294,6 +294,7 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                 `disconnected_at` = VALUES(`disconnected_at`),
                 `last_update` = VALUES(`last_update`),
                 `initiator` = COALESCE(`initiator`, VALUES(`initiator`)),
+                `is_rf` = COALESCE(VALUES(`is_rf`), `is_rf`),
                 `ep1_node` = COALESCE(VALUES(`ep1_node`), `ep1_node`),
                 `ep1_link_id` = COALESCE(VALUES(`ep1_link_id`), `ep1_link_id`),
                 `ep1_direction` = COALESCE(VALUES(`ep1_direction`), `ep1_direction`),
@@ -353,6 +354,7 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                     link.DisconnectedAt,
                     link.LastUpdate,
                     link.Initiator,
+                    link.IsRF,
                     Ep1Node = ep1?.Node,
                     Ep1LinkId = ep1?.Id,
                     Ep1Direction = ep1?.Direction,
@@ -545,6 +547,7 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
             DisconnectedAt = row.disconnected_at,
             LastUpdate = row.last_update,
             Initiator = row.initiator,
+            IsRF = row.is_rf,
             Endpoints = endpoints
         };
     }
@@ -559,6 +562,7 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
         public DateTime? disconnected_at { get; set; }
         public DateTime last_update { get; set; }
         public string? initiator { get; set; }
+        public bool? is_rf { get; set; }
         public string? ep1_node { get; set; }
         public int? ep1_link_id { get; set; }
         public string? ep1_direction { get; set; }

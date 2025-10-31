@@ -240,6 +240,7 @@ public class NetworkStatePersistenceService : BackgroundService
         target.DisconnectedAt = source.DisconnectedAt;
         target.LastUpdate = source.LastUpdate;
         target.Initiator = source.Initiator;
+        target.IsRF = source.IsRF;
         
         foreach (var (key, endpoint) in source.Endpoints)
         {
