@@ -168,6 +168,60 @@
         .status-indicator.disconnected {
             background-color: #f44336;
         }
+        .filter-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .filter-label {
+            font-weight: 600;
+            color: #333;
+            margin-right: 5px;
+        }
+        .filter-button {
+            padding: 8px 16px;
+            border: 2px solid #0066cc;
+            background-color: white;
+            color: #0066cc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .filter-button:hover {
+            background-color: #f0f4ff;
+        }
+        .filter-button.active {
+            background-color: #0066cc;
+            color: white;
+        }
+        .filter-button.rf-only {
+            border-color: #4caf50;
+            color: #4caf50;
+        }
+        .filter-button.rf-only.active {
+            background-color: #4caf50;
+            color: white;
+        }
+        .filter-button.internet-only {
+            border-color: #2196f3;
+            color: #2196f3;
+        }
+        .filter-button.internet-only.active {
+            background-color: #2196f3;
+            color: white;
+        }
+        .filter-button.unknown-only {
+            border-color: #ff9800;
+            color: #ff9800;
+        }
+        .filter-button.unknown-only.active {
+            background-color: #ff9800;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -199,11 +253,34 @@
                 <div class="summary-number" id="disconnectedCount">0</div>
                 <div class="summary-label">Disconnected</div>
             </div>
+            <div class="summary-card">
+                <div class="summary-number" id="rfLinksCount">0</div>
+                <div class="summary-label">📡 RF Links</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-number" id="internetLinksCount">0</div>
+                <div class="summary-label">🌐 Internet Links</div>
+            </div>
         </div>
     </div>
 
     <div class="container">
         <h2>Active Links</h2>
+        <div class="filter-controls">
+            <span class="filter-label">Filter by Type:</span>
+            <button class="filter-button active" id="filter-all" onclick="setRfFilter('all')">
+                All Links
+            </button>
+            <button class="filter-button rf-only" id="filter-rf" onclick="setRfFilter('rf')">
+                📡 RF Only
+            </button>
+            <button class="filter-button internet-only" id="filter-internet" onclick="setRfFilter('internet')">
+                🌐 Internet Only
+            </button>
+            <button class="filter-button unknown-only" id="filter-unknown" onclick="setRfFilter('unknown')">
+                ❓ Unknown
+            </button>
+        </div>
         <div id="linksContainer">
             <div class="no-data">Waiting for link data...</div>
         </div>
@@ -366,7 +443,10 @@
                 return {
                     active: all.filter(l => l.status === 'active').length,
                     total: all.length,
-                    disconnected: all.filter(l => l.status === 'disconnected').length
+                    disconnected: all.filter(l => l.status === 'disconnected').length,
+                    rf: all.filter(l => l.isRF === true).length,
+                    internet: all.filter(l => l.isRF === false).length,
+                    unknown: all.filter(l => l.isRF === null || l.isRF === undefined).length
                 };
             }
         }
@@ -378,6 +458,37 @@
         const activeLinksCount = document.getElementById('activeLinksCount');
         const totalLinksCount = document.getElementById('totalLinksCount');
         const disconnectedCount = document.getElementById('disconnectedCount');
+        const rfLinksCount = document.getElementById('rfLinksCount');
+        const internetLinksCount = document.getElementById('internetLinksCount');
+
+        // RF filter state
+        let currentRfFilter = 'all'; // 'all', 'rf', 'internet', 'unknown'
+
+        function setRfFilter(filter) {
+            currentRfFilter = filter;
+            
+            // Update button states
+            document.querySelectorAll('.filter-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`filter-${filter}`).classList.add('active');
+            
+            // Force immediate UI update
+            updateLinksDisplay();
+        }
+
+        function filterLinksByRf(links) {
+            if (currentRfFilter === 'all') {
+                return links;
+            } else if (currentRfFilter === 'rf') {
+                return links.filter(link => link.isRF === true);
+            } else if (currentRfFilter === 'internet') {
+                return links.filter(link => link.isRF === false);
+            } else if (currentRfFilter === 'unknown') {
+                return links.filter(link => link.isRF === null || link.isRF === undefined);
+            }
+            return links;
+        }
 
         // Fetch initial link state from API
         async function loadInitialState() {
@@ -486,16 +597,23 @@
             return date.toLocaleTimeString();
         }
 
-        // Update UI every second
-        setInterval(() => {
+        function updateLinksDisplay() {
             const stats = linkTracker.getStats();
             activeLinksCount.textContent = stats.active;
             totalLinksCount.textContent = stats.total;
             disconnectedCount.textContent = stats.disconnected;
+            rfLinksCount.textContent = stats.rf;
+            internetLinksCount.textContent = stats.internet;
 
-            const allLinks = linkTracker.getAllLinks();
+            let allLinks = linkTracker.getAllLinks();
             
-            if (allLinks.length === 0) return;
+            // Apply RF filter
+            allLinks = filterLinksByRf(allLinks);
+            
+            if (allLinks.length === 0) {
+                linksContainer.innerHTML = '<div class="no-data">No links match the current filter</div>';
+                return;
+            }
 
             const html = `
                 <table class="links-table">
@@ -601,7 +719,88 @@
             `;
 
             linksContainer.innerHTML = html;
+        }
+
+        // Update UI every second
+        setInterval(() => {
+            updateLinksDisplay();
         }, 1000);
+
+        // Filtering logic
+        const rfOnlyButton = document.querySelector('.filter-button.rf-only');
+        const internetOnlyButton = document.querySelector('.filter-button.internet-only');
+        const unknownOnlyButton = document.querySelector('.filter-button.unknown-only');
+        const resetFilterButton = document.getElementById('resetFilterButton');
+
+        let currentFilter = 'all'; // all | rf | internet | unknown
+
+        function applyFilter() {
+            const rows = document.querySelectorAll('#linksContainer .links-table tbody tr');
+            
+            rows.forEach(row => {
+                const rfCell = row.cells[4]; // RF status cell
+                const rfValue = rfCell ? rfCell.textContent.trim() : '';
+
+                if (currentFilter === 'rf' && rfValue !== '📡') {
+                    row.style.display = 'none';
+                } else if (currentFilter === 'internet' && rfValue !== '🌐') {
+                    row.style.display = 'none';
+                } else if (currentFilter === 'unknown' && rfValue !== '?') {
+                    row.style.display = 'none';
+                } else {
+                    row.style.display = ''; // Show row
+                }
+            });
+        }
+
+        rfOnlyButton.addEventListener('click', () => {
+            currentFilter = currentFilter === 'rf' ? 'all' : 'rf';
+            rfOnlyButton.classList.toggle('active');
+            applyFilter();
+        });
+
+        internetOnlyButton.addEventListener('click', () => {
+            currentFilter = currentFilter === 'internet' ? 'all' : 'internet';
+            internetOnlyButton.classList.toggle('active');
+            applyFilter();
+        });
+
+        unknownOnlyButton.addEventListener('click', () => {
+            currentFilter = currentFilter === 'unknown' ? 'all' : 'unknown';
+            unknownOnlyButton.classList.toggle('active');
+            applyFilter();
+        });
+
+        resetFilterButton.addEventListener('click', () => {
+            currentFilter = 'all';
+            rfOnlyButton.classList.remove('active');
+            internetOnlyButton.classList.remove('active');
+            unknownOnlyButton.classList.remove('active');
+            applyFilter();
+        });
+
+        // RF filter using onclick attribute
+        function setRfFilter(filter) {
+            currentFilter = filter;
+            
+            // Update button active states
+            document.getElementById('filter-all').classList.remove('active');
+            document.getElementById('filter-rf').classList.remove('active');
+            document.getElementById('filter-internet').classList.remove('active');
+            document.getElementById('filter-unknown').classList.remove('active');
+            
+            if (filter === 'all') {
+                document.getElementById('filter-all').classList.add('active');
+            } else if (filter === 'rf') {
+                document.getElementById('filter-rf').classList.add('active');
+            } else if (filter === 'internet') {
+                document.getElementById('filter-internet').classList.add('active');
+            } else if (filter === 'unknown') {
+                document.getElementById('filter-unknown').classList.add('active');
+            }
+            
+            applyFilter();
+        }
     </script>
 </body>
 </html>
