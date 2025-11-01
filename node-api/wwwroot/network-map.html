@@ -440,7 +440,7 @@
                 edges: {
                     width: 2,
                     smooth: {
-                        type: 'continuous',
+                        type: 'dynamic',
                         roundness: 0.5
                     },
                     font: {
@@ -450,19 +450,19 @@
                 },
                 physics: {
                     enabled: true,
-                    forceAtlas2Based: {
-                        gravitationalConstant: -50,
-                        centralGravity: 0.01,
-                        springLength: 200,
-                        springConstant: 0.08,
-                        damping: 0.4,
+                    barnesHut: {
+                        gravitationalConstant: -8000,
+                        centralGravity: 0.3,
+                        springLength: 250,
+                        springConstant: 0.04,
+                        damping: 0.09,
                         avoidOverlap: 0.5
                     },
                     maxVelocity: 50,
-                    solver: 'forceAtlas2Based',
+                    solver: 'barnesHut',
                     stabilization: {
                         enabled: true,
-                        iterations: 100,
+                        iterations: 1000,
                         updateInterval: 25
                     }
                 },
