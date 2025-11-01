@@ -148,6 +148,7 @@
         }
         .unknown-link {
             background-color: #ff9800;
+            opacity: 0.3;
         }
         .active-node {
             background-color: #0066cc;
@@ -475,7 +476,8 @@
                             border: '#2B7CE9',
                             background: '#D2E5FF'
                         }
-                    }
+                    },
+                    chosen: true
                 },
                 edges: {
                     width: 2,
@@ -515,9 +517,12 @@
                 },
                 interaction: {
                     hover: true,
-                    tooltipDelay: 200,
+                    tooltipDelay: 100,
+                    hideEdgesOnDrag: false,
+                    hideEdgesOnZoom: false,
                     zoomView: true,
-                    dragView: true
+                    dragView: true,
+                    navigationButtons: false
                 }
             };
             
@@ -576,8 +581,9 @@
             // Collect nodes to add/remove
             const nodesToAdd = [];
             const nodesToRemove = [];
+            const nodesToUpdate = [];
             
-            // Add new nodes
+            // Add new nodes or update existing ones
             newNodeIds.forEach(nodeId => {
                 if (!existingNodeIds.includes(nodeId)) {
                     nodesToAdd.push({
@@ -586,6 +592,12 @@
                         shape: 'dot',
                         size: 15,
                         title: nodeId // Tooltip shows callsign
+                    });
+                } else {
+                    // Update existing node to ensure it has a title
+                    nodesToUpdate.push({
+                        id: nodeId,
+                        title: nodeId
                     });
                 }
             });
@@ -600,6 +612,9 @@
             // Batch update nodes
             if (nodesToAdd.length > 0) {
                 nodes.add(nodesToAdd);
+            }
+            if (nodesToUpdate.length > 0) {
+                nodes.update(nodesToUpdate);
             }
             if (nodesToRemove.length > 0) {
                 nodes.remove(nodesToRemove);
@@ -683,9 +698,10 @@
                     color = {
                         color: '#ff9800',
                         highlight: '#ffa726',
-                        hover: '#ffa726'
+                        hover: '#ffa726',
+                        opacity: 0.3
                     };
-                    width = 2;
+                    width = 1;
                     arrows = { to: { enabled: false }, from: { enabled: false } };
                 }
                 
