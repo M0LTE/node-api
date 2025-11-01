@@ -99,4 +99,33 @@ public class LinksController : ControllerBase
         
         return Ok(allLinks);
     }
+
+    /// <summary>
+    /// Get all links that are currently flapping (multiple up/down transitions in a short time)
+    /// </summary>
+    /// <param name="flapThreshold">Minimum number of flaps to be considered flapping (default: 3)</param>
+    /// <param name="windowMinutes">Time window in minutes for flap detection (default: 15)</param>
+    [HttpGet("flapping")]
+    public IActionResult GetFlappingLinks(
+        [FromQuery] int flapThreshold = 3,
+        [FromQuery] int windowMinutes = 15)
+    {
+        var flappingLinks = _networkState.GetAllLinks()
+            .Values
+            .Where(l => l.IsFlapping(flapThreshold, windowMinutes) &&
+                       !_networkState.IsTestCallsign(l.Endpoint1) && 
+                       !_networkState.IsTestCallsign(l.Endpoint2) &&
+                       !_networkState.IsHiddenCallsign(l.Endpoint1) &&
+                       !_networkState.IsHiddenCallsign(l.Endpoint2))
+            .OrderByDescending(l => l.FlapCount)
+            .ThenByDescending(l => l.LastFlapTime);
+        
+        _logger.LogInformation(
+            "GetFlappingLinks called (threshold={Threshold}, window={Window}min), returning {Count} links",
+            flapThreshold,
+            windowMinutes,
+            flappingLinks.Count());
+        
+        return Ok(flappingLinks);
+    }
 }

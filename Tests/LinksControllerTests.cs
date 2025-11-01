@@ -456,4 +456,303 @@ public class LinksControllerTests
         var returnedLinks = Assert.IsAssignableFrom<IEnumerable<LinkState>>(okResult.Value);
         Assert.Equal(2, returnedLinks.Count());
     }
+
+    [Fact]
+    public void GetFlappingLinks_ReturnsOnlyFlappingLinks()
+    {
+        // Arrange
+        var now = DateTime.UtcNow;
+        var links = new Dictionary<string, LinkState>
+        {
+            ["G8PZT<->M0LTE"] = new LinkState 
+            { 
+                CanonicalKey = "G8PZT<->M0LTE",
+                Endpoint1 = "G8PZT",
+                Endpoint2 = "M0LTE",
+                FlapCount = 5,
+                FlapWindowStart = now.AddMinutes(-5),
+                LastFlapTime = now.AddMinutes(-1)
+            },
+            ["M0ABC<->M0XYZ"] = new LinkState 
+            { 
+                CanonicalKey = "M0ABC<->M0XYZ",
+                Endpoint1 = "M0ABC",
+                Endpoint2 = "M0XYZ",
+                FlapCount = 2, // Below threshold
+                FlapWindowStart = now.AddMinutes(-5),
+                LastFlapTime = now.AddMinutes(-1)
+            },
+            ["M0DEF<->M0GHI"] = new LinkState 
+            { 
+                CanonicalKey = "M0DEF<->M0GHI",
+                Endpoint1 = "M0DEF",
+                Endpoint2 = "M0GHI",
+                FlapCount = 4,
+                FlapWindowStart = now.AddMinutes(-5),
+                LastFlapTime = now.AddMinutes(-1)
+            }
+        };
+
+        _networkState.GetAllLinks().Returns(links);
+        _networkState.IsTestCallsign(Arg.Any<string>()).Returns(false);
+        _networkState.IsHiddenCallsign(Arg.Any<string>()).Returns(false);
+
+        // Act
+        var result = _controller.GetFlappingLinks(flapThreshold: 3);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnedLinks = Assert.IsAssignableFrom<IEnumerable<LinkState>>(okResult.Value).ToList();
+        Assert.Equal(2, returnedLinks.Count);
+        Assert.Contains(returnedLinks, l => l.CanonicalKey == "G8PZT<->M0LTE");
+        Assert.Contains(returnedLinks, l => l.CanonicalKey == "M0DEF<->M0GHI");
+    }
+
+    [Fact]
+    public void GetFlappingLinks_ExcludesTestCallsigns()
+    {
+        // Arrange
+        var now = DateTime.UtcNow;
+        var links = new Dictionary<string, LinkState>
+        {
+            ["G8PZT<->M0LTE"] = new LinkState 
+            { 
+                CanonicalKey = "G8PZT<->M0LTE",
+                Endpoint1 = "G8PZT",
+                Endpoint2 = "M0LTE",
+                FlapCount = 5,
+                FlapWindowStart = now.AddMinutes(-5),
+                LastFlapTime = now.AddMinutes(-1)
+            },
+            ["TEST<->M0LTE"] = new LinkState 
+            { 
+                CanonicalKey = "TEST<->M0LTE",
+                Endpoint1 = "TEST",
+                Endpoint2 = "M0LTE",
+                FlapCount = 5,
+                FlapWindowStart = now.AddMinutes(-5),
+                LastFlapTime = now.AddMinutes(-1)
+            }
+        };
+
+        _networkState.GetAllLinks().Returns(links);
+        _networkState.IsTestCallsign("TEST").Returns(true);
+        _networkState.IsTestCallsign("M0LTE").Returns(false);
+        _networkState.IsTestCallsign("G8PZT").Returns(false);
+        _networkState.IsHiddenCallsign(Arg.Any<string>()).Returns(false);
+
+        // Act
+        var result = _controller.GetFlappingLinks();
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnedLinks = Assert.IsAssignableFrom<IEnumerable<LinkState>>(okResult.Value);
+        Assert.Single(returnedLinks);
+        Assert.Contains(returnedLinks, l => l.CanonicalKey == "G8PZT<->M0LTE");
+    }
+
+    [Fact]
+    public void GetFlappingLinks_ExcludesHiddenCallsigns()
+    {
+        // Arrange
+        var now = DateTime.UtcNow;
+        var links = new Dictionary<string, LinkState>
+        {
+            ["G8PZT<->M0LTE"] = new LinkState 
+            { 
+                CanonicalKey = "G8PZT<->M0LTE",
+                Endpoint1 = "G8PZT",
+                Endpoint2 = "M0LTE",
+                FlapCount = 5,
+                FlapWindowStart = now.AddMinutes(-5),
+                LastFlapTime = now.AddMinutes(-1)
+            },
+            ["M0LTE<->M2"] = new LinkState 
+            { 
+                CanonicalKey = "M0LTE<->M2",
+                Endpoint1 = "M0LTE",
+                Endpoint2 = "M2",
+                FlapCount = 5,
+                FlapWindowStart = now.AddMinutes(-5),
+                LastFlapTime = now.AddMinutes(-1)
+            }
+        };
+
+        _networkState.GetAllLinks().Returns(links);
+        _networkState.IsTestCallsign(Arg.Any<string>()).Returns(false);
+        _networkState.IsHiddenCallsign("M2").Returns(true);
+        _networkState.IsHiddenCallsign("M0LTE").Returns(false);
+        _networkState.IsHiddenCallsign("G8PZT").Returns(false);
+
+        // Act
+        var result = _controller.GetFlappingLinks();
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnedLinks = Assert.IsAssignableFrom<IEnumerable<LinkState>>(okResult.Value);
+        Assert.Single(returnedLinks);
+        Assert.Contains(returnedLinks, l => l.CanonicalKey == "G8PZT<->M0LTE");
+    }
+
+    [Fact]
+    public void GetFlappingLinks_OrdersByFlapCountDescending()
+    {
+        // Arrange
+        var now = DateTime.UtcNow;
+        var links = new Dictionary<string, LinkState>
+        {
+            ["G8PZT<->M0LTE"] = new LinkState 
+            { 
+                CanonicalKey = "G8PZT<->M0LTE",
+                Endpoint1 = "G8PZT",
+                Endpoint2 = "M0LTE",
+                FlapCount = 3,
+                FlapWindowStart = now.AddMinutes(-5),
+                LastFlapTime = now.AddMinutes(-1)
+            },
+            ["M0ABC<->M0XYZ"] = new LinkState 
+            { 
+                CanonicalKey = "M0ABC<->M0XYZ",
+                Endpoint1 = "M0ABC",
+                Endpoint2 = "M0XYZ",
+                FlapCount = 7,
+                FlapWindowStart = now.AddMinutes(-5),
+                LastFlapTime = now.AddMinutes(-2)
+            },
+            ["M0DEF<->M0GHI"] = new LinkState 
+            { 
+                CanonicalKey = "M0DEF<->M0GHI",
+                Endpoint1 = "M0DEF",
+                Endpoint2 = "M0GHI",
+                FlapCount = 5,
+                FlapWindowStart = now.AddMinutes(-5),
+                LastFlapTime = now.AddMinutes(-3)
+            }
+        };
+
+        _networkState.GetAllLinks().Returns(links);
+        _networkState.IsTestCallsign(Arg.Any<string>()).Returns(false);
+        _networkState.IsHiddenCallsign(Arg.Any<string>()).Returns(false);
+
+        // Act
+        var result = _controller.GetFlappingLinks();
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnedLinks = Assert.IsAssignableFrom<IEnumerable<LinkState>>(okResult.Value).ToList();
+        Assert.Equal(3, returnedLinks.Count);
+        Assert.Equal("M0ABC<->M0XYZ", returnedLinks[0].CanonicalKey); // 7 flaps
+        Assert.Equal("M0DEF<->M0GHI", returnedLinks[1].CanonicalKey); // 5 flaps
+        Assert.Equal("G8PZT<->M0LTE", returnedLinks[2].CanonicalKey); // 3 flaps
+    }
+
+    [Fact]
+    public void GetFlappingLinks_RespectsCustomThreshold()
+    {
+        // Arrange
+        var now = DateTime.UtcNow;
+        var links = new Dictionary<string, LinkState>
+        {
+            ["G8PZT<->M0LTE"] = new LinkState 
+            { 
+                CanonicalKey = "G8PZT<->M0LTE",
+                Endpoint1 = "G8PZT",
+                Endpoint2 = "M0LTE",
+                FlapCount = 2,
+                FlapWindowStart = now.AddMinutes(-5),
+                LastFlapTime = now.AddMinutes(-1)
+            },
+            ["M0ABC<->M0XYZ"] = new LinkState 
+            { 
+                CanonicalKey = "M0ABC<->M0XYZ",
+                Endpoint1 = "M0ABC",
+                Endpoint2 = "M0XYZ",
+                FlapCount = 4,
+                FlapWindowStart = now.AddMinutes(-5),
+                LastFlapTime = now.AddMinutes(-1)
+            }
+        };
+
+        _networkState.GetAllLinks().Returns(links);
+        _networkState.IsTestCallsign(Arg.Any<string>()).Returns(false);
+        _networkState.IsHiddenCallsign(Arg.Any<string>()).Returns(false);
+
+        // Act - Using threshold of 2
+        var result = _controller.GetFlappingLinks(flapThreshold: 2);
+
+        // Assert - Both links should be returned
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnedLinks = Assert.IsAssignableFrom<IEnumerable<LinkState>>(okResult.Value).ToList();
+        Assert.Equal(2, returnedLinks.Count);
+    }
+
+    [Fact]
+    public void GetFlappingLinks_RespectsCustomWindowMinutes()
+    {
+        // Arrange
+        var now = DateTime.UtcNow;
+        var links = new Dictionary<string, LinkState>
+        {
+            ["G8PZT<->M0LTE"] = new LinkState 
+            { 
+                CanonicalKey = "G8PZT<->M0LTE",
+                Endpoint1 = "G8PZT",
+                Endpoint2 = "M0LTE",
+                FlapCount = 5,
+                FlapWindowStart = now.AddMinutes(-10), // 10 minutes ago
+                LastFlapTime = now.AddMinutes(-1)
+            },
+            ["M0ABC<->M0XYZ"] = new LinkState 
+            { 
+                CanonicalKey = "M0ABC<->M0XYZ",
+                Endpoint1 = "M0ABC",
+                Endpoint2 = "M0XYZ",
+                FlapCount = 5,
+                FlapWindowStart = now.AddMinutes(-20), // 20 minutes ago (outside 15min window)
+                LastFlapTime = now.AddMinutes(-1)
+            }
+        };
+
+        _networkState.GetAllLinks().Returns(links);
+        _networkState.IsTestCallsign(Arg.Any<string>()).Returns(false);
+        _networkState.IsHiddenCallsign(Arg.Any<string>()).Returns(false);
+
+        // Act - Using 15 minute window
+        var result = _controller.GetFlappingLinks(windowMinutes: 15);
+
+        // Assert - Only the link within the window should be returned
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnedLinks = Assert.IsAssignableFrom<IEnumerable<LinkState>>(okResult.Value);
+        Assert.Single(returnedLinks);
+        Assert.Contains(returnedLinks, l => l.CanonicalKey == "G8PZT<->M0LTE");
+    }
+
+    [Fact]
+    public void GetFlappingLinks_ReturnsEmptyList_WhenNoFlappingLinks()
+    {
+        // Arrange
+        var links = new Dictionary<string, LinkState>
+        {
+            ["G8PZT<->M0LTE"] = new LinkState 
+            { 
+                CanonicalKey = "G8PZT<->M0LTE",
+                Endpoint1 = "G8PZT",
+                Endpoint2 = "M0LTE",
+                FlapCount = 0
+            }
+        };
+
+        _networkState.GetAllLinks().Returns(links);
+        _networkState.IsTestCallsign(Arg.Any<string>()).Returns(false);
+        _networkState.IsHiddenCallsign(Arg.Any<string>()).Returns(false);
+
+        // Act
+        var result = _controller.GetFlappingLinks();
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnedLinks = Assert.IsAssignableFrom<IEnumerable<LinkState>>(okResult.Value);
+        Assert.Empty(returnedLinks);
+    }
 }
+
