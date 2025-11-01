@@ -306,7 +306,7 @@
                 }
                 
                 link.status = 'active';
-                updateNetworkGraph();
+                scheduleUpdate();
             }
 
             handleLinkStatus(data) {
@@ -326,7 +326,7 @@
                 }
                 
                 link.status = 'active';
-                updateNetworkGraph();
+                scheduleUpdate();
             }
 
             handleLinkDown(data) {
@@ -335,7 +335,7 @@
                 
                 if (link) {
                     link.status = 'disconnected';
-                    updateNetworkGraph();
+                    scheduleUpdate();
                 }
             }
 
@@ -365,7 +365,7 @@
                         nodes.add({ id: data.dest, label: data.dest, shape: 'dot', size: 15 });
                     }
                     
-                    updateNetworkGraph();
+                    scheduleUpdate();
                 }
             }
 
@@ -474,7 +474,8 @@
                         enabled: true,
                         iterations: 1000,
                         updateInterval: 25
-                    }
+                    },
+                    adaptiveTimestep: true
                 },
                 interaction: {
                     hover: true,
@@ -532,14 +533,18 @@
                 activeNodes.add(link.endpoint2);
             });
             
-            // Update nodes
+            // Update nodes - batch operations
             const existingNodeIds = nodes.getIds();
             const newNodeIds = Array.from(activeNodes);
+            
+            // Collect nodes to add/remove
+            const nodesToAdd = [];
+            const nodesToRemove = [];
             
             // Add new nodes
             newNodeIds.forEach(nodeId => {
                 if (!existingNodeIds.includes(nodeId)) {
-                    nodes.add({
+                    nodesToAdd.push({
                         id: nodeId,
                         label: nodeId,
                         shape: 'dot',
@@ -552,13 +557,24 @@
             // Remove nodes that are no longer active
             existingNodeIds.forEach(nodeId => {
                 if (!newNodeIds.includes(nodeId)) {
-                    nodes.remove(nodeId);
+                    nodesToRemove.push(nodeId);
                 }
             });
             
-            // Update edges
+            // Batch update nodes
+            if (nodesToAdd.length > 0) {
+                nodes.add(nodesToAdd);
+            }
+            if (nodesToRemove.length > 0) {
+                nodes.remove(nodesToRemove);
+            }
+            
+            // Update edges - batch operations
             const existingEdgeIds = edges.getIds();
-            const newEdges = [];
+            const edgesToAdd = [];
+            const edgesToUpdate = [];
+            const edgesToRemove = [];
+            const newEdgeIds = [];
             
             filteredLinks.forEach(link => {
                 const edgeId = link.canonicalKey;
@@ -639,23 +655,33 @@
                     title: title
                 };
                 
-                newEdges.push(edge);
+                newEdgeIds.push(edgeId);
                 
                 // Update existing edge or add new one
                 if (existingEdgeIds.includes(edgeId)) {
-                    edges.update(edge);
+                    edgesToUpdate.push(edge);
                 } else {
-                    edges.add(edge);
+                    edgesToAdd.push(edge);
                 }
             });
             
             // Remove edges that are no longer active
-            const newEdgeIds = newEdges.map(e => e.id);
             existingEdgeIds.forEach(edgeId => {
                 if (!newEdgeIds.includes(edgeId)) {
-                    edges.remove(edgeId);
+                    edgesToRemove.push(edgeId);
                 }
             });
+            
+            // Batch update edges
+            if (edgesToAdd.length > 0) {
+                edges.add(edgesToAdd);
+            }
+            if (edgesToUpdate.length > 0) {
+                edges.update(edgesToUpdate);
+            }
+            if (edgesToRemove.length > 0) {
+                edges.remove(edgesToRemove);
+            }
             
             document.getElementById('nodeCount').textContent = nodes.length;
             
@@ -778,9 +804,18 @@
         });
 
         // Update display periodically to fade out activity indicators
-        setInterval(() => {
-            updateNetworkGraph();
-        }, 250); // Update 4 times per second for smooth activity fadeout
+        let updateScheduled = false;
+        function scheduleUpdate() {
+            if (!updateScheduled) {
+                updateScheduled = true;
+                requestAnimationFrame(() => {
+                    updateNetworkGraph();
+                    updateScheduled = false;
+                });
+            }
+        }
+        
+        setInterval(scheduleUpdate, 500); // Update 2 times per second for smooth activity fadeout
 
         // Zoom controls
         const zoomInBtn = document.getElementById('zoomInBtn');
