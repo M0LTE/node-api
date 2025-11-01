@@ -154,6 +154,41 @@
         .flashing-link {
             background: linear-gradient(90deg, #ffeb3b 0%, #ff9800 100%);
         }
+        .zoom-controls {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            background-color: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            z-index: 500;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .zoom-button {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #0066cc;
+            background-color: white;
+            color: #0066cc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: bold;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .zoom-button:hover {
+            background-color: #f0f4ff;
+        }
+        .zoom-button:active {
+            background-color: #0066cc;
+            color: white;
+        }
     </style>
     <script type="text/javascript" src="https://unpkg.com/vis-network@9.1.9/dist/vis-network.min.js"></script>
     <script src="https://unpkg.com/mqtt@5.3.4/dist/mqtt.min.js"></script>
@@ -225,6 +260,12 @@
             <div class="legend-dot active-node"></div>
             <span>Network Node</span>
         </div>
+    </div>
+
+    <div class="zoom-controls">
+        <button class="zoom-button" onclick="zoomIn()" title="Zoom In">+</button>
+        <button class="zoom-button" onclick="zoomOut()" title="Zoom Out">−</button>
+        <button class="zoom-button" onclick="resetZoom()" title="Fit to Screen">⊙</button>
     </div>
 
     <script>
@@ -536,9 +577,10 @@
                     color = {
                         color: '#2196f3',
                         highlight: '#42a5f5',
-                        hover: '#42a5f5'
+                        hover: '#42a5f5',
+                        opacity: 0.3
                     };
-                    width = 2;
+                    width = 1;
                 } else {
                     // Unknown
                     color = {
@@ -600,6 +642,44 @@
             }
             
             updateNetworkGraph();
+        }
+
+        // Zoom control functions
+        function zoomIn() {
+            if (network) {
+                const scale = network.getScale();
+                network.moveTo({
+                    scale: scale * 1.2,
+                    animation: {
+                        duration: 300,
+                        easingFunction: 'easeInOutQuad'
+                    }
+                });
+            }
+        }
+
+        function zoomOut() {
+            if (network) {
+                const scale = network.getScale();
+                network.moveTo({
+                    scale: scale * 0.8,
+                    animation: {
+                        duration: 300,
+                        easingFunction: 'easeInOutQuad'
+                    }
+                });
+            }
+        }
+
+        function resetZoom() {
+            if (network) {
+                network.fit({
+                    animation: {
+                        duration: 500,
+                        easingFunction: 'easeInOutQuad'
+                    }
+                });
+            }
         }
 
         // MQTT connection
@@ -667,6 +747,42 @@
         setInterval(() => {
             updateNetworkGraph();
         }, 250); // Update 4 times per second for smooth activity fadeout
+
+        // Zoom controls
+        const zoomInBtn = document.getElementById('zoomInBtn');
+        const zoomOutBtn = document.getElementById('zoomOutBtn');
+
+        zoomInBtn.onclick = function() {
+            network.setOptions({
+                manipulation: {
+                    enabled: true,
+                    addNode: false,
+                    addEdge: false,
+                    editNode: false,
+                    editEdge: {
+                        edge: true,
+                        label: true
+                    },
+                    deleteNode: false,
+                    deleteEdge: false
+                }
+            });
+            network.fit();
+        };
+
+        zoomOutBtn.onclick = function() {
+            network.setOptions({
+                physics: {
+                    enabled: true,
+                    stabilization: {
+                        enabled: true,
+                        iterations: 50,
+                        updateInterval: 25
+                    }
+                }
+            });
+            network.redraw();
+        };
     </script>
 </body>
 </html>
