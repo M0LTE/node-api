@@ -350,8 +350,12 @@
                         link.isRF = data.isRF;
                     }
                     
-                    // Track traffic activity
-                    linkActivityMap.set(canonicalKey, Date.now());
+                    // Track traffic activity and direction
+                    linkActivityMap.set(canonicalKey, {
+                        timestamp: Date.now(),
+                        from: data.srce,
+                        to: data.dest
+                    });
                     
                     // Also ensure both nodes exist
                     if (!nodes.get(data.srce)) {
@@ -442,6 +446,12 @@
                     smooth: {
                         type: 'dynamic',
                         roundness: 0.5
+                    },
+                    arrows: {
+                        to: {
+                            enabled: false,
+                            scaleFactor: 0.5
+                        }
                     },
                     font: {
                         size: 11,
@@ -552,20 +562,35 @@
             
             filteredLinks.forEach(link => {
                 const edgeId = link.canonicalKey;
-                const isActive = linkActivityMap.has(edgeId) && 
-                                (now - linkActivityMap.get(edgeId)) < activityTimeout;
+                const activityData = linkActivityMap.get(edgeId);
+                const isActive = activityData && (now - activityData.timestamp) < activityTimeout;
                 
-                let color, width, label;
+                let color, width, arrows;
                 
                 // Determine color and appearance based on activity and RF status
                 if (isActive) {
-                    // Traffic is currently flowing
+                    // Traffic is currently flowing - show direction with arrow
                     color = {
                         color: '#ffeb3b',
                         highlight: '#ffc107',
                         hover: '#ffc107'
                     };
                     width = 4;
+                    
+                    // Determine arrow direction based on actual traffic flow
+                    const arrowsTo = activityData.to === link.endpoint2;
+                    arrows = {
+                        to: {
+                            enabled: arrowsTo,
+                            scaleFactor: 1,
+                            type: 'arrow'
+                        },
+                        from: {
+                            enabled: !arrowsTo,
+                            scaleFactor: 1,
+                            type: 'arrow'
+                        }
+                    };
                 } else if (link.isRF === true) {
                     color = {
                         color: '#4caf50',
@@ -573,6 +598,7 @@
                         hover: '#66bb6a'
                     };
                     width = 2;
+                    arrows = { to: { enabled: false }, from: { enabled: false } };
                 } else if (link.isRF === false) {
                     color = {
                         color: '#2196f3',
@@ -581,6 +607,7 @@
                         opacity: 0.3
                     };
                     width = 1;
+                    arrows = { to: { enabled: false }, from: { enabled: false } };
                 } else {
                     // Unknown
                     color = {
@@ -589,12 +616,18 @@
                         hover: '#ffa726'
                     };
                     width = 2;
+                    arrows = { to: { enabled: false }, from: { enabled: false } };
                 }
                 
                 // Build tooltip
-                const rfStatus = link.isRF === true ? '?? RF' : 
-                                link.isRF === false ? '?? Internet' : '? Unknown';
-                const title = `${link.endpoint1} ? ${link.endpoint2}\n${rfStatus}`;
+                const rfStatus = link.isRF === true ? '📡 RF' : 
+                                link.isRF === false ? '🌐 Internet' : '❓ Unknown';
+                let title = `${link.endpoint1} ↔ ${link.endpoint2}\n${rfStatus}`;
+                
+                // Add direction info if active
+                if (isActive && activityData) {
+                    title += `\n→ Traffic: ${activityData.from} → ${activityData.to}`;
+                }
                 
                 const edge = {
                     id: edgeId,
@@ -602,6 +635,7 @@
                     to: link.endpoint2,
                     color: color,
                     width: width,
+                    arrows: arrows,
                     title: title
                 };
                 
