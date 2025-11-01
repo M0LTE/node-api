@@ -303,6 +303,26 @@
                         isRF: null
                     };
                     this.links.set(canonicalKey, link);
+                    
+                    // Ensure both endpoint nodes exist
+                    if (!nodes.get(link.endpoint1)) {
+                        nodes.add({ 
+                            id: link.endpoint1, 
+                            label: link.endpoint1, 
+                            shape: 'dot', 
+                            size: 15,
+                            title: link.endpoint1 
+                        });
+                    }
+                    if (!nodes.get(link.endpoint2)) {
+                        nodes.add({ 
+                            id: link.endpoint2, 
+                            label: link.endpoint2, 
+                            shape: 'dot', 
+                            size: 15,
+                            title: link.endpoint2 
+                        });
+                    }
                 }
                 
                 link.status = 'active';
@@ -323,6 +343,26 @@
                         isRF: null
                     };
                     this.links.set(canonicalKey, link);
+                    
+                    // Ensure both endpoint nodes exist
+                    if (!nodes.get(link.endpoint1)) {
+                        nodes.add({ 
+                            id: link.endpoint1, 
+                            label: link.endpoint1, 
+                            shape: 'dot', 
+                            size: 15,
+                            title: link.endpoint1 
+                        });
+                    }
+                    if (!nodes.get(link.endpoint2)) {
+                        nodes.add({ 
+                            id: link.endpoint2, 
+                            label: link.endpoint2, 
+                            shape: 'dot', 
+                            size: 15,
+                            title: link.endpoint2 
+                        });
+                    }
                 }
                 
                 link.status = 'active';
@@ -357,13 +397,8 @@
                         to: data.dest
                     });
                     
-                    // Also ensure both nodes exist
-                    if (!nodes.get(data.srce)) {
-                        nodes.add({ id: data.srce, label: data.srce, shape: 'dot', size: 15 });
-                    }
-                    if (!nodes.get(data.dest)) {
-                        nodes.add({ id: data.dest, label: data.dest, shape: 'dot', size: 15 });
-                    }
+                    // Don't add nodes here - let the link endpoints create them
+                    // This prevents flashing nodes in the center
                     
                     scheduleUpdate();
                 }
@@ -549,7 +584,7 @@
                         label: nodeId,
                         shape: 'dot',
                         size: 15,
-                        title: `${nodeId}\nClick for details`
+                        title: nodeId // Tooltip shows callsign
                     });
                 }
             });
