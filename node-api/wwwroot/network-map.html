@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Map - Node API</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            overflow: hidden;
+        }
+        .header {
+            background-color: white;
+            padding: 15px 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            position: relative;
+        }
+        h1 {
+            color: #333;
+            margin: 0;
+            font-size: 24px;
+        }
+        .mqtt-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            margin-left: 10px;
+        }
+        .mqtt-status.connected {
+            background-color: #4caf50;
+            color: white;
+        }
+        .mqtt-status.disconnected {
+            background-color: #f44336;
+            color: white;
+        }
+        .mqtt-status.connecting {
+            background-color: #ff9800;
+            color: white;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .links a {
+            padding: 8px 16px;
+            background-color: #0066cc;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        .links a:hover {
+            background-color: #0052a3;
+        }
+        .filter-button {
+            padding: 8px 16px;
+            border: 2px solid #0066cc;
+            background-color: white;
+            color: #0066cc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .filter-button:hover {
+            background-color: #f0f4ff;
+        }
+        .filter-button.active {
+            background-color: #0066cc;
+            color: white;
+        }
+        #network {
+            width: 100%;
+            height: calc(100vh - 120px);
+            border: 1px solid #ddd;
+            background-color: #fafafa;
+        }
+        .stats-panel {
+            background-color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-around;
+            box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0066cc;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+        .legend {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            z-index: 500;
+            font-size: 13px;
+        }
+        .legend-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+        }
+        .legend-line {
+            width: 40px;
+            height: 3px;
+            margin-right: 10px;
+        }
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .rf-link {
+            background-color: #4caf50;
+        }
+        .internet-link {
+            background-color: #2196f3;
+        }
+        .unknown-link {
+            background-color: #ff9800;
+        }
+        .active-node {
+            background-color: #0066cc;
+        }
+        .flashing-link {
+            background: linear-gradient(90deg, #ffeb3b 0%, #ff9800 100%);
+        }
+    </style>
+    <script type="text/javascript" src="https://unpkg.com/vis-network@9.1.9/dist/vis-network.min.js"></script>
+    <script src="https://unpkg.com/mqtt@5.3.4/dist/mqtt.min.js"></script>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>
+                Network Map
+                <span id="mqttStatus" class="mqtt-status connecting">Connecting...</span>
+            </h1>
+        </div>
+        <div class="controls">
+            <button class="filter-button" id="showRfOnlyBtn" onclick="toggleRfOnly()">
+                ?? RF Links Only
+            </button>
+            <div class="links">
+                <a href="/">Home</a>
+                <a href="/links.html">Link Monitor</a>
+                <a href="/circuits.html">Circuit Monitor</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="network"></div>
+
+    <div class="stats-panel">
+        <div class="stat-item">
+            <div class="stat-value" id="nodeCount">0</div>
+            <div class="stat-label">Nodes</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="linkCount">0</div>
+            <div class="stat-label">Active Links</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="rfLinkCount">0</div>
+            <div class="stat-label">?? RF Links</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="internetLinkCount">0</div>
+            <div class="stat-label">?? Internet Links</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="traceCount">0</div>
+            <div class="stat-label">Traces (10s)</div>
+        </div>
+    </div>
+
+    <div class="legend">
+        <div class="legend-title">Legend</div>
+        <div class="legend-item">
+            <div class="legend-line rf-link"></div>
+            <span>RF Link</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-line internet-link"></div>
+            <span>Internet Link</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-line unknown-link"></div>
+            <span>Unknown Type</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-line flashing-link"></div>
+            <span>Traffic Active</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot active-node"></div>
+            <span>Network Node</span>
+        </div>
+    </div>
+
+    <script>
+        // Network graph state
+        let nodes = new vis.DataSet();
+        let edges = new vis.DataSet();
+        let network = null;
+        let showRfOnly = false;
+        let linkActivityMap = new Map(); // Track L2Trace activity per link
+        let traceCounter = 0;
+        let traceTimestamps = [];
+
+        // Link tracker
+        class LinkTracker {
+            constructor() {
+                this.links = new Map();
+            }
+
+            getCanonicalLinkKey(local, remote) {
+                const [endpoint1, endpoint2] = [local, remote].sort();
+                return `${endpoint1}<->${endpoint2}`;
+            }
+
+            handleLinkUp(data) {
+                const canonicalKey = this.getCanonicalLinkKey(data.local, data.remote);
+                
+                let link = this.links.get(canonicalKey);
+                
+                if (!link) {
+                    link = {
+                        canonicalKey: canonicalKey,
+                        endpoint1: data.local < data.remote ? data.local : data.remote,
+                        endpoint2: data.local < data.remote ? data.remote : data.local,
+                        status: 'active',
+                        isRF: null
+                    };
+                    this.links.set(canonicalKey, link);
+                }
+                
+                link.status = 'active';
+                updateNetworkGraph();
+            }
+
+            handleLinkStatus(data) {
+                const canonicalKey = this.getCanonicalLinkKey(data.local, data.remote);
+                
+                let link = this.links.get(canonicalKey);
+                
+                if (!link) {
+                    link = {
+                        canonicalKey: canonicalKey,
+                        endpoint1: data.local < data.remote ? data.local : data.remote,
+                        endpoint2: data.local < data.remote ? data.remote : data.local,
+                        status: 'active',
+                        isRF: null
+                    };
+                    this.links.set(canonicalKey, link);
+                }
+                
+                link.status = 'active';
+                updateNetworkGraph();
+            }
+
+            handleLinkDown(data) {
+                const canonicalKey = this.getCanonicalLinkKey(data.local, data.remote);
+                const link = this.links.get(canonicalKey);
+                
+                if (link) {
+                    link.status = 'disconnected';
+                    updateNetworkGraph();
+                }
+            }
+
+            handleL2Trace(data) {
+                // Track trace activity between source and destination
+                if (data.srce && data.dest) {
+                    const canonicalKey = this.getCanonicalLinkKey(data.srce, data.dest);
+                    
+                    // Update RF status if available
+                    let link = this.links.get(canonicalKey);
+                    if (link && data.isRF !== undefined && data.isRF !== null) {
+                        link.isRF = data.isRF;
+                    }
+                    
+                    // Track traffic activity
+                    linkActivityMap.set(canonicalKey, Date.now());
+                    
+                    // Also ensure both nodes exist
+                    if (!nodes.get(data.srce)) {
+                        nodes.add({ id: data.srce, label: data.srce, shape: 'dot', size: 15 });
+                    }
+                    if (!nodes.get(data.dest)) {
+                        nodes.add({ id: data.dest, label: data.dest, shape: 'dot', size: 15 });
+                    }
+                    
+                    updateNetworkGraph();
+                }
+            }
+
+            getActiveLinks() {
+                return Array.from(this.links.values())
+                    .filter(link => link.status === 'active');
+            }
+
+            getAllLinks() {
+                return Array.from(this.links.values());
+            }
+        }
+
+        const linkTracker = new LinkTracker();
+        const mqttUrl = 'wss://node-api.packet.oarc.uk:443/mqtt/';
+        const statusElement = document.getElementById('mqttStatus');
+
+        // Load initial state from API
+        async function loadInitialState() {
+            try {
+                const response = await fetch('/api/links');
+                if (response.ok) {
+                    const links = await response.json();
+                    console.log(`Loaded ${links.length} links from API`);
+                    
+                    links.forEach(link => {
+                        linkTracker.links.set(link.canonicalKey, {
+                            canonicalKey: link.canonicalKey,
+                            endpoint1: link.endpoint1,
+                            endpoint2: link.endpoint2,
+                            status: link.status === 0 ? 'active' : 'disconnected',
+                            isRF: link.isRF
+                        });
+                    });
+                    
+                    updateNetworkGraph();
+                }
+            } catch (err) {
+                console.error('Error loading initial state:', err);
+            }
+        }
+
+        // Initialize the network graph
+        function initializeNetwork() {
+            const container = document.getElementById('network');
+            const data = { nodes: nodes, edges: edges };
+            
+            const options = {
+                nodes: {
+                    shape: 'dot',
+                    size: 15,
+                    font: {
+                        size: 14,
+                        color: '#333',
+                        face: 'Courier New',
+                        bold: {
+                            color: '#000',
+                            size: 16
+                        }
+                    },
+                    borderWidth: 2,
+                    borderWidthSelected: 4,
+                    color: {
+                        border: '#2B7CE9',
+                        background: '#97C2FC',
+                        highlight: {
+                            border: '#2B7CE9',
+                            background: '#D2E5FF'
+                        },
+                        hover: {
+                            border: '#2B7CE9',
+                            background: '#D2E5FF'
+                        }
+                    }
+                },
+                edges: {
+                    width: 2,
+                    smooth: {
+                        type: 'continuous',
+                        roundness: 0.5
+                    },
+                    font: {
+                        size: 11,
+                        align: 'middle'
+                    }
+                },
+                physics: {
+                    enabled: true,
+                    forceAtlas2Based: {
+                        gravitationalConstant: -50,
+                        centralGravity: 0.01,
+                        springLength: 200,
+                        springConstant: 0.08,
+                        damping: 0.4,
+                        avoidOverlap: 0.5
+                    },
+                    maxVelocity: 50,
+                    solver: 'forceAtlas2Based',
+                    stabilization: {
+                        enabled: true,
+                        iterations: 100,
+                        updateInterval: 25
+                    }
+                },
+                interaction: {
+                    hover: true,
+                    tooltipDelay: 200,
+                    zoomView: true,
+                    dragView: true
+                }
+            };
+            
+            network = new vis.Network(container, data, options);
+            
+            // Handle node clicks - navigate to node detail page
+            network.on('selectNode', function(params) {
+                if (params.nodes.length > 0) {
+                    const nodeId = params.nodes[0];
+                    window.open(`/node.html?callsign=${nodeId}`, '_blank');
+                }
+            });
+            
+            // Handle edge clicks - show link info
+            network.on('selectEdge', function(params) {
+                if (params.edges.length > 0) {
+                    const edgeId = params.edges[0];
+                    const edge = edges.get(edgeId);
+                    if (edge && edge.title) {
+                        console.log(edge.title);
+                    }
+                }
+            });
+        }
+
+        function updateNetworkGraph() {
+            const activeLinks = linkTracker.getActiveLinks();
+            const now = Date.now();
+            const activityTimeout = 1000; // 1 second
+            
+            // Filter links based on RF filter
+            let filteredLinks = activeLinks;
+            if (showRfOnly) {
+                filteredLinks = activeLinks.filter(link => link.isRF === true);
+            }
+            
+            // Update stats
+            const rfCount = activeLinks.filter(l => l.isRF === true).length;
+            const internetCount = activeLinks.filter(l => l.isRF === false).length;
+            
+            document.getElementById('linkCount').textContent = filteredLinks.length;
+            document.getElementById('rfLinkCount').textContent = rfCount;
+            document.getElementById('internetLinkCount').textContent = internetCount;
+            
+            // Build set of all nodes from active links
+            const activeNodes = new Set();
+            filteredLinks.forEach(link => {
+                activeNodes.add(link.endpoint1);
+                activeNodes.add(link.endpoint2);
+            });
+            
+            // Update nodes
+            const existingNodeIds = nodes.getIds();
+            const newNodeIds = Array.from(activeNodes);
+            
+            // Add new nodes
+            newNodeIds.forEach(nodeId => {
+                if (!existingNodeIds.includes(nodeId)) {
+                    nodes.add({
+                        id: nodeId,
+                        label: nodeId,
+                        shape: 'dot',
+                        size: 15,
+                        title: `${nodeId}\nClick for details`
+                    });
+                }
+            });
+            
+            // Remove nodes that are no longer active
+            existingNodeIds.forEach(nodeId => {
+                if (!newNodeIds.includes(nodeId)) {
+                    nodes.remove(nodeId);
+                }
+            });
+            
+            // Update edges
+            const existingEdgeIds = edges.getIds();
+            const newEdges = [];
+            
+            filteredLinks.forEach(link => {
+                const edgeId = link.canonicalKey;
+                const isActive = linkActivityMap.has(edgeId) && 
+                                (now - linkActivityMap.get(edgeId)) < activityTimeout;
+                
+                let color, width, label;
+                
+                // Determine color and appearance based on activity and RF status
+                if (isActive) {
+                    // Traffic is currently flowing
+                    color = {
+                        color: '#ffeb3b',
+                        highlight: '#ffc107',
+                        hover: '#ffc107'
+                    };
+                    width = 4;
+                } else if (link.isRF === true) {
+                    color = {
+                        color: '#4caf50',
+                        highlight: '#66bb6a',
+                        hover: '#66bb6a'
+                    };
+                    width = 2;
+                } else if (link.isRF === false) {
+                    color = {
+                        color: '#2196f3',
+                        highlight: '#42a5f5',
+                        hover: '#42a5f5'
+                    };
+                    width = 2;
+                } else {
+                    // Unknown
+                    color = {
+                        color: '#ff9800',
+                        highlight: '#ffa726',
+                        hover: '#ffa726'
+                    };
+                    width = 2;
+                }
+                
+                // Build tooltip
+                const rfStatus = link.isRF === true ? '?? RF' : 
+                                link.isRF === false ? '?? Internet' : '? Unknown';
+                const title = `${link.endpoint1} ? ${link.endpoint2}\n${rfStatus}`;
+                
+                const edge = {
+                    id: edgeId,
+                    from: link.endpoint1,
+                    to: link.endpoint2,
+                    color: color,
+                    width: width,
+                    title: title
+                };
+                
+                newEdges.push(edge);
+                
+                // Update existing edge or add new one
+                if (existingEdgeIds.includes(edgeId)) {
+                    edges.update(edge);
+                } else {
+                    edges.add(edge);
+                }
+            });
+            
+            // Remove edges that are no longer active
+            const newEdgeIds = newEdges.map(e => e.id);
+            existingEdgeIds.forEach(edgeId => {
+                if (!newEdgeIds.includes(edgeId)) {
+                    edges.remove(edgeId);
+                }
+            });
+            
+            document.getElementById('nodeCount').textContent = nodes.length;
+            
+            // Update trace count (rolling 10-second window)
+            const cutoff = now - 10000;
+            traceTimestamps = traceTimestamps.filter(t => t > cutoff);
+            document.getElementById('traceCount').textContent = traceTimestamps.length;
+        }
+
+        function toggleRfOnly() {
+            showRfOnly = !showRfOnly;
+            const btn = document.getElementById('showRfOnlyBtn');
+            
+            if (showRfOnly) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+            
+            updateNetworkGraph();
+        }
+
+        // MQTT connection
+        loadInitialState();
+        initializeNetwork();
+
+        const client = mqtt.connect(mqttUrl);
+
+        client.on('connect', () => {
+            console.log('Connected to MQTT broker');
+            statusElement.textContent = 'Connected';
+            statusElement.className = 'mqtt-status connected';
+            
+            client.subscribe('out/LinkUpEvent', (err) => {
+                if (err) console.error('Error subscribing to out/LinkUpEvent:', err);
+            });
+            client.subscribe('out/LinkStatus', (err) => {
+                if (err) console.error('Error subscribing to out/LinkStatus:', err);
+            });
+            client.subscribe('out/LinkDownEvent', (err) => {
+                if (err) console.error('Error subscribing to out/LinkDownEvent:', err);
+            });
+            client.subscribe('out/L2Trace', (err) => {
+                if (err) console.error('Error subscribing to out/L2Trace:', err);
+            });
+        });
+
+        client.on('message', (topic, message) => {
+            try {
+                const data = JSON.parse(message.toString());
+                
+                if (topic === 'out/LinkUpEvent') {
+                    linkTracker.handleLinkUp(data);
+                } else if (topic === 'out/LinkStatus') {
+                    linkTracker.handleLinkStatus(data);
+                } else if (topic === 'out/LinkDownEvent') {
+                    linkTracker.handleLinkDown(data);
+                } else if (topic === 'out/L2Trace') {
+                    linkTracker.handleL2Trace(data);
+                    traceCounter++;
+                    traceTimestamps.push(Date.now());
+                }
+            } catch (err) {
+                console.error('Error parsing message:', err);
+            }
+        });
+
+        client.on('error', (err) => {
+            console.error('MQTT connection error:', err);
+            statusElement.textContent = 'Error';
+            statusElement.className = 'mqtt-status disconnected';
+        });
+
+        client.on('offline', () => {
+            statusElement.textContent = 'Disconnected';
+            statusElement.className = 'mqtt-status disconnected';
+        });
+
+        client.on('reconnect', () => {
+            statusElement.textContent = 'Reconnecting...';
+            statusElement.className = 'mqtt-status connecting';
+        });
+
+        // Update display periodically to fade out activity indicators
+        setInterval(() => {
+            updateNetworkGraph();
+        }, 250); // Update 4 times per second for smooth activity fadeout
+    </script>
+</body>
+</html>
