@@ -90,10 +90,17 @@
             min-width: 150px;
             flex: 1;
         }
+        .summary-card.flapping {
+            background-color: #fff3e0;
+            border: 2px solid #ff9800;
+        }
         .summary-number {
             font-size: 36px;
             font-weight: bold;
             color: #0066cc;
+        }
+        .summary-number.flapping {
+            color: #ff9800;
         }
         .summary-label {
             color: #666;
@@ -118,6 +125,12 @@
         }
         .links-table tr:hover {
             background-color: #f5f5f5;
+        }
+        .links-table tr.flapping {
+            background-color: #fff3e0;
+        }
+        .links-table tr.flapping:hover {
+            background-color: #ffe0b2;
         }
         .direction-badge {
             display: inline-block;
@@ -167,6 +180,32 @@
         }
         .status-indicator.disconnected {
             background-color: #f44336;
+        }
+        .flap-indicator {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: #ff9800;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+        .flap-count {
+            font-size: 11px;
+            color: #ff9800;
+            font-weight: bold;
         }
         .filter-controls {
             display: flex;
@@ -261,6 +300,10 @@
                 <div class="summary-number" id="internetLinksCount">0</div>
                 <div class="summary-label">🌐 Internet Links</div>
             </div>
+            <div class="summary-card flapping">
+                <div class="summary-number flapping" id="flappingLinksCount">0</div>
+                <div class="summary-label">⚠️ Flapping Links</div>
+            </div>
         </div>
     </div>
 
@@ -316,7 +359,10 @@
                         connectedAt: data.time ? new Date(data.time * 1000) : new Date(),
                         lastUpdate: new Date(),
                         endpoints: {}, // Per-endpoint statistics
-                        isRF: null // Unknown initially
+                        isRF: null, // Unknown initially
+                        flapCount: 0,
+                        flapWindowStart: null,
+                        lastFlapTime: null
                     };
                     this.links.set(canonicalKey, link);
                 }
@@ -362,7 +408,10 @@
                         connectedAt: estimatedConnectedAt,
                         lastUpdate: new Date(),
                         endpoints: {},
-                        discoveredViaStatus: true
+                        discoveredViaStatus: true,
+                        flapCount: 0,
+                        flapWindowStart: null,
+                        lastFlapTime: null
                     };
                     this.links.set(canonicalKey, link);
                 }
@@ -438,6 +487,20 @@
                     });
             }
 
+            isFlapping(link, flapThreshold = 3, windowMinutes = 15) {
+                if (link.flapCount < flapThreshold)
+                    return false;
+                
+                if (!link.flapWindowStart)
+                    return false;
+                
+                const windowEnd = new Date(link.flapWindowStart.getTime() + windowMinutes * 60 * 1000);
+                const now = new Date();
+                
+                // Link is flapping if we're still within the window and have enough flaps
+                return now <= windowEnd && link.flapCount >= flapThreshold;
+            }
+
             getStats() {
                 const all = Array.from(this.links.values());
                 return {
@@ -446,7 +509,8 @@
                     disconnected: all.filter(l => l.status === 'disconnected').length,
                     rf: all.filter(l => l.isRF === true).length,
                     internet: all.filter(l => l.isRF === false).length,
-                    unknown: all.filter(l => l.isRF === null || l.isRF === undefined).length
+                    unknown: all.filter(l => l.isRF === null || l.isRF === undefined).length,
+                    flapping: all.filter(l => this.isFlapping(l)).length
                 };
             }
         }
@@ -460,6 +524,7 @@
         const disconnectedCount = document.getElementById('disconnectedCount');
         const rfLinksCount = document.getElementById('rfLinksCount');
         const internetLinksCount = document.getElementById('internetLinksCount');
+        const flappingLinksCount = document.getElementById('flappingLinksCount');
 
         // RF filter state
         let currentRfFilter = 'all'; // 'all', 'rf', 'internet', 'unknown'
@@ -510,6 +575,9 @@
                             lastUpdate: new Date(link.lastUpdate),
                             initiator: link.initiator,
                             isRF: link.isRF, // Load RF status from API
+                            flapCount: link.flapCount || 0,
+                            flapWindowStart: link.flapWindowStart ? new Date(link.flapWindowStart) : null,
+                            lastFlapTime: link.lastFlapTime ? new Date(link.lastFlapTime) : null,
                             endpoints: Object.fromEntries(
                                 Object.entries(link.endpoints).map(([key, ep]) => [
                                     key,
@@ -527,8 +595,36 @@
             }
         }
 
+        // Periodically sync flap data from the API (every 10 seconds)
+        async function syncFlapDataFromAPI() {
+            try {
+                const response = await fetch('/api/links');
+                if (response.ok) {
+                    const links = await response.json();
+                    
+                    links.forEach(apiLink => {
+                        const existingLink = linkTracker.links.get(apiLink.canonicalKey);
+                        
+                        if (existingLink) {
+                            // Update flap data from API (backend is source of truth for flapping)
+                            existingLink.flapCount = apiLink.flapCount || 0;
+                            existingLink.flapWindowStart = apiLink.flapWindowStart ? new Date(apiLink.flapWindowStart) : null;
+                            existingLink.lastFlapTime = apiLink.lastFlapTime ? new Date(apiLink.lastFlapTime) : null;
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error('Error syncing flap data:', err);
+            }
+        }
+
         // Load initial state before connecting to MQTT
         loadInitialState();
+
+        // Sync flap data every 10 seconds
+        setInterval(() => {
+            syncFlapDataFromAPI();
+        }, 10000);
 
         // Connect to MQTT broker
         const client = mqtt.connect(mqttUrl);
@@ -597,6 +693,19 @@
             return date.toLocaleTimeString();
         }
 
+        function formatRelativeTime(date) {
+            if (!date) return '-';
+            const now = new Date();
+            const diffMs = now - date;
+            const diffSecs = Math.floor(diffMs / 1000);
+            const diffMins = Math.floor(diffSecs / 60);
+            
+            if (diffSecs < 60) return `${diffSecs}s ago`;
+            if (diffMins < 60) return `${diffMins}m ago`;
+            const diffHours = Math.floor(diffMins / 60);
+            return `${diffHours}h ago`;
+        }
+
         function updateLinksDisplay() {
             const stats = linkTracker.getStats();
             activeLinksCount.textContent = stats.active;
@@ -604,6 +713,7 @@
             disconnectedCount.textContent = stats.disconnected;
             rfLinksCount.textContent = stats.rf;
             internetLinksCount.textContent = stats.internet;
+            flappingLinksCount.textContent = stats.flapping;
 
             let allLinks = linkTracker.getAllLinks();
             
@@ -620,6 +730,7 @@
                     <thead>
                         <tr>
                             <th title="Green=Active, Red=Disconnected">St</th>
+                            <th title="Flapping indicator">⚠️</th>
                             <th>Endpoint 1</th>
                             <th>Endpoint 2</th>
                             <th>Initiator</th>
@@ -642,6 +753,20 @@
                             const statusClass = link.status === 'active' ? 'active' : 'disconnected';
                             const statusTitle = link.status === 'active' ? 'Active' : 'Disconnected';
                             
+                            // Check if link is flapping
+                            const isFlapping = linkTracker.isFlapping(link);
+                            const rowClass = isFlapping ? 'flapping' : '';
+                            
+                            // Flapping indicator
+                            let flapIndicator = '';
+                            if (isFlapping) {
+                                const flapTitle = `Flapping: ${link.flapCount} transitions in last 15 minutes\nLast flap: ${formatRelativeTime(link.lastFlapTime)}`;
+                                flapIndicator = `<span class="flap-indicator" title="${flapTitle}">${link.flapCount}</span>`;
+                            } else if (link.flapCount > 0) {
+                                const flapTitle = `${link.flapCount} flaps (not currently flapping)\nLast flap: ${formatRelativeTime(link.lastFlapTime)}`;
+                                flapIndicator = `<span class="flap-count" title="${flapTitle}">${link.flapCount}</span>`;
+                            }
+                            
                             // Get endpoint stats
                             const ep1Stats = link.endpoints[link.endpoint1];
                             const ep2Stats = link.endpoints[link.endpoint2];
@@ -654,7 +779,8 @@
                             } else if (initiator === link.endpoint2) {
                                 initiatorClass += 'direction-incoming';
                             }
-                            
+         
+
                             // Determine RF status
                             let rfStatus = '?';
                             let rfTitle = 'Unknown';
@@ -695,8 +821,9 @@
                             }
                             
                             return `
-                                <tr>
+                                <tr class="${rowClass}">
                                     <td title="${statusTitle}" style="text-align: center;"><span class="status-indicator ${statusClass}"></span></td>
+                                    <td style="text-align: center;">${flapIndicator}</td>
                                     <td class="callsign"><a href="/node.html?callsign=${link.endpoint1}" style="color: #0066cc; text-decoration: none;">${link.endpoint1}</a></td>
                                     <td class="callsign"><a href="/node.html?callsign=${link.endpoint2}" style="color: #0066cc; text-decoration: none;">${link.endpoint2}</a></td>
                                     <td><span class="${initiatorClass}">${initiator}</span></td>
