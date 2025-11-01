@@ -203,7 +203,7 @@
         </div>
         <div class="controls">
             <button class="filter-button" id="showRfOnlyBtn" onclick="toggleRfOnly()">
-                ?? RF Links Only
+                📡 RF Links Only
             </button>
             <div class="links">
                 <a href="/">Home</a>
@@ -226,11 +226,11 @@
         </div>
         <div class="stat-item">
             <div class="stat-value" id="rfLinkCount">0</div>
-            <div class="stat-label">?? RF Links</div>
+            <div class="stat-label">📡 RF Links</div>
         </div>
         <div class="stat-item">
             <div class="stat-value" id="internetLinkCount">0</div>
-            <div class="stat-label">?? Internet Links</div>
+            <div class="stat-label">🌐 Internet Links</div>
         </div>
         <div class="stat-item">
             <div class="stat-value" id="traceCount">0</div>
@@ -816,42 +816,6 @@
         }
         
         setInterval(scheduleUpdate, 500); // Update 2 times per second for smooth activity fadeout
-
-        // Zoom controls
-        const zoomInBtn = document.getElementById('zoomInBtn');
-        const zoomOutBtn = document.getElementById('zoomOutBtn');
-
-        zoomInBtn.onclick = function() {
-            network.setOptions({
-                manipulation: {
-                    enabled: true,
-                    addNode: false,
-                    addEdge: false,
-                    editNode: false,
-                    editEdge: {
-                        edge: true,
-                        label: true
-                    },
-                    deleteNode: false,
-                    deleteEdge: false
-                }
-            });
-            network.fit();
-        };
-
-        zoomOutBtn.onclick = function() {
-            network.setOptions({
-                physics: {
-                    enabled: true,
-                    stabilization: {
-                        enabled: true,
-                        iterations: 50,
-                        updateInterval: 25
-                    }
-                }
-            });
-            network.redraw();
-        };
     </script>
 </body>
 </html>
