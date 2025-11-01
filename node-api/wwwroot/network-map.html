@@ -545,7 +545,7 @@
         function updateNetworkGraph() {
             const activeLinks = linkTracker.getActiveLinks();
             const now = Date.now();
-            const activityTimeout = 1000; // 1 second
+            const activityTimeout = 2000; // 2 seconds for fade out
             
             // Filter links based on RF filter
             let filteredLinks = activeLinks;
@@ -614,31 +614,49 @@
             filteredLinks.forEach(link => {
                 const edgeId = link.canonicalKey;
                 const activityData = linkActivityMap.get(edgeId);
-                const isActive = activityData && (now - activityData.timestamp) < activityTimeout;
+                const timeSinceActivity = activityData ? (now - activityData.timestamp) : Infinity;
+                const isActive = activityData && timeSinceActivity < activityTimeout;
                 
                 let color, width, arrows;
                 
                 // Determine color and appearance based on activity and RF status
                 if (isActive) {
-                    // Traffic is currently flowing - show direction with arrow
-                    color = {
-                        color: '#ffeb3b',
-                        highlight: '#ffc107',
-                        hover: '#ffc107'
-                    };
-                    width = 4;
+                    // Calculate fade based on time since activity (0 = just happened, 1 = timeout reached)
+                    const fadeProgress = Math.min(timeSinceActivity / activityTimeout, 1);
                     
-                    // Determine arrow direction based on actual traffic flow
+                    // Start with high contrast red/orange, fade to base color
+                    const baseColor = link.isRF === true ? '#4caf50' : 
+                                     link.isRF === false ? '#2196f3' : '#ff9800';
+                    
+                    // Interpolate from bright orange (#ff6b00) to base color
+                    const activeIntensity = 1 - fadeProgress;
+                    const orangeRed = Math.round(255 * activeIntensity + parseInt(baseColor.substr(1,2), 16) * (1 - activeIntensity));
+                    const orangeGreen = Math.round(107 * activeIntensity + parseInt(baseColor.substr(3,2), 16) * (1 - activeIntensity));
+                    const orangeBlue = Math.round(0 * activeIntensity + parseInt(baseColor.substr(5,2), 16) * (1 - activeIntensity));
+                    const currentColor = `rgb(${orangeRed}, ${orangeGreen}, ${orangeBlue})`;
+                    
+                    color = {
+                        color: currentColor,
+                        highlight: '#ff6b00',
+                        hover: '#ff6b00'
+                    };
+                    
+                    // Width fades from 5 to base width
+                    const baseWidth = link.isRF === false ? 1 : 2;
+                    width = 5 * (1 - fadeProgress * 0.6) + baseWidth * (fadeProgress * 0.6);
+                    
+                    // Arrows with dynamic size based on fade
                     const arrowsTo = activityData.to === link.endpoint2;
+                    const arrowScale = 1.5 - (fadeProgress * 0.5); // Scale from 1.5 to 1.0
                     arrows = {
                         to: {
                             enabled: arrowsTo,
-                            scaleFactor: 1,
+                            scaleFactor: arrowScale,
                             type: 'arrow'
                         },
                         from: {
                             enabled: !arrowsTo,
-                            scaleFactor: 1,
+                            scaleFactor: arrowScale,
                             type: 'arrow'
                         }
                     };
