@@ -146,10 +146,6 @@
             background-color: #2196f3;
             opacity: 0.3;
         }
-        .unknown-link {
-            background-color: #ff9800;
-            opacity: 0.3;
-        }
         .active-node {
             background-color: #0066cc;
         }
@@ -248,11 +244,7 @@
         </div>
         <div class="legend-item">
             <div class="legend-line internet-link"></div>
-            <span>Internet Link</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-line unknown-link"></div>
-            <span>Unknown Type</span>
+            <span>Internet / Unknown Link</span>
         </div>
         <div class="legend-item">
             <div class="legend-line" style="background: #ff6b00;"></div>
@@ -523,10 +515,28 @@
                     zoomView: true,
                     dragView: true,
                     navigationButtons: false
+                },
+                // Enable tooltips explicitly
+                tooltips: {
+                    enabled: true,
+                    delay: 100
                 }
             };
             
             network = new vis.Network(container, data, options);
+            
+            // Custom tooltip handling as fallback
+            network.on('hoverNode', function(params) {
+                const nodeId = params.node;
+                const node = nodes.get(nodeId);
+                if (node && node.title) {
+                    network.canvas.body.container.title = node.title;
+                }
+            });
+            
+            network.on('blurNode', function(params) {
+                network.canvas.body.container.title = '';
+            });
             
             // Handle node clicks - navigate to node detail page
             network.on('selectNode', function(params) {
@@ -658,7 +668,7 @@
                     };
                     
                     // Width fades from 5 to base width
-                    const baseWidth = link.isRF === false ? 1 : 2;
+                    const baseWidth = (link.isRF === false || link.isRF === null) ? 1 : 2;
                     width = 5 * (1 - fadeProgress * 0.6) + baseWidth * (fadeProgress * 0.6);
                     
                     // Arrows with dynamic size based on fade
@@ -694,11 +704,11 @@
                     width = 1;
                     arrows = { to: { enabled: false }, from: { enabled: false } };
                 } else {
-                    // Unknown
+                    // Unknown - treat exactly the same as internet links
                     color = {
-                        color: '#ff9800',
-                        highlight: '#ffa726',
-                        hover: '#ffa726',
+                        color: '#2196f3',
+                        highlight: '#42a5f5',
+                        hover: '#42a5f5',
                         opacity: 0.3
                     };
                     width = 1;
