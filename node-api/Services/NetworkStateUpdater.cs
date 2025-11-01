@@ -145,6 +145,9 @@ public class NetworkStateUpdater : IHostedService
     {
         var link = _networkState.GetOrCreateLink(evt.Local, evt.Remote);
         
+        // Track flapping: if link was previously disconnected, this is a flap
+        var wasDisconnected = link.Status == Models.NetworkState.LinkStatus.Disconnected;
+        
         link.Status = Models.NetworkState.LinkStatus.Active;
         link.LastUpdate = DateTime.UtcNow;
         
@@ -172,6 +175,12 @@ public class NetworkStateUpdater : IHostedService
             link.Initiator = evt.Direction.Equals("outgoing", StringComparison.OrdinalIgnoreCase) 
                 ? evt.Local 
                 : evt.Remote;
+        }
+        
+        // Update flap tracking
+        if (wasDisconnected)
+        {
+            TrackLinkFlap(link);
         }
 
         _logger.LogDebug("Updated link state from LinkUpEvent: {Key} ({Local} <-> {Remote})", link.CanonicalKey, evt.Local, evt.Remote);
@@ -370,5 +379,39 @@ public class NetworkStateUpdater : IHostedService
             node.GeoIpCity = geoCity;
 
         _logger.LogDebug("Updated IP info for node: {Callsign}", callsign);
+    }
+    
+    /// <summary>
+    /// Tracks link flapping when a link comes back up after being disconnected
+    /// </summary>
+    /// <param name="link">The link to track flapping for</param>
+    /// <param name="flapWindowMinutes">Time window in minutes for flap detection (default: 15)</param>
+    private void TrackLinkFlap(LinkState link, int flapWindowMinutes = 15)
+    {
+        var now = DateTime.UtcNow;
+        
+        // If we don't have a flap window, or the window has expired, start a new one
+        if (!link.FlapWindowStart.HasValue || 
+            now > link.FlapWindowStart.Value.AddMinutes(flapWindowMinutes))
+        {
+            link.FlapWindowStart = now;
+            link.FlapCount = 1;
+        }
+        else
+        {
+            // We're within the window, increment the flap count
+            link.FlapCount++;
+        }
+        
+        link.LastFlapTime = now;
+        
+        if (link.FlapCount >= 3)
+        {
+            _logger.LogWarning(
+                "Link {Link} is flapping: {Count} transitions in the last {Minutes} minutes",
+                link.CanonicalKey,
+                link.FlapCount,
+                flapWindowMinutes);
+        }
     }
 }

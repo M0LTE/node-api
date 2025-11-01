@@ -264,6 +264,7 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
             INSERT INTO `links` (
                 `canonical_key`, `endpoint1`, `endpoint2`, `status`,
                 `connected_at`, `disconnected_at`, `last_update`, `initiator`, `is_rf`,
+                `flap_count`, `flap_window_start`, `last_flap_time`,
                 `ep1_node`, `ep1_link_id`, `ep1_direction`, `ep1_port`, `ep1_remote`, `ep1_local`,
                 `ep1_frames_sent`, `ep1_frames_received`, `ep1_frames_resent`, `ep1_frames_queued`,
                 `ep1_frames_queued_peak`, `ep1_bytes_sent`, `ep1_bytes_received`,
@@ -277,6 +278,7 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
             ) VALUES (
                 @CanonicalKey, @Endpoint1, @Endpoint2, @Status,
                 @ConnectedAt, @DisconnectedAt, @LastUpdate, @Initiator, @IsRF,
+                @FlapCount, @FlapWindowStart, @LastFlapTime,
                 @Ep1Node, @Ep1LinkId, @Ep1Direction, @Ep1Port, @Ep1Remote, @Ep1Local,
                 @Ep1FramesSent, @Ep1FramesReceived, @Ep1FramesResent, @Ep1FramesQueued,
                 @Ep1FramesQueuedPeak, @Ep1BytesSent, @Ep1BytesReceived,
@@ -295,6 +297,9 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                 `last_update` = VALUES(`last_update`),
                 `initiator` = COALESCE(`initiator`, VALUES(`initiator`)),
                 `is_rf` = COALESCE(VALUES(`is_rf`), `is_rf`),
+                `flap_count` = VALUES(`flap_count`),
+                `flap_window_start` = VALUES(`flap_window_start`),
+                `last_flap_time` = VALUES(`last_flap_time`),
                 `ep1_node` = COALESCE(VALUES(`ep1_node`), `ep1_node`),
                 `ep1_link_id` = COALESCE(VALUES(`ep1_link_id`), `ep1_link_id`),
                 `ep1_direction` = COALESCE(VALUES(`ep1_direction`), `ep1_direction`),
@@ -355,6 +360,9 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                     link.LastUpdate,
                     link.Initiator,
                     link.IsRF,
+                    link.FlapCount,
+                    link.FlapWindowStart,
+                    link.LastFlapTime,
                     Ep1Node = ep1?.Node,
                     Ep1LinkId = ep1?.Id,
                     Ep1Direction = ep1?.Direction,
@@ -548,6 +556,9 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
             LastUpdate = row.last_update,
             Initiator = row.initiator,
             IsRF = row.is_rf,
+            FlapCount = row.flap_count,
+            FlapWindowStart = row.flap_window_start,
+            LastFlapTime = row.last_flap_time,
             Endpoints = endpoints
         };
     }
@@ -563,6 +574,9 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
         public DateTime last_update { get; set; }
         public string? initiator { get; set; }
         public bool? is_rf { get; set; }
+        public int flap_count { get; set; }
+        public DateTime? flap_window_start { get; set; }
+        public DateTime? last_flap_time { get; set; }
         public string? ep1_node { get; set; }
         public int? ep1_link_id { get; set; }
         public string? ep1_direction { get; set; }

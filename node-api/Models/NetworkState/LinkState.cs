@@ -97,6 +97,57 @@ public class LinkState
         }
     }
     
+    private int _flapCount;
+    /// <summary>
+    /// Number of connection/disconnection transitions within the current flap detection window
+    /// </summary>
+    public int FlapCount
+    {
+        get => _flapCount;
+        set
+        {
+            if (_flapCount != value)
+            {
+                _flapCount = value;
+                MarkDirty();
+            }
+        }
+    }
+    
+    private DateTime? _flapWindowStart;
+    /// <summary>
+    /// Start time of the current flap detection window
+    /// </summary>
+    public DateTime? FlapWindowStart
+    {
+        get => _flapWindowStart;
+        set
+        {
+            if (_flapWindowStart != value)
+            {
+                _flapWindowStart = value;
+                MarkDirty();
+            }
+        }
+    }
+    
+    private DateTime? _lastFlapTime;
+    /// <summary>
+    /// Timestamp of the most recent flap (up/down transition)
+    /// </summary>
+    public DateTime? LastFlapTime
+    {
+        get => _lastFlapTime;
+        set
+        {
+            if (_lastFlapTime != value)
+            {
+                _lastFlapTime = value;
+                MarkDirty();
+            }
+        }
+    }
+    
     public Dictionary<string, LinkEndpointState> Endpoints { get; init; } = new();
     
     // Dirty tracking for persistence optimization
@@ -110,6 +161,27 @@ public class LinkState
     public void MarkClean()
     {
         IsDirty = false;
+    }
+    
+    /// <summary>
+    /// Checks if this link is currently flapping based on flap count and timing
+    /// </summary>
+    /// <param name="flapThreshold">Minimum number of flaps to be considered flapping (default: 3)</param>
+    /// <param name="windowMinutes">Time window in minutes for flap detection (default: 15)</param>
+    /// <returns>True if the link is flapping, false otherwise</returns>
+    public bool IsFlapping(int flapThreshold = 3, int windowMinutes = 15)
+    {
+        if (FlapCount < flapThreshold)
+            return false;
+            
+        if (!FlapWindowStart.HasValue)
+            return false;
+            
+        var windowEnd = FlapWindowStart.Value.AddMinutes(windowMinutes);
+        var now = DateTime.UtcNow;
+        
+        // Link is flapping if we're still within the window and have enough flaps
+        return now <= windowEnd && FlapCount >= flapThreshold;
     }
 }
 
