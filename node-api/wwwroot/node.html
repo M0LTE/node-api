@@ -1104,6 +1104,7 @@
                             <th>Remote</th>
                             <th>Direction</th>
                             <th>RF</th>
+                            <th>Up Time</th>
                             <th>Frames Sent</th>
                             <th>Frames Received</th>
                             <th>RTT (ms)</th>
@@ -1112,7 +1113,13 @@
                     <tbody>
                         ${links.map(link => {
                             const statusClass = link.status === 'active' ? 'active' : 'disconnected';
-                            const ep = link.endpoints[Object.keys(link.endpoints)[0]];
+                            
+                            // Get endpoint stats for both endpoints
+                            const ep1Stats = link.endpoints[link.endpoint1];
+                            const ep2Stats = link.endpoints[link.endpoint2];
+                            
+                            // Use the first available endpoint for direction display
+                            const ep = ep1Stats || ep2Stats;
                             
                             // Determine RF status
                             let rfStatus = '?';
@@ -1125,6 +1132,12 @@
                                 rfTitle = 'Internet/Ethernet Link';
                             }
                             
+                            // Get uptime (prefer the longer uptime if both endpoints report)
+                            const uptime = Math.max(
+                                ep1Stats?.upForSecs || 0,
+                                ep2Stats?.upForSecs || 0
+                            );
+                            
                             return `
                                 <tr>
                                     <td><span class="status-indicator ${statusClass}"></span></td>
@@ -1132,6 +1145,7 @@
                                     <td class="callsign">${link.endpoint2}</td>
                                     <td><span class="direction-badge direction-${ep?.direction || 'unknown'}">${ep?.direction || '?'}</span></td>
                                     <td title="${rfTitle}" style="text-align: center; font-size: 18px;">${rfStatus}</td>
+                                    <td>${formatDuration(uptime)}</td>
                                     <td class="metric">${ep?.framesSent ?? '-'}</td>
                                     <td class="metric">${ep?.framesReceived ?? '-'}</td>
                                     <td class="metric">${ep?.l2RttMs ?? '-'}</td>
