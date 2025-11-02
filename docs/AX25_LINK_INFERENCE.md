@@ -33,25 +33,26 @@ ELSE
 
 ```
 You see L2Trace data:
-  ?? Question 1: What's the direction?
-  ?    ?? "rcvd" ? ? Trust it
-  ?    ?? "sent" ? Go to Question 2
-  ?    ?? null/unknown ? ? Trust it (conservative)
-  ?
-  ?? Question 2: Do the base callsigns match?
-       ?? YES ? ? Trust it (reporter transmitting as itself)
-       ?? NO ? ? Don't trust it (impersonation!)
+  → Question 1: What's the direction?
+  │    → "rcvd" → ✓ Trust it
+  │    → "sent" → Go to Question 2
+  │    → null/unknown → ✓ Trust it (conservative)
+  │
+  → Question 2: Do the base callsigns match?
+       → YES → ✓ Trust it (reporter transmitting as itself)
+       → NO → ✗ Don't trust it (impersonation!)
+```
 ```
 
 ### Quick Examples
 
 | Scenario | reportFrom | dirn | source | Can Infer? | Reason |
 |----------|------------|------|---------|------------|---------|
-| Received frame | G8PZT | `rcvd` | M0LTE | ? YES | Source is genuine |
-| Same callsign | G8PZT-1 | `sent` | G8PZT-1 | ? YES | Reporter = Source |
-| Same base, diff SSID | G8PZT-1 | `sent` | G8PZT-2 | ? YES | G8PZT = G8PZT |
-| Different base | G8PZT | `sent` | M0LTE | ? NO | G8PZT ? M0LTE (impersonation) |
-| Missing direction | G8PZT | `null` | M0LTE | ? YES | Conservative default |
+| Received frame | G8PZT | `rcvd` | M0LTE | ✓ YES | Source is genuine |
+| Same callsign | G8PZT-1 | `sent` | G8PZT-1 | ✓ YES | Reporter = Source |
+| Same base, diff SSID | G8PZT-1 | `sent` | G8PZT-2 | ✓ YES | G8PZT = G8PZT |
+| Different base | G8PZT | `sent` | M0LTE | ✗ NO | G8PZT ≠ M0LTE (impersonation) |
+| Missing direction | G8PZT | `null` | M0LTE | ✓ YES | Conservative default |
 
 ---
 
@@ -132,10 +133,10 @@ END IF
 
 | Component | Impact |
 |-----------|--------|
-| Node tracking | ? **No change** - All nodes still tracked |
-| Link creation | ? **No change** - Only LinkUpEvent creates links |
-| Link properties | ?? **Changed** - `IsRF` only updated when reliable |
-| Network map | ?? **Improved** - Shows accurate topology |
+| Node tracking | ✓ **No change** - All nodes still tracked |
+| Link creation | ✓ **No change** - Only LinkUpEvent creates links |
+| Link properties | ⚠️ **Changed** - `IsRF` only updated when reliable |
+| Network map | ✅ **Improved** - Shows accurate topology |
 
 ---
 
@@ -144,18 +145,18 @@ END IF
 ### Scenario 1: Direct Connection (No Impersonation)
 
 ```
-???????????                          ???????????
-? M0LTE   ?  ???????????????????????>? G8PZT   ?
-???????????      RF transmission     ???????????
-                                         ?
-                                         ? Reports L2Trace:
-                                         ? reportFrom: "G8PZT"
-                                         ? dirn: "rcvd"
-                                         ? source: "M0LTE"
-                                         ? dest: "G8PZT"
-                                         ? isRF: true
-                                         ?
-                                    ? CAN INFER LINK
+┌─────────┐                          ┌─────────┐
+│ M0LTE   │  ──────────────────────> │ G8PZT   │
+└─────────┘      RF transmission     └─────────┘
+                                         │
+                                         │ Reports L2Trace:
+                                         │ reportFrom: "G8PZT"
+                                         │ dirn: "rcvd"
+                                         │ source: "M0LTE"
+                                         │ dest: "G8PZT"
+                                         │ isRF: true
+                                         │
+                                    ✓ CAN INFER LINK
                                     M0LTE <-> G8PZT
                                     isRF: true
 ```
@@ -174,14 +175,14 @@ END IF
                    source: "G8PZT-1"
                    dest: "M0LTE"
                    isRF: true
-                        ?
-                        ? RF transmission
-                        ?
-???????????      ???????????????????>      ???????????
-? G8PZT-1 ?                                ? M0LTE   ?
-???????????                                ???????????
+                        │
+                        │ RF transmission
+                        │
+┌─────────┐      ──────────────────>      ┌─────────┐
+│ G8PZT-1 │                                │ M0LTE   │
+└─────────┘                                └─────────┘
 
-? CAN INFER LINK
+✓ CAN INFER LINK
 G8PZT-1 <-> M0LTE
 isRF: true
 ```
@@ -201,14 +202,14 @@ isRF: true
                    source: "G8PZT-2"
                    dest: "M0LTE"
                    isRF: false
-                        ?
-                        ? Internet/Ethernet
-                        ?
-???????????      ?????????????????????>    ???????????
-? G8PZT-2 ?                                ? M0LTE   ?
-???????????                                ???????????
+                        │
+                        │ Internet/Ethernet
+                        │
+┌─────────┐      ───────────────────────>    ┌─────────┐
+│ G8PZT-2 │                                │ M0LTE   │
+└─────────┘                                └─────────┘
 
-? CAN INFER LINK
+✓ CAN INFER LINK
 G8PZT-2 <-> M0LTE
 isRF: false
 ```
@@ -223,30 +224,31 @@ isRF: false
 ### Scenario 4: Intermediate Node Forwarding (IMPERSONATION DETECTED)
 
 ```
-???????????                                   ???????????
-? M0LTE   ?  ????> (L2 connection) ????????> ? G8PZT   ?
-???????????         through G8PZT             ???????????
-                                                   ?
-                                                   ? G8PZT forwards traffic
-                                                   ? but transmits using
-                                                   ? M0LTE's callsign!
-                                                   ?
-                                                   ? G8PZT Reports:
-                                                   ? reportFrom: "G8PZT"
-                                                   ? dirn: "sent"
-                                                   ? source: "M0LTE"    ??
-                                                   ? dest: "M0ABC"
-                                                   ? isRF: true
-                                                   ?
-                                                   ? RF transmission
-                                                   ?
-                                              ???????????
-                                              ? M0ABC   ?
-                                              ???????????
+┌─────────┐                                   ┌─────────┐
+│ M0LTE   │  ───-> (L2 connection) ────────> │ G8PZT   │
+└─────────┘         through G8PZT             └─────────┘
+                                                   │
+                                                   │ G8PZT forwards traffic
+                                                   │ but transmits using
+                                                   │ M0LTE's callsign!
+                                                   │
+                                                   │ G8PZT Reports:
+                                                   │ reportFrom: "G8PZT"
+                                                   │ dirn: "sent"
+                                                   │ source: "M0LTE"    ⚠️
+                                                   │ dest: "M0ABC"
+                                                   │ isRF: true
+                                                   │
+                                                   │ RF transmission
+                                                   │
+                                              ┌─────────┐
+                                              │ M0ABC   │
+                                              └─────────┘
 
-? CANNOT INFER DIRECT LINK between M0LTE <-> M0ABC
+✗ CANNOT INFER DIRECT LINK between M0LTE <-> M0ABC
 Base callsigns differ: M0LTE != G8PZT
 Source M0LTE is being IMPERSONATED by G8PZT
+```
 
 ACTUAL TOPOLOGY:
   M0LTE <?(some link)?> G8PZT <?(RF)?> M0ABC
@@ -263,33 +265,33 @@ ACTUAL TOPOLOGY:
 ### Scenario 5: Overheard Forwarded Traffic (Limitation)
 
 ```
-???????????                                   ???????????
-? M0LTE   ?  ????> (L2 connection) ????????> ? G8PZT   ?
-???????????         through G8PZT             ???????????
-                                                   ?
-                                                   ? RF transmission
-                                                   ? (M0LTE impersonated)
-                                                   ?
-                                                   ?
-                                              ???????????
-                                              ? M0ABC   ?
-                                              ???????????
-                                                   ?
-                                                   ? M0XYZ overhears
-                                                   ?
-???????????                                        ?
-? M0XYZ   ?  <???????? (overhears RF) ?????????????
-???????????
-     ?
-     ? M0XYZ Reports:
-     ? reportFrom: "M0XYZ"
-     ? dirn: "rcvd"
-     ? source: "M0LTE"      ?? Actually from G8PZT!
-     ? dest: "M0ABC"
-     ? isRF: true
-     ?
+┌─────────┐                                   ┌─────────┐
+│ M0LTE   │  ───-> (L2 connection) ────────> │ G8PZT   │
+└─────────┘         through G8PZT             └─────────┘
+                                                   │
+                                                   │ RF transmission
+                                                   │ (M0LTE impersonated)
+                                                   │
+                                                   │
+                                              ┌─────────┐
+                                              │ M0ABC   │
+                                              └─────────┘
+                                                   │
+                                                   │ M0XYZ overhears
+                                                   │
+┌─────────┐                                        │
+│ M0XYZ   │  <──────── (overhears RF) ─────────────┘
+└─────────┘
+     │
+     │ M0XYZ Reports:
+     │ reportFrom: "M0XYZ"
+     │ dirn: "rcvd"
+     │ source: "M0LTE"      ⚠️ Actually from G8PZT!
+     │ dest: "M0ABC"
+     │ isRF: true
+     │
 
-?? LIMITATION: M0XYZ cannot detect impersonation
+⚠️ LIMITATION: M0XYZ cannot detect impersonation
 dirn: "rcvd" means M0XYZ received the frame
 Heuristic allows link inference (conservative)
 Result: Incorrectly infers M0LTE <-> M0ABC RF link

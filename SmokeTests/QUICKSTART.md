@@ -4,7 +4,7 @@
 
 The smoke tests are a **separate test suite** that you can run locally to verify that a **deployed instance** of the node-api service is working correctly. Unlike the unit/integration tests that test the code, these tests verify an actual running service.
 
-?? **Important**: These tests require a running instance of the service. They will fail if the service is not running.
+⚠️ **Important**: These tests require a running instance of the service. They will fail if the service is not running.
 
 ## Quick Start
 
@@ -73,7 +73,7 @@ cd SmokeTests
 
 The scripts just show your config and run `dotnet test` - nothing magical!
 
-## ?? Common Issues
+## ⚠️ Common Issues
 
 ### "Connection refused" or "No connection could be made"
 
@@ -120,7 +120,7 @@ This filtering is **intentional** to keep production monitoring clean while allo
 - Can subscribe to error topics (`in/udp/errored/#`)
 - Can subscribe to output topics (`out/#`)
 
-### ?? End-to-End Tests (Skipped by Default)
+### ⏭️ End-to-End Tests (Skipped by Default)
 - Complete UDP ? Service ? MQTT flow
 - Invalid datagrams appear on error topics
 
@@ -380,7 +380,7 @@ mosquitto_sub -h node-api.packet.oarc.uk -t "test" -d
 This is expected behavior:
 - ? **TEST data IS processed** - Check MQTT topics, service logs, or explicit API queries
 - ? **TEST data NOT in general listings** - This is intentional to keep production clean
-- ?? **To verify TEST data**: Use explicit queries like `/api/nodes/TEST` or `/api/traces?reportFrom=TEST`
+- 💡 **To verify TEST data**: Use explicit queries like `/api/nodes/TEST` or `/api/traces?reportFrom=TEST`
 
 ## Support
 

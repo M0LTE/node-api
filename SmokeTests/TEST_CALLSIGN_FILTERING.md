@@ -117,7 +117,7 @@ curl http://localhost:5000/api/traces?limit=10
    - MQTT shows TEST events in real-time
    - Service logs show TEST processing
 
-### ?? Use Cases
+### 🎯 Use Cases
 
 | Use Case | Solution |
 |----------|----------|
@@ -199,7 +199,7 @@ public async Task TEST_Data_Should_Be_Processed_But_Filtered()
 
 ? **Not a bug** - this is intentional filtering
 
-?? **Solution**: Use explicit queries:
+💡 **Solution**: Use explicit queries:
 - `GET /api/nodes/TEST`
 - `GET /api/traces?reportFrom=TEST`
 - `GET /api/links/node/TEST`

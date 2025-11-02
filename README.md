@@ -2,24 +2,24 @@
 
 A .NET 9.0 ASP.NET Core Web API service for real-time packet radio network monitoring and analysis.
 
-## ?? Overview
+## 📚 Overview
 
 **node-api** is a comprehensive monitoring solution for AX.25 packet radio networks. It ingests network event data via UDP datagrams, validates and processes various event types, maintains network state, and provides both REST API and MQTT interfaces for real-time monitoring.
 
 ### Key Features
 
-- ?? **UDP Datagram Ingestion** - Listens on port 13579 for network events
-- ? **Comprehensive Validation** - FluentValidation for all event types
-- ?? **Real-time MQTT Publishing** - Events published to MQTT topics
-- ?? **Persistent State** - MySQL database for network state and history
-- ?? **REST API** - Query nodes, links, circuits, traces, and diagnostics
-- ??? **Rate Limiting** - Rolling average with burst support
-- ?? **GeoIP Integration** - Location tracking with privacy-preserving obfuscation
-- ?? **Link Intelligence** - Flapping detection and AX.25 routing heuristics
-- ?? **RabbitMQ Support** - Dual-path ingestion for resilience
-- ?? **OpenAPI/Scalar** - Interactive API documentation at `/scalar`
+- 📡 **UDP Datagram Ingestion** - Listens on port 13579 for network events
+- ✅ **Comprehensive Validation** - FluentValidation for all event types
+- 📤 **Real-time MQTT Publishing** - Events published to MQTT topics
+- 💾 **Persistent State** - MySQL database for network state and history
+- 🌐 **REST API** - Query nodes, links, circuits, traces, and diagnostics
+- ⚡ **Rate Limiting** - Rolling average with burst support
+- 🌍 **GeoIP Integration** - Location tracking with privacy-preserving obfuscation
+- 🧠 **Link Intelligence** - Flapping detection and AX.25 routing heuristics
+- 🐰 **RabbitMQ Support** - Dual-path ingestion for resilience
+- 📖 **OpenAPI/Scalar** - Interactive API documentation at `/scalar`
 
-## ?? Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
 
@@ -56,55 +56,55 @@ docker run -p 5000:8080 -p 13579:13579/udp node-api
 
 See [Deployment Guide](docs/DEPLOYMENT.md) for production deployment instructions.
 
-## ?? Documentation
+## 📚 Documentation
 
 ### Getting Started
-- ?? [Documentation Index](docs/README.md) - Complete documentation navigation
-- ?? [Deployment Guide](docs/DEPLOYMENT.md) - Production deployment
-- ?? [Docker Publishing](docs/DOCKER_PUBLISH.md) - Container build and publish
+- 📖 [Documentation Index](docs/README.md) - Complete documentation navigation
+- 🚀 [Deployment Guide](docs/DEPLOYMENT.md) - Production deployment
+- 🐳 [Docker Publishing](docs/DOCKER_PUBLISH.md) - Container build and publish
 
 ### Core Features
-- ?? [Rate Limiting](docs/RATE_LIMITING.md) - UDP rate limiting lifecycle
-- ?? [IP & GeoIP Tracking](docs/IP_AND_GEOIP_FEATURE.md) - Location with privacy
-- ?? [Link Flapping Detection](docs/LINK_FLAPPING.md) - Unstable connection tracking
-- ?? [AX.25 Link Inference](docs/AX25_LINK_INFERENCE.md) - Routing heuristics
-- ? [Timestamp Tracking](docs/TIMESTAMP_TRACKING.md) - Datagram arrival times
+- ⚡ [Rate Limiting](docs/RATE_LIMITING.md) - UDP rate limiting lifecycle
+- 🌍 [IP & GeoIP Tracking](docs/IP_AND_GEOIP_FEATURE.md) - Location with privacy
+- 📊 [Link Flapping Detection](docs/LINK_FLAPPING.md) - Unstable connection tracking
+- 🧠 [AX.25 Link Inference](docs/AX25_LINK_INFERENCE.md) - Routing heuristics
+- ⏰ [Timestamp Tracking](docs/TIMESTAMP_TRACKING.md) - Datagram arrival times
 
 ### Architecture
-- ?? [RabbitMQ Integration](docs/RABBITMQ_INTEGRATION.md) - Message queue support
-- ?? [Phase 2 Summary](docs/PHASE2_SUMMARY.md) - Dual-path ingestion
+- 🐰 [RabbitMQ Integration](docs/RABBITMQ_INTEGRATION.md) - Message queue support
+- 📋 [Phase 2 Summary](docs/PHASE2_SUMMARY.md) - Dual-path ingestion
 
 ### Testing
-- ?? [Smoke Tests](SmokeTests/README.md) - End-to-end testing guide
-- ? [Unit Tests](Tests/) - 1,000+ comprehensive tests
+- 🧪 [Smoke Tests](SmokeTests/README.md) - End-to-end testing guide
+- ✅ [Unit Tests](Tests/) - 1,000+ comprehensive tests
 
 ### Developer Resources
-- ?? [Copilot Instructions](.github/copilot-instructions.md) - Coding standards and guidelines
+- 💻 [Copilot Instructions](.github/copilot-instructions.md) - Coding standards and guidelines
 
-## ??? Architecture
+## 🏗️ Architecture
 
 ```
-???????????????     UDP:13579      ????????????????
-?   XRouter   ? ?????????????????> ? UDP Listener ?
-?   Nodes     ?                    ?              ?
-???????????????                    ????????????????
-                                          ?
-???????????????     AMQP          ?????????????????
-?  RabbitMQ   ? ?????????????????>?  Validation   ?
-?   Queue     ?                    ?   Service     ?
-???????????????                    ?????????????????
-                                          ?
-                                   ???????????????????
-                                   ? Network State   ?
-                                   ?    Updater      ?
-                                   ???????????????????
-                                          ?
-                    ?????????????????????????????????????????????
-                    ?                     ?                     ?
-             ??????????????        ??????????????       ??????????????
-             ?   MySQL    ?        ?    MQTT    ?       ?  REST API  ?
-             ?  Database  ?        ?  Publisher ?       ?   /api/*   ?
-             ??????????????        ??????????????       ??????????????
+┌─────────┐     UDP:13579      ┌──────────────┐
+│   XRouter   │ ────────────────>│ UDP Listener │
+│   Nodes     │                    │              │
+└─────────┘                    └──────────────┘
+                                          │
+┌─────────┐     AMQP          ┌─────────────────┐
+│  RabbitMQ   │ ────────────────>│  Validation   │
+│   Queue     │                    │   Service     │
+└─────────┘                    └─────────────────┘
+                                          │
+                                   ┌───────────────────┐
+                                   │ Network State   │
+                                   │    Updater      │
+                                   └───────────────────┘
+                                          │
+                    ┌─────────────────────┼─────────────────────┐
+                    │                     │                     │
+             ┌──────────┐        ┌──────────┐       ┌──────────┐
+             │   MySQL    │        │    MQTT    │       │  REST API  │
+             │  Database  │        │  Publisher │       │   /api/*   │
+             └──────────┘        └──────────┘       └──────────┘
 ```
 
 ### Technology Stack
@@ -117,7 +117,7 @@ See [Deployment Guide](docs/DEPLOYMENT.md) for production deployment instruction
 - **Testing**: xUnit (1,000+ tests)
 - **Containerization**: Docker
 
-## ?? Event Types
+## 📋 Event Types
 
 The service processes the following AX.25 network events:
 
@@ -134,7 +134,7 @@ The service processes the following AX.25 network events:
 | `CircuitDisconnectionEvent` | Circuit disconnected |
 | `L2Trace` | Layer 2 frame trace |
 
-## ?? API Endpoints
+## 🌐 API Endpoints
 
 ### Nodes
 - `GET /api/nodes` - List all nodes
@@ -163,7 +163,7 @@ The service processes the following AX.25 network events:
 - `GET /scalar` - Interactive API documentation
 - `GET /openapi/v1.json` - OpenAPI specification
 
-## ?? Testing
+## 🧪 Testing
 
 ```bash
 # Run all tests
@@ -190,7 +190,7 @@ dotnet test --filter "FullyQualifiedName~NetworkStateUpdaterL2TraceTests"
 
 See [Smoke Tests Documentation](SmokeTests/README.md) for detailed testing guide.
 
-## ??? Security & Privacy
+## 🔒 Security & Privacy
 
 - **IP Obfuscation**: Only last 2 octets of IPv4 addresses stored
 - **Rate Limiting**: Prevents abuse with rolling average + burst detection
@@ -198,7 +198,7 @@ See [Smoke Tests Documentation](SmokeTests/README.md) for detailed testing guide
 - **Input Validation**: FluentValidation on all incoming data
 - **SQL Injection Protection**: Parameterized queries throughout
 
-## ?? Troubleshooting
+## 🔧 Troubleshooting
 
 ### UDP Port Not Accessible
 ```bash
@@ -225,7 +225,7 @@ netsh advfirewall firewall show rule name="Node API UDP"
 
 See individual feature documentation for specific troubleshooting guides.
 
-## ?? Performance
+## ⚡ Performance
 
 - **UDP Throughput**: Handles 100+ datagrams/second
 - **Rate Limiting**: Configurable per-IP limits with burst support
@@ -233,7 +233,7 @@ See individual feature documentation for specific troubleshooting guides.
 - **Memory**: Efficient in-memory network state tracking
 - **Latency**: Sub-millisecond event processing
 
-## ?? Contributing
+## 🤝 Contributing
 
 Contributions are welcome! Please:
 
@@ -243,15 +243,15 @@ Contributions are welcome! Please:
 4. Follow existing code patterns and naming conventions
 5. Update documentation for new features
 
-## ?? License
+## 📄 License
 
 [Add license information here]
 
-## ?? Acknowledgments
+## 🙏 Acknowledgments
 
 This project monitors AX.25 packet radio networks and processes data from XRouter nodes. Thanks to the amateur radio community for the protocols and specifications.
 
-## ?? Support
+## 💬 Support
 
 - **Issues**: [GitHub Issues](https://github.com/M0LTE/node-api/issues)
 - **Documentation**: [docs/](docs/)
@@ -259,4 +259,4 @@ This project monitors AX.25 packet radio networks and processes data from XRoute
 
 ---
 
-**Built with ?? for the packet radio community**
+**Built with ❤️ for the packet radio community**

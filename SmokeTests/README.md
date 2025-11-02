@@ -51,7 +51,7 @@ The smoke tests verify:
 
 ### Prerequisites
 
-?? **Important**: Most tests require the service to be running!
+⚠️ **Important**: Most tests require the service to be running!
 
 ```bash
 # Start the service in one terminal
@@ -134,17 +134,17 @@ dotnet test --filter "FullyQualifiedName~MqttSmokeTests"
 - ? MQTT broker connectivity
 - ? Subscription to input topics
 - ? Subscription to error topics
-- ? Subscription to output topics
-- ? Clean session support
-- ?? **Skipped**: End-to-end message verification (requires write credentials)
+- ✓ Subscription to output topics
+- ✓ Clean session support
+- ⏭️ **Skipped**: End-to-end message verification (requires write credentials)
 
 ### EndToEndSmokeTests
 
-- ?? **Skipped**: Complete UDP ? MQTT flow (requires MQTT access)
-- ?? **Skipped**: Invalid datagram error topic verification
-- ? Burst message handling
-- ? Diagnostics endpoint availability during load
-- ? Multiple datagram types processing
+- ⏭️ **Skipped**: Complete UDP → MQTT flow (requires MQTT access)
+- ⏭️ **Skipped**: Invalid datagram error topic verification
+- ✓ Burst message handling
+- ✓ Diagnostics endpoint availability during load
+- ✓ Multiple datagram types processing
 
 ## TEST Callsign Behavior
 
@@ -220,9 +220,9 @@ curl http://localhost:5000/api/nodes  # No TEST nodes
 
 #### "TEST data not found"
 **This is expected for general queries!**
-- ? TEST data IS processed - check MQTT, logs, or use explicit queries
-- ? TEST data NOT in `/api/nodes`, `/api/links`, etc. - this is by design
-- ?? To verify: Use `/api/nodes/TEST` or `/api/traces?reportFrom=TEST`
+- ✓ TEST data IS processed - check MQTT, logs, or use explicit queries
+- ✓ TEST data NOT in `/api/nodes`, `/api/links`, etc. - this is by design
+- 💡 To verify: Use `/api/nodes/TEST` or `/api/traces?reportFrom=TEST`
 
 ## Manual Testing
 

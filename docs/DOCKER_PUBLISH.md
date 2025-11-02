@@ -76,11 +76,11 @@ You can manually trigger the workflow from the GitHub Actions tab:
 
 | Feature | Visual Studio | GitHub Actions |
 |---------|--------------|----------------|
-| Ease of use | ? GUI-based, one-click | ?? Automated |
-| Local machine | ? Runs locally | ? Runs on GitHub |
-| Runs tests | ? No | ? Yes |
-| Tagging | Manual | ? Automatic semantic versioning |
-| CI/CD | ? No | ? Yes |
+| Ease of use | ✓ GUI-based, one-click | ✅ Automated |
+| Local machine | ✓ Runs locally | ✗ Runs on GitHub |
+| Runs tests | ✗ No | ✓ Yes |
+| Tagging | Manual | ✓ Automatic semantic versioning |
+| CI/CD | ✗ No | ✓ Yes |
 | Requires setup | Minimal | One-time secret configuration |
 
 ## Command Line Publishing (Alternative)

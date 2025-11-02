@@ -275,8 +275,8 @@ Key log messages to monitor:
 ### Runtime
 - `Processing datagram from RabbitMQ` - Consumer processing messages (normal in queue mode)
 - `Published datagram from {SourceIp} to RabbitMQ` - Publisher working (normal in queue mode)
-- `Failed to publish datagram to RabbitMQ. Processing directly as fallback.` - ?? RabbitMQ publish issue, using fallback
-- `Error processing RabbitMQ message` - ?? Consumer processing errors (message requeued)
+- `Failed to publish datagram to RabbitMQ. Processing directly as fallback.` - ⚠️ RabbitMQ publish issue, using fallback
+- `Error processing RabbitMQ message` - ⚠️ Consumer processing errors (message requeued)
 
 ### What to Watch For
 
