@@ -56,6 +56,15 @@
         .links a:hover {
             background-color: #0052a3;
         }
+        .links-table a {
+            color: #0066cc;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .links-table a:hover {
+            color: #0052a3;
+            text-decoration: underline;
+        }
         .mqtt-status {
             display: inline-block;
             padding: 4px 8px;
@@ -1100,8 +1109,7 @@
                     <thead>
                         <tr>
                             <th>Status</th>
-                            <th>Local</th>
-                            <th>Remote</th>
+                            <th>Remote Callsign</th>
                             <th>Direction</th>
                             <th>RF</th>
                             <th>Up Time</th>
@@ -1114,6 +1122,9 @@
                     <tbody>
                         ${links.map(link => {
                             const statusClass = link.status === 'active' ? 'active' : 'disconnected';
+                            
+                            // Determine the remote callsign (the one that's not the current node)
+                            const remoteCallsign = link.endpoint1 === currentSelectedSsid ? link.endpoint2 : link.endpoint1;
                             
                             // Get endpoint stats for both endpoints
                             const ep1Stats = link.endpoints[link.endpoint1];
@@ -1142,8 +1153,7 @@
                             return `
                                 <tr>
                                     <td><span class="status-indicator ${statusClass}"></span></td>
-                                    <td class="callsign">${link.endpoint1}</td>
-                                    <td class="callsign">${link.endpoint2}</td>
+                                    <td class="callsign"><a href="/node.html?callsign=${remoteCallsign}">${remoteCallsign}</a></td>
                                     <td><span class="direction-badge direction-${ep?.direction || 'unknown'}">${ep?.direction || '?'}</span></td>
                                     <td title="${rfTitle}" style="text-align: center; font-size: 18px;">${rfStatus}</td>
                                     <td>${formatDuration(uptime)}</td>
