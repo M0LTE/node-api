@@ -2,7 +2,7 @@
 
 Welcome to the node-api documentation. This index provides quick navigation to all available documentation.
 
-## ?? Table of Contents
+## 📑 Table of Contents
 
 ### Getting Started
 
@@ -64,7 +64,7 @@ Welcome to the node-api documentation. This index provides quick navigation to a
   - Database conventions
   - MQTT patterns
 
-## ?? Documentation by Category
+## 📚 Documentation by Category
 
 ### For New Developers
 
@@ -110,7 +110,7 @@ Running and maintaining the service:
 | Link inference issues | [AX25_LINK_INFERENCE.md](AX25_LINK_INFERENCE.md) |
 | Test data appearing | [TEST_CALLSIGN_FILTERING.md](../SmokeTests/TEST_CALLSIGN_FILTERING.md) |
 
-## ?? Quick Searches
+## 🔍 Quick Searches
 
 ### By Technology
 
@@ -127,7 +127,7 @@ Running and maintaining the service:
 - **L2Trace**: [AX25_LINK_INFERENCE.md](AX25_LINK_INFERENCE.md)
 - **CircuitUpEvent/CircuitStatus**: [Main README](../README.md)
 
-## ?? Documentation Standards
+## 📝 Documentation Standards
 
 When contributing documentation:
 
@@ -139,34 +139,34 @@ When contributing documentation:
 6. **Code examples**: Include runnable snippets
 7. **Cross-reference**: Link to related documentation
 
-## ??? Documentation Map
+## 🗺️ Documentation Map
 
 ```
 node-api/
-??? README.md ...................... Main project overview
-??? CONTRIBUTING.md ................ Contribution guidelines
-??? .github/
-?   ??? copilot-instructions.md .... Coding standards
-??? docs/
-?   ??? README.md .................. This file
-?   ??? CHANGELOG.md ............... Project history
-?   ??? DEPLOYMENT.md .............. Production deployment
-?   ??? DOCKER_PUBLISH.md .......... Container publishing
-?   ??? RATE_LIMITING.md ........... Rate limiting system
-?   ??? AX25_LINK_INFERENCE.md ..... Link detection logic (consolidated)
-?   ??? LINK_FLAPPING.md ........... Flapping detection
-?   ??? IP_AND_GEOIP_FEATURE.md .... GeoIP tracking
-?   ??? RABBITMQ_INTEGRATION.md .... Message queue support
-?   ??? TIMESTAMP_TRACKING.md ...... Arrival timestamps
-?   ??? ... (other feature docs)
-??? SmokeTests/
-?   ??? README.md .................. Testing guide
-?   ??? QUICKSTART.md .............. Quick test guide
-?   ??? TEST_CALLSIGN_FILTERING.md . Test data handling
-??? Tests/ ......................... Unit tests
+├── README.md ...................... Main project overview
+├── CONTRIBUTING.md ................ Contribution guidelines
+├── .github/
+│   └── copilot-instructions.md .... Coding standards
+├── docs/
+│   ├── README.md .................. This file
+│   ├── CHANGELOG.md ............... Project history
+│   ├── DEPLOYMENT.md .............. Production deployment
+│   ├── DOCKER_PUBLISH.md .......... Container publishing
+│   ├── RATE_LIMITING.md ........... Rate limiting system
+│   ├── AX25_LINK_INFERENCE.md ..... Link detection logic (consolidated)
+│   ├── LINK_FLAPPING.md ........... Flapping detection
+│   ├── IP_AND_GEOIP_FEATURE.md .... GeoIP tracking
+│   ├── RABBITMQ_INTEGRATION.md .... Message queue support
+│   ├── TIMESTAMP_TRACKING.md ...... Arrival timestamps
+│   └── ... (other feature docs)
+├── SmokeTests/
+│   ├── README.md .................. Testing guide
+│   ├── QUICKSTART.md .............. Quick test guide
+│   └── TEST_CALLSIGN_FILTERING.md . Test data handling
+└── Tests/ ......................... Unit tests
 ```
 
-## ?? Need Help?
+## ❓ Need Help?
 
 - **Can't find what you need?** Check the [main README](../README.md) or browse this index
 - **Found a documentation issue?** Open a GitHub issue or submit a PR

@@ -36,21 +36,21 @@ The UDP rate limiting system now implements a sophisticated dual-threshold appro
 
 ```
 1. Check blacklist (permanent block)
-   ?? If blacklisted ? BLOCK
-   ?? If not blacklisted ? Continue
+   → If blacklisted → BLOCK
+   → If not blacklisted → Continue
 
 2. Get or create rate limit bucket for IP
 
 3. Clean old timestamps (older than rolling window)
 
 4. Calculate rates:
-   ?? Burst rate: requests in last 1 second
-   ?? Average rate: requests in last 10 seconds � 10
+   → Burst rate: requests in last 1 second
+   → Average rate: requests in last 10 seconds ÷ 10
 
 5. Apply thresholds:
-   ?? If burst rate >= burst limit (e.g., 6 req/s) ? BLOCK (burst_limit)
-   ?? If average rate >= sustained limit (e.g., 2 req/s) ? BLOCK (sustained_rate_limit)
-   ?? Otherwise ? ALLOW and add timestamp
+   → If burst rate >= burst limit (e.g., 6 req/s) → BLOCK (burst_limit)
+   → If average rate >= sustained limit (e.g., 2 req/s) → BLOCK (sustained_rate_limit)
+   → Otherwise → ALLOW and add timestamp
 ```
 
 ### Example Scenarios
@@ -101,7 +101,7 @@ IP sends 3 requests per second for 10 seconds (30 total)
 
 ### Automatic Calculations
 
-- **Burst Limit**: Automatically set to `3 � RequestsPerSecondPerIp`
+- **Burst Limit**: Automatically set to `3 � RequestsPerSecondPerIp`
 - **Rolling Window**: Fixed at 10 seconds
 - **Cleanup Interval**: Every 1 minute for stale buckets
 
