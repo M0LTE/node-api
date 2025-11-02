@@ -1105,6 +1105,7 @@
                             <th>Direction</th>
                             <th>RF</th>
                             <th>Up Time</th>
+                            <th>Last Activity</th>
                             <th>Frames Sent</th>
                             <th>Frames Received</th>
                             <th>RTT (ms)</th>
@@ -1146,6 +1147,7 @@
                                     <td><span class="direction-badge direction-${ep?.direction || 'unknown'}">${ep?.direction || '?'}</span></td>
                                     <td title="${rfTitle}" style="text-align: center; font-size: 18px;">${rfStatus}</td>
                                     <td>${formatDuration(uptime)}</td>
+                                    <td>${formatLastSeen(link.lastUpdate)}</td>
                                     <td class="metric">${ep?.framesSent ?? '-'}</td>
                                     <td class="metric">${ep?.framesReceived ?? '-'}</td>
                                     <td class="metric">${ep?.l2RttMs ?? '-'}</td>
