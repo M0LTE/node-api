@@ -53,6 +53,11 @@ Welcome to the node-api documentation. This index provides quick navigation to a
 
 ### Developer Resources
 
+- **[Contributing Guide](../CONTRIBUTING.md)** - How to contribute to the project
+  - Development workflow
+  - Pull request process
+  - Code review checklist
+  - Testing requirements
 - **[Copilot Instructions](../.github/copilot-instructions.md)** - AI coding assistant guidelines
   - Code style standards
   - Testing practices
@@ -66,9 +71,10 @@ Welcome to the node-api documentation. This index provides quick navigation to a
 Start here if you're new to the project:
 
 1. [Main README](../README.md) - Understand what node-api does
-2. [Copilot Instructions](../.github/copilot-instructions.md) - Learn coding standards
-3. [Deployment Guide](DEPLOYMENT.md) - Get it running
-4. [Smoke Tests](../SmokeTests/README.md) - Verify it works
+2. [Contributing Guide](../CONTRIBUTING.md) - Learn how to contribute
+3. [Copilot Instructions](../.github/copilot-instructions.md) - Learn coding standards
+4. [Deployment Guide](DEPLOYMENT.md) - Get it running
+5. [Smoke Tests](../SmokeTests/README.md) - Verify it works
 
 ### For Feature Understanding
 
@@ -138,6 +144,7 @@ When contributing documentation:
 ```
 node-api/
 ├── README.md ...................... Main project overview
+├── CONTRIBUTING.md ................ Contribution guidelines
 ├── .github/
 │   └── copilot-instructions.md .... Coding standards
 ├── docs/
@@ -163,7 +170,7 @@ node-api/
 
 - **Can't find what you need?** Check the [main README](../README.md) or browse this index
 - **Found a documentation issue?** Open a GitHub issue or submit a PR
-- **Want to contribute?** See [Copilot Instructions](../.github/copilot-instructions.md)
+- **Want to contribute?** See [Contributing Guide](../CONTRIBUTING.md) and [Copilot Instructions](../.github/copilot-instructions.md)
 
 ---
 
