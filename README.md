@@ -79,6 +79,7 @@ See [Deployment Guide](docs/DEPLOYMENT.md) for production deployment instruction
 - ? [Unit Tests](Tests/) - 1,000+ comprehensive tests
 
 ### Developer Resources
+- ?? [Contributing Guide](CONTRIBUTING.md) - How to contribute to the project
 - ?? [Copilot Instructions](.github/copilot-instructions.md) - Coding standards and guidelines
 
 ## ??? Architecture
@@ -235,13 +236,17 @@ See individual feature documentation for specific troubleshooting guides.
 
 ## ?? Contributing
 
-Contributions are welcome! Please:
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
+Quick checklist:
 
 1. Review [Copilot Instructions](.github/copilot-instructions.md) for coding standards
 2. Write tests for new features (xUnit)
 3. Ensure all tests pass: `dotnet test`
 4. Follow existing code patterns and naming conventions
 5. Update documentation for new features
+
+For comprehensive contributor guidelines, workflow, and best practices, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## ?? License
 
