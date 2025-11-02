@@ -272,6 +272,9 @@
         let traceCounter = 0;
         let traceTimestamps = [];
         
+        // Configuration constants
+        const GROUP_CLUSTERING_DISTANCE = 100; // Physics edge length for nodes in same group
+        
         // Helper function to extract base callsign (without SSID)
         function getBaseCallsign(callsign) {
             if (!callsign) return '';
@@ -298,6 +301,22 @@
             }
             const index = Math.abs(hash) % groupColors.length;
             return groupColors[index];
+        }
+        
+        // Helper function to create node color configuration
+        function createNodeColorConfig(color) {
+            return {
+                border: color,
+                background: color,
+                highlight: {
+                    border: color,
+                    background: color
+                },
+                hover: {
+                    border: color,
+                    background: color
+                }
+            };
         }
 
         // Link tracker
@@ -337,18 +356,7 @@
                             size: 15,
                             title: link.endpoint1,
                             group: baseCallsign1,
-                            color: {
-                                border: color1,
-                                background: color1,
-                                highlight: {
-                                    border: color1,
-                                    background: color1
-                                },
-                                hover: {
-                                    border: color1,
-                                    background: color1
-                                }
-                            }
+                            color: createNodeColorConfig(color1)
                         });
                     }
                     if (!nodes.get(link.endpoint2)) {
@@ -361,18 +369,7 @@
                             size: 15,
                             title: link.endpoint2,
                             group: baseCallsign2,
-                            color: {
-                                border: color2,
-                                background: color2,
-                                highlight: {
-                                    border: color2,
-                                    background: color2
-                                },
-                                hover: {
-                                    border: color2,
-                                    background: color2
-                                }
-                            }
+                            color: createNodeColorConfig(color2)
                         });
                     }
                 }
@@ -407,18 +404,7 @@
                             size: 15,
                             title: link.endpoint1,
                             group: baseCallsign1,
-                            color: {
-                                border: color1,
-                                background: color1,
-                                highlight: {
-                                    border: color1,
-                                    background: color1
-                                },
-                                hover: {
-                                    border: color1,
-                                    background: color1
-                                }
-                            }
+                            color: createNodeColorConfig(color1)
                         });
                     }
                     if (!nodes.get(link.endpoint2)) {
@@ -431,18 +417,7 @@
                             size: 15,
                             title: link.endpoint2,
                             group: baseCallsign2,
-                            color: {
-                                border: color2,
-                                background: color2,
-                                highlight: {
-                                    border: color2,
-                                    background: color2
-                                },
-                                hover: {
-                                    border: color2,
-                                    background: color2
-                                }
-                            }
+                            color: createNodeColorConfig(color2)
                         });
                     }
                 }
@@ -695,18 +670,7 @@
                         size: 15,
                         title: nodeId, // Tooltip shows callsign
                         group: baseCallsign,
-                        color: {
-                            border: color,
-                            background: color,
-                            highlight: {
-                                border: color,
-                                background: color
-                            },
-                            hover: {
-                                border: color,
-                                background: color
-                            }
-                        }
+                        color: createNodeColorConfig(color)
                     });
                 } else {
                     // Update existing node to ensure it has a title
@@ -867,6 +831,9 @@
                     // Sort to ensure consistent edge creation
                     nodeList.sort();
                     // Create edges between each pair in the group (forming a complete graph)
+                    // Note: This creates O(n²) edges per group, but in practice, amateur radio
+                    // networks rarely have more than 3-4 nodes per base callsign, so the impact is minimal.
+                    // For a group of 3: 3 edges, for 4: 6 edges, for 5: 10 edges, etc.
                     for (let i = 0; i < nodeList.length - 1; i++) {
                         for (let j = i + 1; j < nodeList.length; j++) {
                             const edgeId = `group:${nodeList[i]}<->${nodeList[j]}`;
@@ -878,7 +845,7 @@
                                 to: nodeList[j],
                                 hidden: true, // Make edge invisible
                                 physics: true, // But still affected by physics
-                                length: 100, // Keep them close together
+                                length: GROUP_CLUSTERING_DISTANCE, // Keep them close together
                                 color: { opacity: 0 }, // Completely transparent
                                 value: 0 // No visual weight
                             };
