@@ -1,15 +1,19 @@
 using node_api.Models;
 using node_api.Models.NetworkState;
+using System.Text.RegularExpressions;
 
 namespace node_api.Services;
 
 /// <summary>
 /// Updates the network state based on incoming events from MQTT/UDP
 /// </summary>
-public class NetworkStateUpdater : IHostedService
+public partial class NetworkStateUpdater : IHostedService
 {
     private readonly INetworkStateService _networkState;
     private readonly ILogger<NetworkStateUpdater> _logger;
+
+    [GeneratedRegex(@"^([A-Z0-9]+)(?:-\d+)?$", RegexOptions.IgnoreCase | RegexOptions.Compiled)]
+    private static partial Regex BaseCallsignRegex();
 
     public NetworkStateUpdater(
         INetworkStateService networkState,
@@ -83,6 +87,82 @@ public class NetworkStateUpdater : IHostedService
         _logger.LogDebug("Updated node state from NodeDownEvent: {Callsign}", evt.NodeCall);
     }
 
+    /// <summary>
+    /// Extracts the base callsign without SSID (e.g., "M0LTE-5" -> "M0LTE")
+    /// </summary>
+    private static string? GetBaseCallsign(string? callsign)
+    {
+        if (string.IsNullOrWhiteSpace(callsign))
+            return null;
+
+        var match = BaseCallsignRegex().Match(callsign);
+        return match.Success ? match.Groups[1].Value.ToUpperInvariant() : null;
+    }
+
+    /// <summary>
+    /// Determines if a link can be reliably inferred from an L2Trace.
+    /// 
+    /// In AX.25, when a user makes an L2 connection through an intermediate node,
+    /// that node transmits using the user's callsign (not its own). This means
+    /// we can hear frames where the source callsign is not the actual transmitter.
+    /// 
+    /// Heuristic:
+    /// - If dirn == "sent" AND base(source) != base(reportFrom):
+    ///   The reporting node is forwarding/proxying for another station.
+    ///   The source callsign is NOT the actual transmitter - it's being impersonated.
+    ///   We should NOT infer a direct link between source and destination.
+    /// 
+    /// - If dirn == "rcvd":
+    ///   The reporting node received/overheard the frame.
+    ///   The source is the actual sender (not impersonated).
+    ///   We CAN infer a link.
+    /// 
+    /// - If dirn == "sent" AND base(source) == base(reportFrom):
+    ///   The reporting node is transmitting as itself (or one of its SSIDs).
+    ///   We CAN infer a link.
+    /// </summary>
+    /// <param name="trace">The L2Trace to analyze</param>
+    /// <returns>True if we can reliably infer a link, false if the source may be impersonated</returns>
+    private bool CanInferLinkFromTrace(L2Trace trace)
+    {
+        // If direction is not specified or is "rcvd", we can infer the link
+        if (string.IsNullOrEmpty(trace.Direction) || 
+            trace.Direction.Equals("rcvd", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        // If direction is "sent", check if source matches reporter
+        if (trace.Direction.Equals("sent", StringComparison.OrdinalIgnoreCase))
+        {
+            var sourceBase = GetBaseCallsign(trace.Source);
+            var reporterBase = GetBaseCallsign(trace.ReportFrom);
+
+            // If we can't extract base callsigns, be conservative and allow it
+            if (sourceBase == null || reporterBase == null)
+            {
+                return true;
+            }
+
+            // If the base callsigns match, the reporter is transmitting as itself
+            if (sourceBase.Equals(reporterBase, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            // Base callsigns don't match - the reporter is forwarding for someone else
+            // The source is being impersonated - DO NOT infer a direct link
+            _logger.LogDebug(
+                "Not inferring link from L2Trace: reporter={Reporter} is forwarding for source={Source} (direction=sent, base callsigns differ)",
+                trace.ReportFrom,
+                trace.Source);
+            return false;
+        }
+
+        // Unknown direction value - be conservative and allow it
+        return true;
+    }
+
     public void UpdateFromL2Trace(L2Trace trace)
     {
         if (trace.ReportFrom != null)
@@ -100,7 +180,8 @@ public class NetworkStateUpdater : IHostedService
             _logger.LogDebug("Updated node state from L2Trace: {Callsign}", trace.ReportFrom);
         }
 
-        // Also track activity for source and destination
+        // Track activity for source and destination nodes
+        // We always track node activity regardless of link inference
         if (trace.Source != null)
         {
             var node = _networkState.GetOrCreateNode(trace.Source);
@@ -121,10 +202,21 @@ public class NetworkStateUpdater : IHostedService
             }
         }
 
-        // Update link RF status if isRF information is available
+        // Update link RF status ONLY if we can reliably infer this link
         // Only update when we have definitive information (not null)
         if (trace.IsRF.HasValue && trace.Source != null && trace.Destination != null)
         {
+            // Apply the AX.25 routing heuristic
+            if (!CanInferLinkFromTrace(trace))
+            {
+                // Don't update link information when source is being impersonated
+                _logger.LogTrace(
+                    "Skipping link RF update: source {Source} appears to be impersonated by {Reporter}",
+                    trace.Source,
+                    trace.ReportFrom);
+                return;
+            }
+
             var canonicalKey = _networkState.GetCanonicalLinkKey(trace.Source, trace.Destination);
             var link = _networkState.GetLink(canonicalKey);
             
