@@ -17,6 +17,7 @@ public class MockEventRepository : IEventRepository
         int limit,
         string? cursor,
         bool includeTotalCount,
+        string sortOrder,
         CancellationToken ct)
     {
         // Return empty results for testing

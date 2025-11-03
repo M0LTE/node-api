@@ -14,5 +14,6 @@ public interface ITraceRepository
         int limit,
         string? cursor,
         bool includeTotalCount,
+        string sortOrder,
         CancellationToken ct);
 }

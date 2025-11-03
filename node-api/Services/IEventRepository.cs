@@ -16,5 +16,6 @@ public interface IEventRepository
         int limit,
         string? cursor,
         bool includeTotalCount,
+        string sortOrder,
         CancellationToken ct);
 }

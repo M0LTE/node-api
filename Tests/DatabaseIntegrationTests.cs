@@ -148,7 +148,7 @@ public class DatabaseIntegrationTests : IDisposable
         
         var (traces, _, _) = await repository.GetTracesAsync(
             null, null, DateTime.UtcNow.AddMinutes(-1), DateTime.UtcNow, 
-            null, new[] { "TEST-INT" }, 5, null, false, default);
+            null, new[] { "TEST-INT" }, 5, null, false, "ASC", default);
 
         // Assert
         Assert.NotNull(traces);
@@ -171,6 +171,7 @@ public class DatabaseIntegrationTests : IDisposable
             limit: 1,
             cursor: null,
             includeTotalCount: true,
+            sortOrder: "ASC",
             ct: default);
 
         Assert.NotNull(traces);
@@ -193,7 +194,7 @@ public class DatabaseIntegrationTests : IDisposable
         
         var (events, _, _) = await repository.GetEventsAsync(
             "TEST-NODE", null, null, null, null, null,
-            DateTime.UtcNow.AddMinutes(-1), DateTime.UtcNow, 5, null, false, default);
+            DateTime.UtcNow.AddMinutes(-1), DateTime.UtcNow, 5, null, false, "ASC", default);
 
         // Assert
         Assert.NotNull(events);
@@ -218,6 +219,7 @@ public class DatabaseIntegrationTests : IDisposable
             limit: 1,
             cursor: null,
             includeTotalCount: true,
+            sortOrder: "ASC",
             ct: default);
 
         Assert.NotNull(events);
@@ -307,8 +309,8 @@ public class DatabaseIntegrationTests : IDisposable
         var stateRepo = new MySqlNetworkStateRepository(_stateLogger, _tracker);
 
         // Act & Assert - Should complete without errors
-        await traceRepo.GetTracesAsync(null, null, null, null, null, null, 1, null, false, default);
-        await eventRepo.GetEventsAsync(null, null, null, null, null, null, null, null, 1, null, false, default);
+        await traceRepo.GetTracesAsync(null, null, null, null, null, null, 1, null, false, "ASC", default);
+        await eventRepo.GetEventsAsync(null, null, null, null, null, null, null, null, 1, null, false, "ASC", default);
         await stateRepo.GetAllNodesAsync();
     }
 
@@ -323,7 +325,7 @@ public class DatabaseIntegrationTests : IDisposable
         for (int i = 0; i < 10; i++)
         {
             tasks.Add(traceRepo.GetTracesAsync(
-                null, null, null, null, null, null, 5, null, false, default));
+                null, null, null, null, null, null, 5, null, false, "ASC", default));
         }
 
         // Assert - Should not throw or deadlock
@@ -347,6 +349,7 @@ public class DatabaseIntegrationTests : IDisposable
             limit: 100,
             cursor: null,
             includeTotalCount: true,
+            sortOrder: "ASC",
             ct: default);
 
         // Assert
@@ -367,8 +370,8 @@ public class DatabaseIntegrationTests : IDisposable
         var errorRepo = new MySqlErroredMessageRepository(_errorLogger, _tracker);
 
         // Act & Assert - Each operation should succeed
-        await traceRepo.GetTracesAsync(null, null, null, null, null, null, 1, null, true, default);
-        await eventRepo.GetEventsAsync(null, null, null, null, null, null, null, null, 1, null, true, default);
+        await traceRepo.GetTracesAsync(null, null, null, null, null, null, 1, null, true, "ASC", default);
+        await eventRepo.GetEventsAsync(null, null, null, null, null, null, null, null, 1, null, true, "ASC", default);
         await stateRepo.GetAllNodesAsync();
         await stateRepo.GetAllLinksAsync();
         await stateRepo.GetAllCircuitsAsync();

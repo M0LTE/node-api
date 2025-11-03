@@ -56,6 +56,7 @@ public class MySqlEventRepository(ILogger<MySqlEventRepository> logger, QueryFre
         int limit,
         string? cursor,
         bool includeTotalCount,
+        string sortOrder,
         CancellationToken ct)
     {
         var where = new List<string> { "1=1" };
@@ -109,13 +110,18 @@ public class MySqlEventRepository(ILogger<MySqlEventRepository> logger, QueryFre
             p.Add("to", to.Value.UtcDateTime);
         }
 
-        // Keyset pagination on (timestamp DESC, id DESC)
+        // Determine sort direction and pagination operator
+        var isAscending = sortOrder == "ASC";
+        var comparisonOp = isAscending ? ">" : "<";
+        var orderByClause = $"ORDER BY `timestamp` {sortOrder}, `id` {sortOrder}";
+
+        // Keyset pagination
         if (!string.IsNullOrEmpty(cursor))
         {
             if (!TryDecodeCursor(cursor, out var tsLast, out var idLast))
                 throw new ArgumentException("Invalid cursor.");
 
-            where.Add("(`timestamp` < @cts OR (`timestamp` = @cts AND `id` < @cid))");
+            where.Add($"(`timestamp` {comparisonOp} @cts OR (`timestamp` = @cts AND `id` {comparisonOp} @cid))");
             p.Add("cts", tsLast);
             p.Add("cid", idLast);
         }
@@ -127,7 +133,7 @@ public class MySqlEventRepository(ILogger<MySqlEventRepository> logger, QueryFre
               `json` as event
             FROM `events`
             WHERE {string.Join(" AND ", where)}
-            ORDER BY `timestamp` DESC, `id` DESC
+            {orderByClause}
             LIMIT @lim";
 
         p.Add("lim", limit);

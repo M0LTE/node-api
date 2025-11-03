@@ -15,6 +15,7 @@ public class MockTraceRepository : ITraceRepository
         int limit,
         string? cursor,
         bool includeTotalCount,
+        string sortOrder,
         CancellationToken ct)
     {
         // Return empty results for testing
