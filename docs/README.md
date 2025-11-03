@@ -99,6 +99,7 @@ Running and maintaining the service:
 | Monitor query load | [QUERY_FREQUENCY_DIAGNOSTICS.md](QUERY_FREQUENCY_DIAGNOSTICS.md) |
 | Troubleshoot loops | [TRAFFIC_LOOP_FIX.md](TRAFFIC_LOOP_FIX.md) |
 | Run smoke tests | [Smoke Tests](../SmokeTests/README.md) |
+| Configure database tests | [CI_CD_DATABASE_TESTS.md](CI_CD_DATABASE_TESTS.md) |
 | View change history | [CHANGELOG.md](CHANGELOG.md) |
 
 ### For Troubleshooting

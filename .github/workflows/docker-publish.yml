@@ -35,7 +35,7 @@ jobs:
         run: dotnet restore
 
       - name: Run tests
-        run: dotnet test Tests/ --no-restore --configuration Release --logger "console;verbosity=minimal"
+        run: dotnet test Tests/ --no-restore --configuration Release --logger "console;verbosity=minimal" --filter "Category!=DatabaseIntegration"
 
       - name: Log in to Docker Hub
         if: github.event_name != 'pull_request'

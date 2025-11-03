@@ -4,7 +4,9 @@
 
 The `DatabaseIntegrationTests.cs` file contains comprehensive integration tests that verify the node-api codebase is compatible with the deployed MySQL database schema and configuration.
 
-**These tests are NOT run as part of the normal test suite.** They require a live database connection and should be run manually after:
+**These tests are NOT run as part of the normal test suite or CI/CD pipelines.** They are tagged with `[Trait("Category", "DatabaseIntegration")]` and excluded from GitHub Actions to prevent build failures when database credentials are not available.
+
+They require a live database connection and should be run manually after:
 
 - Schema migrations
 - Database configuration changes  

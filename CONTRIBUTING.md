@@ -194,6 +194,7 @@ See [Copilot Instructions](.github/copilot-instructions.md) for comprehensive gu
 
 - **Unit tests**: `/Tests` - Fast, isolated tests with mocked dependencies
 - **Smoke tests**: `/SmokeTests` - End-to-end tests requiring running service
+- **Database integration tests**: `/Tests` - Tagged with `[Trait("Category", "DatabaseIntegration")]` - **not run in CI/CD**
 
 ### Test Requirements
 
@@ -206,11 +207,14 @@ See [Copilot Instructions](.github/copilot-instructions.md) for comprehensive gu
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run all tests (excludes database integration tests by default in CI/CD)
 dotnet test
 
-# Run only unit tests
-dotnet test Tests/
+# Run only unit tests (fast)
+dotnet test Tests/ --filter "Category!=DatabaseIntegration"
+
+# Run database integration tests manually (requires database configuration)
+dotnet test Tests/ --filter "Category=DatabaseIntegration"
 
 # Run only smoke tests (requires running service)
 dotnet test SmokeTests/
@@ -218,6 +222,15 @@ dotnet test SmokeTests/
 # Run with coverage (if configured)
 dotnet test /p:CollectCoverage=true
 ```
+
+### Database Integration Tests
+
+Database integration tests are **excluded from GitHub Actions CI/CD** because they require:
+- Live MySQL database connection
+- User Secrets or environment variables configured locally
+- Should only be run manually before deployment
+
+See [`Tests/DATABASE_INTEGRATION_TESTS.md`](../Tests/DATABASE_INTEGRATION_TESTS.md) for setup instructions.
 
 ## 📝 Commit Message Guidelines
 
