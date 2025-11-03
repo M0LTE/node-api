@@ -10,6 +10,7 @@
     <ContainerRegistry>docker.io</ContainerRegistry>
     <ContainerRepository>m0lte/node-api</ContainerRepository>
     <ContainerImageTags>latest</ContainerImageTags>
+    <UserSecretsId>6471d754-eb95-4d79-9bc3-fc026e9852bf</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

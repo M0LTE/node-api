@@ -10,6 +10,9 @@ using IPNetwork = Microsoft.AspNetCore.HttpOverrides.IPNetwork;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Initialize database configuration (supports User Secrets in Development)
+Database.Initialize(builder.Configuration);
+
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole(options =>
 {
