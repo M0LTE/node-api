@@ -7,10 +7,10 @@ using System.Text.Json;
 namespace node_api.Controllers;
 
 /// <summary>
-/// Controller for diagnosing and validating events and traces before sending them via UDP
+/// Controller for system diagnostics and validation
 /// </summary>
 [ApiController]
-[Route("api/diagnostics")]
+[Route("api/system")]
 public class DiagnosticsController : ControllerBase
 {
     private readonly DatagramValidationService _validationService;

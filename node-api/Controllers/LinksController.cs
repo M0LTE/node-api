@@ -4,7 +4,7 @@ using node_api.Services;
 namespace node_api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/network/links")]
 public class LinksController : ControllerBase
 {
     private readonly INetworkStateService _networkState;

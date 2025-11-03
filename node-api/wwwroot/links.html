@@ -559,7 +559,7 @@
         // Fetch initial link state from API
         async function loadInitialState() {
             try {
-                const response = await fetch('/api/links');
+                const response = await fetch('/api/network/links');
                 if (response.ok) {
                     const links = await response.json();
                     console.log(`Loaded ${links.length} links from API`);
@@ -599,7 +599,7 @@
         // Periodically sync flap data from the API (every 10 seconds)
         async function syncFlapDataFromAPI() {
             try {
-                const response = await fetch('/api/links');
+                const response = await fetch('/api/network/links');
                 if (response.ok) {
                     const links = await response.json();
                     
@@ -754,6 +754,7 @@
                             const statusClass = link.status === 'active' ? 'active' : 'disconnected';
                             const statusTitle = link.status === 'active' ? 'Active' : 'Disconnected';
                             
+
                             // Check if link is flapping
                             const isFlapping = linkTracker.isFlapping(link);
                             const rowClass = isFlapping ? 'flapping' : '';

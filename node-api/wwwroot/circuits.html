@@ -365,7 +365,7 @@
         // Fetch initial circuit state from API
         async function loadInitialState() {
             try {
-                const response = await fetch('/api/circuits');
+                const response = await fetch('/api/network/circuits');
                 if (response.ok) {
                     const circuits = await response.json();
                     console.log(`Loaded ${circuits.length} circuits from API`);

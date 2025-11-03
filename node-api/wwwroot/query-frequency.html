@@ -242,7 +242,7 @@
 
         async function fetchQueryData() {
             try {
-                const response = await fetch('/api/diagnostics/db/query-frequency');
+                const response = await fetch('/api/system/db/query-frequency');
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }

@@ -5,7 +5,7 @@ using System.Text.Json;
 namespace node_api.Controllers;
 
 [ApiController]
-[Route("api/events")]
+[Route("api/history/events")]
 public class EventsController(IEventRepository repository) : ControllerBase
 {
     // GET /api/events?node=...&type=...&direction=...&remote=...&local=...&port=...&from=...&to=...&limit=...&cursor=...&includeCount=...

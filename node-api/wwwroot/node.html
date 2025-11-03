@@ -584,7 +584,7 @@
         // Fetch server time for accurate time calculations
         async function fetchServerTime() {
             try {
-                const response = await fetch('/api/diagnostics/server-time');
+                const response = await fetch('/api/system/server-time');
                 if (response.ok) {
                     const data = await response.json();
                     if (data.serverTime) {
@@ -619,7 +619,7 @@
         async function loadInitialState() {
             try {
                 // Load all SSIDs for this base callsign
-                const nodesResponse = await fetch(`/api/nodes/base/${baseCallsign}`);
+                const nodesResponse = await fetch(`/api/network/nodes/base/${baseCallsign}`);
                 if (nodesResponse.ok) {
                     const nodes = await nodesResponse.json();
                     console.log(`Loaded ${nodes.length} nodes for ${baseCallsign} from API`);
@@ -651,7 +651,7 @@
                 }
 
                 // Load all links for this base callsign
-                const linksResponse = await fetch(`/api/links/base/${baseCallsign}`);
+                const linksResponse = await fetch(`/api/network/links/base/${baseCallsign}`);
                 if (linksResponse.ok) {
                     const links = await linksResponse.json();
                     console.log(`Loaded ${links.length} links for ${baseCallsign} from API`);

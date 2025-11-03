@@ -478,7 +478,7 @@
         // Load initial state from API
         async function loadInitialState() {
             try {
-                const response = await fetch('/api/links');
+                const response = await fetch('/api/network/links');
                 if (response.ok) {
                     const links = await response.json();
                     console.log(`Loaded ${links.length} links from API`);

@@ -5,7 +5,7 @@ using System.Text.Json;
 namespace node_api.Controllers;
 
 [ApiController]
-[Route("api/traces")]
+[Route("api/history/traces")]
 public class TracesController(ITraceRepository repository) : ControllerBase
 {
     // GET /api/traces?source=...&dest=...&from=...&to=...&type=...&reportFrom=...&limit=...&cursor=...&includeCount=...

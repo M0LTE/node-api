@@ -698,7 +698,7 @@
         // Fetch initial node state from API
         async function loadInitialState() {
             try {
-                const response = await fetch('/api/nodes');
+                const response = await fetch('/api/network/nodes');
                 if (response.ok) {
                     const nodes = await response.json();
                     console.log(`Loaded ${nodes.length} nodes from API`);
@@ -726,7 +726,7 @@
         // Fetch rate limit stats from API
         async function fetchRateLimitStats() {
             try {
-                const response = await fetch('/api/diagnostics/ratelimit/stats');
+                const response = await fetch('/api/system/ratelimit/stats');
                 if (response.ok) {
                     rateLimitStats = await response.json();
                     
