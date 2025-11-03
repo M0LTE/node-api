@@ -71,7 +71,7 @@ public class HttpApiSmokeTests : IClassFixture<SmokeTestFixture>
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -96,7 +96,7 @@ public class HttpApiSmokeTests : IClassFixture<SmokeTestFixture>
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -118,7 +118,7 @@ public class HttpApiSmokeTests : IClassFixture<SmokeTestFixture>
         var json = "{ invalid json }";
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -133,7 +133,7 @@ public class HttpApiSmokeTests : IClassFixture<SmokeTestFixture>
     public async Task Validate_Endpoint_Should_Support_CORS()
     {
         // Arrange
-        var request = new HttpRequestMessage(HttpMethod.Post, "/api/diagnostics/validate")
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/system/validate")
         {
             Content = new StringContent("{\"@type\": \"NodeUpEvent\"}", Encoding.UTF8, "application/json")
         };

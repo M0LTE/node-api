@@ -37,7 +37,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -68,7 +68,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -101,7 +101,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -131,7 +131,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -159,7 +159,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -179,7 +179,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         var json = "This is not JSON";
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -205,7 +205,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -233,7 +233,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -259,7 +259,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -286,7 +286,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -328,7 +328,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -360,7 +360,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -390,7 +390,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -420,7 +420,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -450,7 +450,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         }
         """;
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -497,7 +497,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -554,7 +554,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -600,7 +600,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "text/plain"));
 
         // Assert
@@ -624,7 +624,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -666,7 +666,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -707,7 +707,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -733,7 +733,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -755,7 +755,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         var json = "{}";
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -778,7 +778,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -804,7 +804,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -831,7 +831,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         """;
 
         // Act
-        var response = await _client.PostAsync("/api/diagnostics/validate",
+        var response = await _client.PostAsync("/api/system/validate",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         // Assert
@@ -866,7 +866,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
             "nodeAlias": "XRLN64"
         }
         """;
-        var request = new HttpRequestMessage(HttpMethod.Post, "/api/diagnostics/validate")
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/system/validate")
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json")
         };
@@ -888,7 +888,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
     public async Task ServerTime_Endpoint_Should_Return_Current_Time()
     {
         // Act
-        var response = await _client.GetAsync("/api/diagnostics/server-time");
+        var response = await _client.GetAsync("/api/system/server-time");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -901,7 +901,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
     public async Task ServerTime_Endpoint_Should_Return_Utc_Time()
     {
         // Act
-        var response = await _client.GetAsync("/api/diagnostics/server-time");
+        var response = await _client.GetAsync("/api/system/server-time");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -914,7 +914,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
     public async Task ServerTime_Endpoint_Should_Have_Correct_Content_Type()
     {
         // Act
-        var response = await _client.GetAsync("/api/diagnostics/server-time");
+        var response = await _client.GetAsync("/api/system/server-time");
 
         // Assert
         response.Content.Headers.ContentType?.MediaType.Should().Be("application/json");
@@ -924,7 +924,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
     public async Task ServerTime_Endpoint_Should_Support_CORS()
     {
         // Arrange
-        var request = new HttpRequestMessage(HttpMethod.Get, "/api/diagnostics/server-time");
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/system/server-time");
         request.Headers.Add("Origin", "https://example.com");
 
         // Act
@@ -943,7 +943,7 @@ public class DiagnosticsControllerTests : IClassFixture<TestWebApplicationFactor
         // Act
         for (int i = 0; i < 3; i++)
         {
-            var response = await _client.GetAsync("/api/diagnostics/server-time");
+            var response = await _client.GetAsync("/api/system/server-time");
             var result = await response.Content.ReadFromJsonAsync<ServerTimeResponse>();
             times.Add(result!.ServerTime);
             await Task.Delay(10); // Small delay between calls

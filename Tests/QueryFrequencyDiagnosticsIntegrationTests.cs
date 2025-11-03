@@ -24,7 +24,7 @@ public class QueryFrequencyDiagnosticsIntegrationTests : IClassFixture<TestWebAp
     public async Task Should_Return_Empty_Stats_When_No_Queries_Have_Been_Made()
     {
         // Act
-        var response = await _client.GetAsync("/api/diagnostics/db/query-frequency");
+        var response = await _client.GetAsync("/api/system/db/query-frequency");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -39,7 +39,7 @@ public class QueryFrequencyDiagnosticsIntegrationTests : IClassFixture<TestWebAp
     public async Task Endpoint_Should_Have_Correct_Content_Type()
     {
         // Act
-        var response = await _client.GetAsync("/api/diagnostics/db/query-frequency");
+        var response = await _client.GetAsync("/api/system/db/query-frequency");
 
         // Assert
         response.Content.Headers.ContentType?.MediaType.Should().Be("application/json");
@@ -49,10 +49,10 @@ public class QueryFrequencyDiagnosticsIntegrationTests : IClassFixture<TestWebAp
     public async Task Stats_Should_Have_Expected_Structure()
     {
         // Arrange - Make a request that might trigger some DB queries
-        await _client.GetAsync("/api/traces?limit=1");
+        await _client.GetAsync("/api/history/traces?limit=1");
 
         // Act
-        var response = await _client.GetAsync("/api/diagnostics/db/query-frequency");
+        var response = await _client.GetAsync("/api/system/db/query-frequency");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -82,18 +82,18 @@ public class QueryFrequencyDiagnosticsIntegrationTests : IClassFixture<TestWebAp
     public async Task Stats_Should_Accumulate_Over_Multiple_Requests()
     {
         // Arrange - Get initial stats
-        var initialResponse = await _client.GetAsync("/api/diagnostics/db/query-frequency");
+        var initialResponse = await _client.GetAsync("/api/system/db/query-frequency");
         var initialResult = await initialResponse.Content.ReadFromJsonAsync<QueryFrequencyTracker.QueryFrequencyResponse>();
         var initialTotalQueries = initialResult?.Queries.Sum(s => s.TotalCount) ?? 0;
 
         // Act - Make several requests that will trigger DB queries
         for (int i = 0; i < 3; i++)
         {
-            await _client.GetAsync("/api/traces?limit=1");
+            await _client.GetAsync("/api/history/traces?limit=1");
         }
 
         // Get updated stats
-        var updatedResponse = await _client.GetAsync("/api/diagnostics/db/query-frequency");
+        var updatedResponse = await _client.GetAsync("/api/system/db/query-frequency");
         var updatedResult = await updatedResponse.Content.ReadFromJsonAsync<QueryFrequencyTracker.QueryFrequencyResponse>();
         var updatedTotalQueries = updatedResult?.Queries.Sum(s => s.TotalCount) ?? 0;
 
@@ -106,10 +106,10 @@ public class QueryFrequencyDiagnosticsIntegrationTests : IClassFixture<TestWebAp
     public async Task Stats_Should_Show_Method_Names()
     {
         // Arrange - Make a request to trigger GetTracesAsync
-        await _client.GetAsync("/api/traces?limit=1");
+        await _client.GetAsync("/api/history/traces?limit=1");
 
         // Act
-        var response = await _client.GetAsync("/api/diagnostics/db/query-frequency");
+        var response = await _client.GetAsync("/api/system/db/query-frequency");
         var result = await response.Content.ReadFromJsonAsync<QueryFrequencyTracker.QueryFrequencyResponse>();
 
         // Assert
@@ -126,11 +126,11 @@ public class QueryFrequencyDiagnosticsIntegrationTests : IClassFixture<TestWebAp
     public async Task Stats_Should_Be_Sorted_By_Total_Count_Descending()
     {
         // Arrange - Trigger some queries
-        await _client.GetAsync("/api/traces?limit=1");
-        await _client.GetAsync("/api/events?limit=1");
+        await _client.GetAsync("/api/history/traces?limit=1");
+        await _client.GetAsync("/api/history/events?limit=1");
 
         // Act
-        var response = await _client.GetAsync("/api/diagnostics/db/query-frequency");
+        var response = await _client.GetAsync("/api/system/db/query-frequency");
         var result = await response.Content.ReadFromJsonAsync<QueryFrequencyTracker.QueryFrequencyResponse>();
 
         // Assert

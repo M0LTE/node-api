@@ -123,7 +123,7 @@ public class QueryFrequencyTrackerTests : IClassFixture<TestWebApplicationFactor
         // Arrange - The endpoint should exist and return OK even with no data
 
         // Act
-        var response = await _client.GetAsync("/api/diagnostics/db/query-frequency");
+        var response = await _client.GetAsync("/api/system/db/query-frequency");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -232,7 +232,7 @@ public class QueryFrequencyTrackerTests : IClassFixture<TestWebApplicationFactor
         // Arrange - The endpoint should return the new format with serverTime
 
         // Act
-        var response = await _client.GetAsync("/api/diagnostics/db/query-frequency");
+        var response = await _client.GetAsync("/api/system/db/query-frequency");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
