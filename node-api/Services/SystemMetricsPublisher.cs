@@ -491,7 +491,7 @@ public class SystemMetricsPublisher : BackgroundService
 
             await _mqttClient.EnqueueAsync(message);
 
-            _logger.LogInformation(
+            _logger.LogDebug(
                 "Published system metrics: DB Conn={Connections}, DB QPS={QPS}, Disk={DiskPct}%, CPU={CpuPct}%, Mem={MemPct}%, App Memory={MemoryMB}MB",
                 metrics.Database?.Connections ?? 0,
                 metrics.Database?.QueriesPerSecond ?? 0,
