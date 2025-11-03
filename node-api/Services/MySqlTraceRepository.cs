@@ -62,7 +62,7 @@ public partial class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger, 
         DateTimeOffset? from,
         DateTimeOffset? to,
         string? type,
-        string? reportFrom,
+        string[]? reportFrom,
         int limit,
         string? cursor,
         bool includeTotalCount,
@@ -72,10 +72,23 @@ public partial class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger, 
         var p = new DynamicParameters();
 
         // Exclude TEST callsigns from reportFrom unless explicitly requested
-        if (!string.IsNullOrWhiteSpace(reportFrom))
+        if (reportFrom != null && reportFrom.Length > 0)
         {
-            where.Add("`reportFrom_idx` = @reportFrom");
-            p.Add("reportFrom", reportFrom);
+            // Filter out null/empty values
+            var validCallsigns = reportFrom.Where(c => !string.IsNullOrWhiteSpace(c)).ToArray();
+            
+            if (validCallsigns.Length > 0)
+            {
+                // Build IN clause for multiple callsigns
+                var paramNames = new List<string>();
+                for (int i = 0; i < validCallsigns.Length; i++)
+                {
+                    var paramName = $"reportFrom{i}";
+                    paramNames.Add($"@{paramName}");
+                    p.Add(paramName, validCallsigns[i]);
+                }
+                where.Add($"`reportFrom_idx` IN ({string.Join(", ", paramNames)})");
+            }
         }
         else
         {

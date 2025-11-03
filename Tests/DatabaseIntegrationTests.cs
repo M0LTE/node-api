@@ -148,7 +148,7 @@ public class DatabaseIntegrationTests : IDisposable
         
         var (traces, _, _) = await repository.GetTracesAsync(
             null, null, DateTime.UtcNow.AddMinutes(-1), DateTime.UtcNow, 
-            null, "TEST-INT", 5, null, false, default);
+            null, new[] { "TEST-INT" }, 5, null, false, default);
 
         // Assert
         Assert.NotNull(traces);
@@ -167,7 +167,7 @@ public class DatabaseIntegrationTests : IDisposable
             from: DateTime.UtcNow.AddDays(-1),
             to: DateTime.UtcNow,
             type: "UI",
-            reportFrom: "ANY",
+            reportFrom: new[] { "ANY" },
             limit: 1,
             cursor: null,
             includeTotalCount: true,

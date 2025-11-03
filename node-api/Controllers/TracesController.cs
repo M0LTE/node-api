@@ -8,7 +8,7 @@ namespace node_api.Controllers;
 [Route("api/history/traces")]
 public class TracesController(ITraceRepository repository) : ControllerBase
 {
-    // GET /api/traces?source=...&dest=...&from=...&to=...&type=...&reportFrom=...&limit=...&cursor=...&includeCount=...
+    // GET /api/traces?source=...&dest=...&from=...&to=...&type=...&reportFrom=...&reportFrom=...&limit=...&cursor=...&includeCount=...
     [HttpGet]
     public async Task<ActionResult<PagedResult<TraceDto>>> GetAsync(
         [FromQuery] string? source,
@@ -16,7 +16,7 @@ public class TracesController(ITraceRepository repository) : ControllerBase
         [FromQuery] DateTimeOffset? from,
         [FromQuery] DateTimeOffset? to,
         [FromQuery] string? type,
-        [FromQuery] string? reportFrom,
+        [FromQuery] string[]? reportFrom,
         [FromQuery] int limit = 100,
         [FromQuery] string? cursor = null,
         [FromQuery] bool includeCount = false,

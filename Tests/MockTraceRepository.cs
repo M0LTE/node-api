@@ -11,7 +11,7 @@ public class MockTraceRepository : ITraceRepository
         DateTimeOffset? from,
         DateTimeOffset? to,
         string? type,
-        string? reportFrom,
+        string[]? reportFrom,
         int limit,
         string? cursor,
         bool includeTotalCount,
