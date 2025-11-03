@@ -2,6 +2,7 @@ using node_api.Services;
 using System.Text.Json;
 using Xunit;
 using Microsoft.Extensions.Configuration;
+using Dapper;
 
 namespace Tests;
 
@@ -26,6 +27,9 @@ namespace Tests;
 ///    dotnet user-secrets set "DB_USER" "your-user"
 ///    dotnet user-secrets set "DB_PASSWORD" "your-password"
 ///    dotnet user-secrets set "DB_NAME" "your-database"
+/// 
+/// Note: These tests clean up after themselves by deleting ONLY test-specific data.
+/// Test data is marked with special markers (TEST-INT-{guid}, TEST-NODE-{guid}, etc.)
 /// </summary>
 [Trait("Category", "DatabaseIntegration")]
 [Trait("Category", "ManualTest")]
@@ -37,8 +41,17 @@ public class DatabaseIntegrationTests : IDisposable
     private readonly ILogger<MySqlErroredMessageRepository> _errorLogger;
     private readonly QueryFrequencyTracker _tracker;
     
+    // Unique test run identifier to safely distinguish test data from production data
+    private readonly string _testRunId;
+    // Track test start time for efficient timestamp-based filtering
+    private readonly DateTime _testStartTime;
+    
     public DatabaseIntegrationTests()
     {
+        // Generate unique ID for this test run to safely identify test data
+        _testRunId = Guid.NewGuid().ToString("N")[..8];
+        _testStartTime = DateTime.UtcNow.AddSeconds(-1); // Buffer for timing issues
+        
         // Build configuration that includes User Secrets
         var configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
@@ -60,6 +73,62 @@ public class DatabaseIntegrationTests : IDisposable
 
     public void Dispose()
     {
+        try
+        {
+            using var connection = Database.GetConnection();
+            
+            // SAFE + FAST cleanup: Combine timestamp range (for speed) with unique test ID (for safety)
+            // This uses the indexed timestamp column for fast filtering, 
+            // then applies the unique ID pattern as a secondary safety check
+            var testEndTime = DateTime.UtcNow.AddSeconds(1); // Buffer for timing issues
+            
+            var deletedTraces = connection.Execute(@"
+                DELETE FROM traces 
+                WHERE timestamp >= @start 
+                  AND timestamp <= @end 
+                  AND (json LIKE @testIntPattern OR json LIKE @testSchemaPattern)",
+                new { 
+                    start = _testStartTime, 
+                    end = testEndTime,
+                    testIntPattern = $"%TEST-INT-{_testRunId}%",
+                    testSchemaPattern = $"%TEST-SCHEMA-{_testRunId}%"
+                });
+            
+            var deletedEvents = connection.Execute(@"
+                DELETE FROM events 
+                WHERE timestamp >= @start 
+                  AND timestamp <= @end 
+                  AND (json LIKE @testNodePattern OR json LIKE @testSchemaPattern)",
+                new { 
+                    start = _testStartTime, 
+                    end = testEndTime,
+                    testNodePattern = $"%TEST-NODE-{_testRunId}%",
+                    testSchemaPattern = $"%TEST-SCHEMA-{_testRunId}%"
+                });
+            
+            var deletedErrors = connection.Execute(@"
+                DELETE FROM errored_messages 
+                WHERE timestamp >= @start 
+                  AND timestamp <= @end 
+                  AND (reason LIKE @integrationTestPattern OR reason LIKE @testPattern)",
+                new { 
+                    start = _testStartTime, 
+                    end = testEndTime,
+                    integrationTestPattern = $"Integration test %{_testRunId}%",
+                    testPattern = $"Test-{_testRunId}%"
+                });
+            
+            if (deletedTraces > 0 || deletedEvents > 0 || deletedErrors > 0)
+            {
+                Console.WriteLine($"[{_testRunId}] Cleaned up test data: {deletedTraces} traces, {deletedEvents} events, {deletedErrors} errors");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Log cleanup failures but don't throw - we're already disposing
+            Console.WriteLine($"Warning: Failed to clean up test data: {ex.Message}");
+        }
+        
         GC.SuppressFinalize(this);
     }
 
@@ -140,7 +209,8 @@ public class DatabaseIntegrationTests : IDisposable
     {
         // Arrange
         var repository = new MySqlTraceRepository(_traceLogger, _tracker);
-        var json = JsonSerializer.Serialize(new { type = "L2Trace", reportFrom = "TEST-INT" });
+        var testCallsign = $"TEST-INT-{_testRunId}";
+        var json = JsonSerializer.Serialize(new { type = "L2Trace", reportFrom = testCallsign });
         
         // Act
         await repository.InsertTraceAsync(json, DateTime.UtcNow);
@@ -148,7 +218,7 @@ public class DatabaseIntegrationTests : IDisposable
         
         var (traces, _, _) = await repository.GetTracesAsync(
             null, null, DateTime.UtcNow.AddMinutes(-1), DateTime.UtcNow, 
-            null, new[] { "TEST-INT" }, 5, null, false, "ASC", default);
+            null, new[] { testCallsign }, 5, null, false, "ASC", default);
 
         // Assert
         Assert.NotNull(traces);
@@ -186,14 +256,15 @@ public class DatabaseIntegrationTests : IDisposable
     {
         // Arrange
         var repository = new MySqlEventRepository(_eventLogger, _tracker);
-        var json = JsonSerializer.Serialize(new { type = "LinkUpEvent", node = "TEST-NODE" });
+        var testNode = $"TEST-NODE-{_testRunId}";
+        var json = JsonSerializer.Serialize(new { type = "LinkUpEvent", node = testNode });
         
         // Act
         await repository.InsertEventAsync(json, DateTime.UtcNow);
         await Task.Delay(100);
         
         var (events, _, _) = await repository.GetEventsAsync(
-            "TEST-NODE", null, null, null, null, null,
+            testNode, null, null, null, null, null,
             DateTime.UtcNow.AddMinutes(-1), DateTime.UtcNow, 5, null, false, "ASC", default);
 
         // Assert
@@ -274,7 +345,7 @@ public class DatabaseIntegrationTests : IDisposable
 
         // Act & Assert - Should not throw
         await repository.InsertErroredMessageAsync(
-            reason: "Integration test validation error",
+            reason: $"Integration test validation error {_testRunId}",
             datagram: "LinkUpEvent",
             type: "LinkUpEvent",
             errors: "Test error message",
@@ -289,7 +360,7 @@ public class DatabaseIntegrationTests : IDisposable
 
         // Act & Assert - Should not throw
         await repository.InsertErroredMessageAsync(
-            reason: "Integration test generic error",
+            reason: $"Integration test generic error {_testRunId}",
             datagram: null,
             type: null,
             errors: null,
@@ -376,10 +447,11 @@ public class DatabaseIntegrationTests : IDisposable
         await stateRepo.GetAllLinksAsync();
         await stateRepo.GetAllCircuitsAsync();
 
-        var testJson = JsonSerializer.Serialize(new { type = "Test" });
+        // Use unique test identifiers for inserted data
+        var testJson = JsonSerializer.Serialize(new { type = $"TEST-SCHEMA-{_testRunId}" });
         await traceRepo.InsertTraceAsync(testJson);
         await eventRepo.InsertEventAsync(testJson);
-        await errorRepo.InsertErroredMessageAsync("Test", json: testJson);
+        await errorRepo.InsertErroredMessageAsync($"Test-{_testRunId}", json: testJson);
     }
 
     #endregion
