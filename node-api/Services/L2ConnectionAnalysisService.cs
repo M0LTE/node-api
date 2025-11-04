@@ -201,50 +201,16 @@ public class L2ConnectionAnalysisService(
         var dir1To2 = BuildDirectionalMetrics(direction1To2Stats);
         var dir2To1 = BuildDirectionalMetrics(direction2To1Stats);
 
-        // Get session count from events
-        var eventData = await eventRepository.GetEventsAsync(
-            node: null,
-            type: "LinkDownEvent",
-            direction: null,
-            remote: null,
-            local: null,
-            port: null,
-            from: from,
-            to: to,
-            limit: 10000, // Large limit to get all sessions
-            cursor: null,
-            includeTotalCount: false,
-            sortOrder: "ASC",
-            ct: ct);
+        // Get session information from link events
+        var eventData = await eventRepository.GetLinkEventsBetweenEndpointsAsync(
+            endpoint1, endpoint2, from, to, ct);
+        var sessions = BuildSessionsFromEvents(eventData);
 
-        // Count sessions and calculate total duration
-        var sessionCount = 0;
-        var totalDuration = 0;
-
-        foreach (var evt in eventData.Data)
-        {
-            var root = evt.Event;
-            
-            // Check if this is a link between our two endpoints
-            if (root.TryGetProperty("local", out var local) && 
-                root.TryGetProperty("remote", out var remote))
-            {
-                var localVal = local.GetString() ?? "";
-                var remoteVal = remote.GetString() ?? "";
-                
-                if ((localVal.Equals(endpoint1, StringComparison.OrdinalIgnoreCase) && 
-                     remoteVal.Equals(endpoint2, StringComparison.OrdinalIgnoreCase)) ||
-                    (localVal.Equals(endpoint2, StringComparison.OrdinalIgnoreCase) && 
-                     remoteVal.Equals(endpoint1, StringComparison.OrdinalIgnoreCase)))
-                {
-                    sessionCount++;
-                    if (root.TryGetProperty("upForSecs", out var upForSecs))
-                    {
-                        totalDuration += upForSecs.GetInt32();
-                    }
-                }
-            }
-        }
+        // Calculate session metrics from the already-built sessions
+        var sessionCount = sessions.Count;
+        var totalDuration = sessions
+            .Where(s => s.LinkDown?.UpForSecs.HasValue == true)
+            .Sum(s => s.LinkDown!.UpForSecs!.Value);
 
         return new OverallMetrics(
             sessionCount,

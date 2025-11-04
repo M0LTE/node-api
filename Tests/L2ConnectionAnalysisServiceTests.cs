@@ -415,11 +415,6 @@ public class L2ConnectionAnalysisServiceTests
             "G8PZT-1", "M0LTE-5", from, to, Arg.Any<CancellationToken>())
             .Returns(Array.Empty<FrameStatistic>());
 
-        _eventRepository.GetEventsAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(),
-            Arg.Any<DateTimeOffset>(), Arg.Any<DateTimeOffset>(), Arg.Any<int>(), Arg.Any<string>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns((Array.Empty<EventsController.EventDto>(), (string?)null, CountResult.NotRequested));
-
         // Act - Pass in reverse order
         var result = await _service.AnalyzeConnectionAsync(
             "M0LTE-5", "G8PZT-1", from, to, null, true, false, 100, null, CancellationToken.None);
@@ -428,7 +423,8 @@ public class L2ConnectionAnalysisServiceTests
         result.Connection.Callsign1.Should().Be("G8PZT-1");
         result.Connection.Callsign2.Should().Be("M0LTE-5");
 
-        await _eventRepository.Received(1).GetLinkEventsBetweenEndpointsAsync(
+        // Should be called twice: once for sessions, once for metrics
+        await _eventRepository.Received(2).GetLinkEventsBetweenEndpointsAsync(
             "G8PZT-1", "M0LTE-5", from, to, Arg.Any<CancellationToken>());
     }
 

@@ -364,14 +364,14 @@
     </style>
 </head>
 <body>
-    <a href="/" class="back-link">? Back to Dashboard</a>
+    <a href="/" class="back-link">← Back to Dashboard</a>
 
     <div class="container">
         <h1>L2 Connection Analysis</h1>
         <p>Analyze bidirectional L2 communication between two callsigns</p>
 
         <div class="help-text">
-            ?? <strong>Tip:</strong> This tool analyzes L2 (link layer) sessions between two stations, including link up/down events, frame statistics, and optional frame-level traces.
+            💡 <strong>Tip:</strong> This tool analyzes L2 (link layer) sessions between two stations, including link up/down events, frame statistics, and optional frame-level traces.
         </div>
 
         <div class="query-form">
@@ -571,10 +571,10 @@
                 <div class="container">
                     <div class="connection-info">
                         <div class="connection-title">
-                            ${data.connection.callsign1} ? ${data.connection.callsign2}
+                            ${data.connection.callsign1} ↔ ${data.connection.callsign2}
                         </div>
                         <div class="connection-subtitle">
-                            ${formatDateTime(data.connection.timeRange.from)} ? ${formatDateTime(data.connection.timeRange.to)}
+                            ${formatDateTime(data.connection.timeRange.from)} → ${formatDateTime(data.connection.timeRange.to)}
                         </div>
                     </div>
             `;
@@ -605,7 +605,7 @@
             const dir2To1 = metrics.direction2To1;
 
             return `
-                <h2>?? Overall Metrics</h2>
+                <h2>▶▶ Overall Metrics</h2>
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-label">Total Sessions</div>
@@ -618,25 +618,25 @@
                     <div class="stat-card">
                         <div class="stat-label">Total Frames</div>
                         <div class="stat-value">${formatNumber(metrics.totalFrames)}</div>
-                        <div class="stat-subtitle">${formatNumber(dir1To2.frames)} ? / ${formatNumber(dir2To1.frames)} ?</div>
+                        <div class="stat-subtitle">${formatNumber(dir1To2.frames)} → / ${formatNumber(dir2To1.frames)} ←</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">I-Frames Sent</div>
                         <div class="stat-value">${formatNumber(dir1To2.iFrames + dir2To1.iFrames)}</div>
-                        <div class="stat-subtitle">${formatNumber(dir1To2.iFrames)} ? / ${formatNumber(dir2To1.iFrames)} ?</div>
+                        <div class="stat-subtitle">${formatNumber(dir1To2.iFrames)} → / ${formatNumber(dir2To1.iFrames)} ←</div>
                     </div>
                 </div>
 
                 <div class="expandable-section">
                     <div class="expand-toggle" onclick="toggleSection('frame-types')">
-                        <span class="expand-toggle-title">?? Frame Type Breakdown</span>
-                        <span class="expand-toggle-icon" id="frame-types-icon">?</span>
+                        <span class="expand-toggle-title">▶▶ Frame Type Breakdown</span>
+                        <span class="expand-toggle-icon" id="frame-types-icon">▶</span>
                     </div>
                     <div class="expand-content" id="frame-types-content">
                         <div class="metrics-section">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                                 <div>
-                                    <div class="metrics-title">Direction 1 ? 2</div>
+                                    <div class="metrics-title">Direction 1 → 2</div>
                                     ${Object.entries(dir1To2.frameTypes).map(([type, count]) => `
                                         <div class="metric-row">
                                             <span>${type}</span>
@@ -645,7 +645,7 @@
                                     `).join('')}
                                 </div>
                                 <div>
-                                    <div class="metrics-title">Direction 2 ? 1</div>
+                                    <div class="metrics-title">Direction 2 → 1</div>
                                     ${Object.entries(dir2To1.frameTypes).map(([type, count]) => `
                                         <div class="metric-row">
                                             <span>${type}</span>
@@ -662,7 +662,7 @@
 
         function renderSessions(sessions) {
             return `
-                <h2>?? Sessions (${sessions.length})</h2>
+                <h2>▶▶ Sessions (${sessions.length})</h2>
                 ${sessions.map((session, idx) => `
                     <div class="session">
                         <div class="session-header">
@@ -752,8 +752,8 @@
                         ${session.statusReports && session.statusReports.length > 0 ? `
                             <div class="expandable-section">
                                 <div class="expand-toggle" onclick="toggleSection('status-${idx}')">
-                                    <span class="expand-toggle-title">?? Status Reports (${session.statusReports.length})</span>
-                                    <span class="expand-toggle-icon" id="status-${idx}-icon">?</span>
+                                    <span class="expand-toggle-title">▶▶ Status Reports (${session.statusReports.length})</span>
+                                    <span class="expand-toggle-icon" id="status-${idx}-icon">▶</span>
                                 </div>
                                 <div class="expand-content" id="status-${idx}-content">
                                     <table class="trace-table">
@@ -790,11 +790,11 @@
 
         function renderTraces(traces) {
             if (!traces.data || traces.data.length === 0) {
-                return '<h2>?? Traces</h2><div class="no-data">No traces found</div>';
+                return '<h2>▶▶ Traces</h2><div class="no-data">No traces found</div>';
             }
 
             return `
-                <h2>?? Traces</h2>
+                <h2>▶▶ Traces</h2>
                 <p style="color: #666; margin-bottom: 15px;">
                     Showing ${traces.data.length} of up to ${traces.page.limit} traces
                     ${traces.page.next ? ' (more available)' : ''}
@@ -825,11 +825,11 @@
 
                 <div class="pagination">
                     <button class="btn-page" onclick="loadPreviousPage()" ${!currentCursor ? 'disabled' : ''}>
-                        ? Previous
+                        ← Previous
                     </button>
                     <span>${traces.data.length} traces</span>
                     <button class="btn-page" onclick="loadNextPage('${traces.page.next || ''}')" ${!traces.page.next ? 'disabled' : ''}>
-                        Next ?
+                        Next ←
                     </button>
                 </div>
             `;
