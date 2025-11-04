@@ -231,6 +231,162 @@ public partial class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger, 
         }
     }
 
+    public async Task<(IReadOnlyList<TracesController.TraceDto> Data, string? NextCursor)> GetBidirectionalTracesAsync(
+        string endpoint1,
+        string endpoint2,
+        DateTimeOffset from,
+        DateTimeOffset to,
+        string[]? reportFrom,
+        int limit,
+        string? cursor,
+        CancellationToken ct)
+    {
+        using var conn = Database.GetConnection(open: false);
+        await conn.OpenAsync(ct);
+
+        var where = new List<string>
+        {
+            "((srce_idx = @endpoint1 AND dest_idx = @endpoint2) OR (srce_idx = @endpoint2 AND dest_idx = @endpoint1))",
+            "timestamp >= @from",
+            "timestamp <= @to"
+        };
+
+        var p = new DynamicParameters();
+        p.Add("endpoint1", endpoint1);
+        p.Add("endpoint2", endpoint2);
+        p.Add("from", from.UtcDateTime);
+        p.Add("to", to.UtcDateTime);
+
+        // Handle reportFrom filter
+        if (reportFrom != null && reportFrom.Length > 0)
+        {
+            var validCallsigns = reportFrom.Where(c => !string.IsNullOrWhiteSpace(c)).ToArray();
+            if (validCallsigns.Length > 0)
+            {
+                var paramNames = new List<string>();
+                for (int i = 0; i < validCallsigns.Length; i++)
+                {
+                    var paramName = $"reportFrom{i}";
+                    paramNames.Add($"@{paramName}");
+                    p.Add(paramName, validCallsigns[i]);
+                }
+                where.Add($"reportFrom_idx IN ({string.Join(", ", paramNames)})");
+            }
+        }
+        else
+        {
+            where.Add("reportFrom_idx NOT REGEXP @testPattern");
+            p.Add("testPattern", "^TEST(-([0-9]|1[0-5]))?$");
+        }
+
+        // Keyset pagination
+        if (!string.IsNullOrEmpty(cursor))
+        {
+            if (TryDecodeCursor(cursor, out var tsLast, out var idLast))
+            {
+                where.Add("(timestamp > @cts OR (timestamp = @cts AND id > @cid))");
+                p.Add("cts", tsLast);
+                p.Add("cid", idLast);
+            }
+        }
+
+        var sql = $@"
+            SELECT 
+                id,
+                timestamp,
+                json as report
+            FROM traces
+            WHERE {string.Join(" AND ", where)}
+            ORDER BY timestamp ASC, id ASC
+            LIMIT @limit";
+
+        p.Add("limit", limit);
+
+        var rows = (await QueryLogger.QueryWithLoggingAsync<TraceRow>(
+            conn,
+            new CommandDefinition(sql, p, cancellationToken: ct),
+            logger,
+            SlowQueryThresholdMs,
+            tracker)).ToList();
+
+        var data = new List<TracesController.TraceDto>();
+        foreach (var r in rows)
+        {
+            using var doc = JsonDocument.Parse(r.report ?? "null");
+            data.Add(new TracesController.TraceDto(
+                r.id,
+                DateTime.SpecifyKind(r.timestamp, DateTimeKind.Utc),
+                doc.RootElement.Clone()
+            ));
+        }
+
+        string? next = null;
+        if (data.Count == limit && data.Count > 0)
+        {
+            var last = rows[^1];
+            next = EncodeCursor(DateTime.SpecifyKind(last.timestamp, DateTimeKind.Utc), last.id);
+        }
+
+        return (data, next);
+    }
+
+    public async Task<IReadOnlyList<FrameStatistic>> GetFrameStatisticsBetweenEndpointsAsync(
+        string endpoint1,
+        string endpoint2,
+        DateTimeOffset from,
+        DateTimeOffset to,
+        CancellationToken ct)
+    {
+        using var conn = Database.GetConnection(open: false);
+        await conn.OpenAsync(ct);
+
+        var sql = @"
+            SELECT 
+                srce_idx as source,
+                dest_idx as dest,
+                type_idx as frameType,
+                COUNT(*) as count,
+                COALESCE(SUM(ilen_idx), 0) as totalBytes
+            FROM traces
+            WHERE ((srce_idx = @endpoint1 AND dest_idx = @endpoint2)
+                OR (srce_idx = @endpoint2 AND dest_idx = @endpoint1))
+              AND timestamp >= @from
+              AND timestamp <= @to
+              AND reportFrom_idx NOT REGEXP @testPattern
+            GROUP BY srce_idx, dest_idx, type_idx";
+
+        var p = new DynamicParameters();
+        p.Add("endpoint1", endpoint1);
+        p.Add("endpoint2", endpoint2);
+        p.Add("from", from.UtcDateTime);
+        p.Add("to", to.UtcDateTime);
+        p.Add("testPattern", "^TEST(-([0-9]|1[0-5]))?$");
+
+        var rows = await QueryLogger.QueryWithLoggingAsync<FrameStatRow>(
+            conn,
+            new CommandDefinition(sql, p, cancellationToken: ct),
+            logger,
+            SlowQueryThresholdMs,
+            tracker);
+
+        return rows.Select(r => new FrameStatistic(
+            r.source,
+            r.dest,
+            r.frameType,
+            r.count,
+            r.totalBytes
+        )).ToList();
+    }
+
+    private sealed class FrameStatRow
+    {
+        public string source { get; set; } = "";
+        public string dest { get; set; } = "";
+        public string? frameType { get; set; }
+        public long count { get; set; }
+        public long totalBytes { get; set; }
+    }
+
     private sealed class TraceRow
     {
         public long id { get; set; }

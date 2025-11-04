@@ -215,6 +215,56 @@ public class MySqlEventRepository(ILogger<MySqlEventRepository> logger, QueryFre
         }
     }
 
+    public async Task<IReadOnlyList<EventsController.EventDto>> GetLinkEventsBetweenEndpointsAsync(
+        string endpoint1,
+        string endpoint2,
+        DateTimeOffset from,
+        DateTimeOffset to,
+        CancellationToken ct)
+    {
+        using var conn = Database.GetConnection(open: false);
+        await conn.OpenAsync(ct);
+
+        var sql = @"
+            SELECT 
+                id,
+                timestamp,
+                json as event
+            FROM events
+            WHERE type_idx IN ('LinkUpEvent', 'LinkDownEvent', 'LinkStatus')
+              AND ((local_idx = @endpoint1 AND remote_idx = @endpoint2)
+                OR (local_idx = @endpoint2 AND remote_idx = @endpoint1))
+              AND timestamp >= @from
+              AND timestamp <= @to
+            ORDER BY timestamp ASC, id ASC";
+
+        var p = new DynamicParameters();
+        p.Add("endpoint1", endpoint1);
+        p.Add("endpoint2", endpoint2);
+        p.Add("from", from.UtcDateTime);
+        p.Add("to", to.UtcDateTime);
+
+        var rows = await QueryLogger.QueryWithLoggingAsync<EventRow>(
+            conn,
+            new CommandDefinition(sql, p, cancellationToken: ct),
+            logger,
+            SlowQueryThresholdMs,
+            tracker);
+
+        var data = new List<EventsController.EventDto>();
+        foreach (var r in rows)
+        {
+            using var doc = JsonDocument.Parse(r.@event ?? "null");
+            data.Add(new EventsController.EventDto(
+                r.id,
+                DateTime.SpecifyKind(r.timestamp, DateTimeKind.Utc),
+                doc.RootElement.Clone()
+            ));
+        }
+
+        return data;
+    }
+
     private sealed class EventRow
     {
         public long id { get; set; }

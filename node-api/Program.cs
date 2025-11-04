@@ -95,6 +95,9 @@ builder.Services.AddSingleton<MySqlEventRepository>();
 builder.Services.AddSingleton<IEventRepository>(sp => sp.GetRequiredService<MySqlEventRepository>());
 builder.Services.AddSingleton<MySqlErroredMessageRepository>();
 
+// Register L2 connection analysis service
+builder.Services.AddSingleton<IL2ConnectionAnalysisService, L2ConnectionAnalysisService>();
+
 // Register FluentValidation validators
 builder.Services.AddSingleton<IValidator<L2Trace>, L2TraceValidator>();
 builder.Services.AddSingleton<IValidator<NodeUpEvent>, NodeUpEventValidator>();

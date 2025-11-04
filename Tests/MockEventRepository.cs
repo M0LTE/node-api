@@ -28,4 +28,14 @@ public class MockEventRepository : IEventRepository
         );
         return Task.FromResult(emptyResult);
     }
+
+    public Task<IReadOnlyList<EventsController.EventDto>> GetLinkEventsBetweenEndpointsAsync(
+        string endpoint1,
+        string endpoint2,
+        DateTimeOffset from,
+        DateTimeOffset to,
+        CancellationToken ct)
+    {
+        return Task.FromResult(Array.Empty<EventsController.EventDto>() as IReadOnlyList<EventsController.EventDto>);
+    }
 }

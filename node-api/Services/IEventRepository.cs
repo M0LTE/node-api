@@ -18,4 +18,14 @@ public interface IEventRepository
         bool includeTotalCount,
         string sortOrder,
         CancellationToken ct);
+
+    /// <summary>
+    /// Get link events between two endpoints for connection analysis
+    /// </summary>
+    Task<IReadOnlyList<EventsController.EventDto>> GetLinkEventsBetweenEndpointsAsync(
+        string endpoint1,
+        string endpoint2,
+        DateTimeOffset from,
+        DateTimeOffset to,
+        CancellationToken ct);
 }
