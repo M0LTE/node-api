@@ -87,8 +87,8 @@ GET /api/history/connections/l2
 ```json
 {
   "connection": {
-    "callsign1": "G8PZT-1",
-    "callsign2": "M0LTE-5",
+    "callsign1": "CALL1-1",
+    "callsign2": "CALL2-5",
     "timeRange": {
       "from": "2025-01-01T00:00:00Z",
       "to": "2025-01-02T00:00:00Z"
@@ -132,7 +132,7 @@ The UI follows the existing design system:
 ## Usage Example
 
 1. Navigate to `/l2-connection.html`
-2. Enter two callsigns (e.g., `G8PZT-1` and `M0LTE-5`)
+2. Enter two callsigns (e.g., `CALL1-1` and `CALL2-5`)
 3. Select a date range (default: last 24 hours)
 4. Optionally filter by reporting station
 5. Choose whether to include metrics and/or traces

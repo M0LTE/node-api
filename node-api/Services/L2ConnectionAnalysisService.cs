@@ -4,8 +4,7 @@ namespace node_api.Services;
 
 public class L2ConnectionAnalysisService(
     IEventRepository eventRepository,
-    ITraceRepository traceRepository,
-    ILogger<L2ConnectionAnalysisService> logger) : IL2ConnectionAnalysisService
+    ITraceRepository traceRepository) : IL2ConnectionAnalysisService
 {
     public async Task<L2ConnectionAnalysis> AnalyzeConnectionAsync(
         string callsign1,

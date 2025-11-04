@@ -84,7 +84,7 @@ public class L2ConnectionsControllerTests
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
         badRequestResult.Value.Should().NotBeNull();
-        var errorMessage = badRequestResult.Value.ToString();
+        var errorMessage = badRequestResult.Value?.ToString() ?? "";
         errorMessage.Should().Contain("different");
     }
 

@@ -16,8 +16,7 @@ public class L2ConnectionAnalysisServiceTests
     {
         _eventRepository = Substitute.For<IEventRepository>();
         _traceRepository = Substitute.For<ITraceRepository>();
-        var logger = Substitute.For<Microsoft.Extensions.Logging.ILogger<L2ConnectionAnalysisService>>();
-        _service = new L2ConnectionAnalysisService(_eventRepository, _traceRepository, logger);
+        _service = new L2ConnectionAnalysisService(_eventRepository, _traceRepository);
     }
 
     #region BuildSessionsFromEvents Tests
