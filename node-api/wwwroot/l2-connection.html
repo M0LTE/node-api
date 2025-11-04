@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L2 Connection Analysis</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+            margin: 0 0 20px 0;
+        }
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #0066cc;
+            padding-bottom: 8px;
+            margin: 20px 0 15px 0;
+            font-size: 20px;
+        }
+        h3 {
+            color: #444;
+            margin: 15px 0 10px 0;
+            font-size: 16px;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #0066cc;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .query-form {
+            background-color: #f9f9f9;
+            padding: 25px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        .form-group input,
+        .form-group select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #0066cc;
+        }
+        .form-group small {
+            color: #666;
+            margin-top: 4px;
+            font-size: 12px;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+        .btn-submit {
+            background-color: #0066cc;
+            color: white;
+            padding: 12px 32px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .btn-submit:hover {
+            background-color: #0052a3;
+        }
+        .btn-submit:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #0066cc;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #c62828;
+            margin-bottom: 20px;
+        }
+        .connection-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .connection-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .connection-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .stat-card {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 6px;
+            border-left: 4px solid #0066cc;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #333;
+        }
+        .stat-subtitle {
+            font-size: 13px;
+            color: #888;
+            margin-top: 4px;
+        }
+        .session {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border-left: 4px solid #4caf50;
+        }
+        .session-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .session-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        .session-badge {
+            background-color: #4caf50;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .session-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .detail-label {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .detail-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+        .metrics-section {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 6px;
+            margin-top: 15px;
+            border: 1px solid #e0e0e0;
+        }
+        .metrics-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #333;
+        }
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .metric-row:last-child {
+            border-bottom: none;
+        }
+        .trace-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .trace-table th {
+            background-color: #f0f4ff;
+            padding: 12px 10px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #ddd;
+            font-size: 13px;
+        }
+        .trace-table td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+        .trace-table tr:hover {
+            background-color: #f9f9f9;
+        }
+        .direction-arrow {
+            font-weight: bold;
+            color: #0066cc;
+        }
+        .frame-type-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            background-color: #e3f2fd;
+            color: #1976d2;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .btn-page {
+            padding: 8px 16px;
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-page:hover {
+            background-color: #0052a3;
+        }
+        .btn-page:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .no-data {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+            font-style: italic;
+        }
+        .expandable-section {
+            margin-top: 15px;
+        }
+        .expand-toggle {
+            cursor: pointer;
+            padding: 12px 15px;
+            background-color: #f0f4ff;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            transition: background-color 0.2s;
+        }
+        .expand-toggle:hover {
+            background-color: #e0e8ff;
+        }
+        .expand-toggle-title {
+            font-weight: 600;
+            color: #333;
+        }
+        .expand-toggle-icon {
+            color: #666;
+            transition: transform 0.2s;
+        }
+        .expand-toggle-icon.expanded {
+            transform: rotate(90deg);
+        }
+        .expand-content {
+            display: none;
+            padding-top: 15px;
+        }
+        .expand-content.expanded {
+            display: block;
+        }
+        .help-text {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #1565c0;
+        }
+        .timestamp {
+            font-family: 'Courier New', monospace;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-link">? Back to Dashboard</a>
+
+    <div class="container">
+        <h1>L2 Connection Analysis</h1>
+        <p>Analyze bidirectional L2 communication between two callsigns</p>
+
+        <div class="help-text">
+            ?? <strong>Tip:</strong> This tool analyzes L2 (link layer) sessions between two stations, including link up/down events, frame statistics, and optional frame-level traces.
+        </div>
+
+        <div class="query-form">
+            <form id="queryForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="callsign1">Callsign 1 *</label>
+                        <input type="text" id="callsign1" name="callsign1" placeholder="e.g. G8PZT-1" required>
+                        <small>Include SSID if needed</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="callsign2">Callsign 2 *</label>
+                        <input type="text" id="callsign2" name="callsign2" placeholder="e.g. M0LTE-5" required>
+                        <small>Must be different from Callsign 1</small>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="from">From Date/Time *</label>
+                        <input type="datetime-local" id="from" name="from" required>
+                        <small>UTC timezone</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="to">To Date/Time *</label>
+                        <input type="datetime-local" id="to" name="to" required>
+                        <small>UTC timezone</small>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="reportFrom">Filter by Reporting Station (Optional)</label>
+                        <input type="text" id="reportFrom" name="reportFrom" placeholder="e.g. G8PZT-3">
+                        <small>Leave empty for all stations (excludes TEST*)</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="tracesLimit">Traces Limit</label>
+                        <input type="number" id="tracesLimit" name="tracesLimit" value="100" min="1" max="500">
+                        <small>Max 500 traces per page</small>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="includeMetrics" name="includeMetrics" checked>
+                            <label for="includeMetrics">Include Metrics</label>
+                        </div>
+                        <small>Session and frame statistics</small>
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="includeTraces" name="includeTraces" checked>
+                            <label for="includeTraces">Include Traces</label>
+                        </div>
+                        <small>Frame-level data (slower)</small>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit">Analyze Connection</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        let currentCursor = null;
+        let queryParams = {};
+
+        // Set default date range (last 24 hours)
+        function initializeDateRange() {
+            const now = new Date();
+            const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            
+            document.getElementById('to').value = formatDateTimeLocal(now);
+            document.getElementById('from').value = formatDateTimeLocal(yesterday);
+        }
+
+        function formatDateTimeLocal(date) {
+            const pad = (num) => String(num).padStart(2, '0');
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        }
+
+        function formatDateTime(isoString) {
+            const date = new Date(isoString);
+            return date.toLocaleString('en-GB', { 
+                timeZone: 'UTC',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            }) + ' UTC';
+        }
+
+        function formatDuration(seconds) {
+            if (!seconds) return 'N/A';
+            const hours = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            if (hours > 0) return `${hours}h ${mins}m ${secs}s`;
+            if (mins > 0) return `${mins}m ${secs}s`;
+            return `${secs}s`;
+        }
+
+        function formatNumber(num) {
+            return num?.toLocaleString() || 'N/A';
+        }
+
+        function formatPercentage(num) {
+            return num !== undefined && num !== null ? `${(num * 100).toFixed(2)}%` : 'N/A';
+        }
+
+        document.getElementById('queryForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            currentCursor = null;
+            await performQuery();
+        });
+
+        async function performQuery(cursor = null) {
+            const formData = new FormData(document.getElementById('queryForm'));
+            
+            // Build query parameters
+            queryParams = {
+                callsign1: formData.get('callsign1').trim(),
+                callsign2: formData.get('callsign2').trim(),
+                from: new Date(formData.get('from')).toISOString(),
+                to: new Date(formData.get('to')).toISOString(),
+                includeMetrics: formData.get('includeMetrics') === 'on',
+                includeTraces: formData.get('includeTraces') === 'on',
+                tracesLimit: formData.get('tracesLimit') || 100
+            };
+
+            const reportFrom = formData.get('reportFrom')?.trim();
+            if (reportFrom) {
+                queryParams.reportFrom = reportFrom;
+            }
+
+            if (cursor) {
+                queryParams.tracesCursor = cursor;
+            }
+
+            // Validate
+            if (queryParams.callsign1.toLowerCase() === queryParams.callsign2.toLowerCase()) {
+                document.getElementById('results').innerHTML = `
+                    <div class="container">
+                        <div class="error">Callsigns must be different</div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Show loading
+            document.getElementById('results').innerHTML = `
+                <div class="container">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Analyzing connection...</p>
+                    </div>
+                </div>
+            `;
+
+            // Disable submit button
+            document.querySelector('.btn-submit').disabled = true;
+
+            try {
+                const queryString = new URLSearchParams(queryParams).toString();
+                const response = await fetch(`/api/history/connections/l2?${queryString}`);
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || `HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                displayResults(data);
+
+            } catch (error) {
+                document.getElementById('results').innerHTML = `
+                    <div class="container">
+                        <div class="error">
+                            <strong>Error:</strong> ${error.message}
+                        </div>
+                    </div>
+                `;
+            } finally {
+                document.querySelector('.btn-submit').disabled = false;
+            }
+        }
+
+        function displayResults(data) {
+            let html = `
+                <div class="container">
+                    <div class="connection-info">
+                        <div class="connection-title">
+                            ${data.connection.callsign1} ? ${data.connection.callsign2}
+                        </div>
+                        <div class="connection-subtitle">
+                            ${formatDateTime(data.connection.timeRange.from)} ? ${formatDateTime(data.connection.timeRange.to)}
+                        </div>
+                    </div>
+            `;
+
+            // Overall Metrics
+            if (data.metrics) {
+                html += renderMetrics(data.metrics);
+            }
+
+            // Sessions
+            if (data.sessions && data.sessions.length > 0) {
+                html += renderSessions(data.sessions);
+            } else {
+                html += '<div class="no-data">No sessions found in this time period</div>';
+            }
+
+            // Traces
+            if (data.traces) {
+                html += renderTraces(data.traces);
+            }
+
+            html += '</div>';
+            document.getElementById('results').innerHTML = html;
+        }
+
+        function renderMetrics(metrics) {
+            const dir1To2 = metrics.direction1To2;
+            const dir2To1 = metrics.direction2To1;
+
+            return `
+                <h2>?? Overall Metrics</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Sessions</div>
+                        <div class="stat-value">${metrics.totalSessions}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Duration</div>
+                        <div class="stat-value">${formatDuration(metrics.totalDurationSecs)}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Frames</div>
+                        <div class="stat-value">${formatNumber(metrics.totalFrames)}</div>
+                        <div class="stat-subtitle">${formatNumber(dir1To2.frames)} ? / ${formatNumber(dir2To1.frames)} ?</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">I-Frames Sent</div>
+                        <div class="stat-value">${formatNumber(dir1To2.iFrames + dir2To1.iFrames)}</div>
+                        <div class="stat-subtitle">${formatNumber(dir1To2.iFrames)} ? / ${formatNumber(dir2To1.iFrames)} ?</div>
+                    </div>
+                </div>
+
+                <div class="expandable-section">
+                    <div class="expand-toggle" onclick="toggleSection('frame-types')">
+                        <span class="expand-toggle-title">?? Frame Type Breakdown</span>
+                        <span class="expand-toggle-icon" id="frame-types-icon">?</span>
+                    </div>
+                    <div class="expand-content" id="frame-types-content">
+                        <div class="metrics-section">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                <div>
+                                    <div class="metrics-title">Direction 1 ? 2</div>
+                                    ${Object.entries(dir1To2.frameTypes).map(([type, count]) => `
+                                        <div class="metric-row">
+                                            <span>${type}</span>
+                                            <strong>${formatNumber(count)}</strong>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <div>
+                                    <div class="metrics-title">Direction 2 ? 1</div>
+                                    ${Object.entries(dir2To1.frameTypes).map(([type, count]) => `
+                                        <div class="metric-row">
+                                            <span>${type}</span>
+                                            <strong>${formatNumber(count)}</strong>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderSessions(sessions) {
+            return `
+                <h2>?? Sessions (${sessions.length})</h2>
+                ${sessions.map((session, idx) => `
+                    <div class="session">
+                        <div class="session-header">
+                            <div class="session-title">Session ${session.sessionId}</div>
+                            <div class="session-badge">${session.linkDown ? 'Completed' : 'Active'}</div>
+                        </div>
+                        
+                        ${session.linkUp ? `
+                            <div class="session-details">
+                                <div class="detail-item">
+                                    <div class="detail-label">Link Up</div>
+                                    <div class="detail-value timestamp">${formatDateTime(session.linkUp.timestamp)}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Node</div>
+                                    <div class="detail-value">${session.linkUp.node}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Port</div>
+                                    <div class="detail-value">${session.linkUp.port}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Direction</div>
+                                    <div class="detail-value">${session.linkUp.direction}</div>
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        ${session.linkDown ? `
+                            <div class="metrics-section">
+                                <div class="metrics-title">Link Down</div>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+                                    <div class="metric-row">
+                                        <span>Timestamp:</span>
+                                        <span class="timestamp">${formatDateTime(session.linkDown.timestamp)}</span>
+                                    </div>
+                                    <div class="metric-row">
+                                        <span>Duration:</span>
+                                        <strong>${formatDuration(session.linkDown.upForSecs)}</strong>
+                                    </div>
+                                    <div class="metric-row">
+                                        <span>Frames Sent:</span>
+                                        <strong>${formatNumber(session.linkDown.framesSent)}</strong>
+                                    </div>
+                                    <div class="metric-row">
+                                        <span>Frames Received:</span>
+                                        <strong>${formatNumber(session.linkDown.framesReceived)}</strong>
+                                    </div>
+                                    <div class="metric-row">
+                                        <span>Frames Resent:</span>
+                                        <strong>${formatNumber(session.linkDown.framesResent)}</strong>
+                                    </div>
+                                    ${session.linkDown.reason ? `
+                                        <div class="metric-row">
+                                            <span>Reason:</span>
+                                            <strong>${session.linkDown.reason}</strong>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        ` : '<div class="no-data">Session still active or link down event not recorded</div>'}
+
+                        ${session.metrics ? `
+                            <div class="metrics-section">
+                                <div class="metrics-title">Session Metrics</div>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;">
+                                    <div class="metric-row">
+                                        <span>Retransmission Rate:</span>
+                                        <strong>${formatPercentage(session.metrics.retransmissionRate)}</strong>
+                                    </div>
+                                    <div class="metric-row">
+                                        <span>Avg RTT:</span>
+                                        <strong>${session.metrics.avgRttMs || 'N/A'} ms</strong>
+                                    </div>
+                                    <div class="metric-row">
+                                        <span>Throughput:</span>
+                                        <strong>${formatNumber(session.metrics.throughputBps)} bps</strong>
+                                    </div>
+                                    <div class="metric-row">
+                                        <span>Total Frames:</span>
+                                        <strong>${formatNumber(session.metrics.totalFrames)}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        ${session.statusReports && session.statusReports.length > 0 ? `
+                            <div class="expandable-section">
+                                <div class="expand-toggle" onclick="toggleSection('status-${idx}')">
+                                    <span class="expand-toggle-title">?? Status Reports (${session.statusReports.length})</span>
+                                    <span class="expand-toggle-icon" id="status-${idx}-icon">?</span>
+                                </div>
+                                <div class="expand-content" id="status-${idx}-content">
+                                    <table class="trace-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Timestamp</th>
+                                                <th>Up For</th>
+                                                <th>Sent</th>
+                                                <th>Received</th>
+                                                <th>Resent</th>
+                                                <th>RTT (ms)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${session.statusReports.map(report => `
+                                                <tr>
+                                                    <td class="timestamp">${formatDateTime(report.timestamp)}</td>
+                                                    <td>${formatDuration(report.upForSecs)}</td>
+                                                    <td>${formatNumber(report.framesSent)}</td>
+                                                    <td>${formatNumber(report.framesReceived)}</td>
+                                                    <td>${formatNumber(report.framesResent)}</td>
+                                                    <td>${report.l2RttMs || 'N/A'}</td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('')}
+            `;
+        }
+
+        function renderTraces(traces) {
+            if (!traces.data || traces.data.length === 0) {
+                return '<h2>?? Traces</h2><div class="no-data">No traces found</div>';
+            }
+
+            return `
+                <h2>?? Traces</h2>
+                <p style="color: #666; margin-bottom: 15px;">
+                    Showing ${traces.data.length} of up to ${traces.page.limit} traces
+                    ${traces.page.next ? ' (more available)' : ''}
+                </p>
+                
+                <table class="trace-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Direction</th>
+                            <th>Frame Type</th>
+                            <th>Session</th>
+                            <th>Reported By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${traces.data.map(trace => `
+                            <tr>
+                                <td class="timestamp">${formatDateTime(trace.timestamp)}</td>
+                                <td class="direction-arrow">${trace.direction}</td>
+                                <td><span class="frame-type-badge">${trace.frameType}</span></td>
+                                <td>${trace.sessionId || '-'}</td>
+                                <td>${trace.reportedBy.join(', ') || '-'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <div class="pagination">
+                    <button class="btn-page" onclick="loadPreviousPage()" ${!currentCursor ? 'disabled' : ''}>
+                        ? Previous
+                    </button>
+                    <span>${traces.data.length} traces</span>
+                    <button class="btn-page" onclick="loadNextPage('${traces.page.next || ''}')" ${!traces.page.next ? 'disabled' : ''}>
+                        Next ?
+                    </button>
+                </div>
+            `;
+        }
+
+        async function loadNextPage(cursor) {
+            if (!cursor) return;
+            currentCursor = cursor;
+            await performQuery(cursor);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function loadPreviousPage() {
+            // Simple implementation: just reload without cursor
+            currentCursor = null;
+            performQuery();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function toggleSection(section) {
+            const content = document.getElementById(`${section}-content`);
+            const icon = document.getElementById(`${section}-icon`);
+            
+            if (content && icon) {
+                content.classList.toggle('expanded');
+                icon.classList.toggle('expanded');
+            }
+        }
+
+        // Initialize on page load
+        initializeDateRange();
+    </script>
+</body>
+</html>
