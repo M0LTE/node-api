@@ -340,20 +340,16 @@ public partial class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger, 
         using var conn = Database.GetConnection(open: false);
         await conn.OpenAsync(ct);
 
+        // Get all traces between the endpoints and let C# calculate statistics
         var sql = @"
             SELECT 
-                srce_idx as source,
-                dest_idx as dest,
-                type_idx as frameType,
-                COUNT(*) as count,
-                COALESCE(SUM(ilen_idx), 0) as totalBytes
+                json
             FROM traces
             WHERE ((srce_idx = @endpoint1 AND dest_idx = @endpoint2)
                 OR (srce_idx = @endpoint2 AND dest_idx = @endpoint1))
               AND timestamp >= @from
               AND timestamp <= @to
-              AND reportFrom_idx NOT REGEXP @testPattern
-            GROUP BY srce_idx, dest_idx, type_idx";
+              AND reportFrom_idx NOT REGEXP @testPattern";
 
         var p = new DynamicParameters();
         p.Add("endpoint1", endpoint1);
@@ -362,29 +358,56 @@ public partial class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger, 
         p.Add("to", to.UtcDateTime);
         p.Add("testPattern", "^TEST(-([0-9]|1[0-5]))?$");
 
-        var rows = await QueryLogger.QueryWithLoggingAsync<FrameStatRow>(
+        var rows = await QueryLogger.QueryWithLoggingAsync<JsonRow>(
             conn,
             new CommandDefinition(sql, p, cancellationToken: ct),
             logger,
             SlowQueryThresholdMs,
             tracker);
 
-        return rows.Select(r => new FrameStatistic(
-            r.source,
-            r.dest,
-            r.frameType,
-            r.count,
-            r.totalBytes
+        // Calculate statistics in C# from JSON
+        var stats = new Dictionary<(string source, string dest, string? frameType), FrameStatBuilder>();
+
+        foreach (var row in rows)
+        {
+            using var doc = JsonDocument.Parse(row.json ?? "{}");
+            var root = doc.RootElement;
+
+            var source = root.TryGetProperty("srce", out var s) ? s.GetString() : null;
+            var dest = root.TryGetProperty("dest", out var d) ? d.GetString() : null;
+            var frameType = root.TryGetProperty("l2Type", out var ft) ? ft.GetString() : null;
+            var ilen = root.TryGetProperty("ilen", out var il) ? il.GetInt32() : 0;
+
+            if (source == null || dest == null) continue;
+
+            var key = (source, dest, frameType);
+            if (!stats.ContainsKey(key))
+            {
+                stats[key] = new FrameStatBuilder();
+            }
+
+            stats[key].Count++;
+            stats[key].TotalBytes += ilen;
+        }
+
+        return stats.Select(kvp => new FrameStatistic(
+            kvp.Key.source,
+            kvp.Key.dest,
+            kvp.Key.frameType,
+            kvp.Value.Count,
+            kvp.Value.TotalBytes
         )).ToList();
     }
 
-    private sealed class FrameStatRow
+    private sealed class JsonRow
     {
-        public string source { get; set; } = "";
-        public string dest { get; set; } = "";
-        public string? frameType { get; set; }
-        public long count { get; set; }
-        public long totalBytes { get; set; }
+        public string? json { get; set; }
+    }
+
+    private class FrameStatBuilder
+    {
+        public long Count { get; set; }
+        public long TotalBytes { get; set; }
     }
 
     private sealed class TraceRow
