@@ -47,6 +47,42 @@ This meant that for every UDP packet received, the node's IP address, GeoIP coun
 
 **Result**: Single state update per event, reducing database churn and network traffic.
 
+## Additional Cleanup (2024)
+
+### L2Trace Events - No State Inference
+
+**Decision**: L2Trace events should **ONLY be saved to the database**, not used to infer any node state.
+
+**Rationale**:
+- L2Trace is frame-level telemetry (very high volume)
+- Node state should only be updated from explicit event reports (NodeUpEvent, NodeStatus, LinkUpEvent, etc.)
+- Prevents spurious state updates from overheard frames
+- Reduces unnecessary state churn
+
+**Implementation**:
+```csharp
+case "out/L2Trace":
+    var l2Trace = JsonSerializer.Deserialize<L2Trace>(payload);
+    if (l2Trace != null)
+    {
+        // L2Trace is saved to database only, no state updates
+        await _traceRepository.InsertTraceAsync(payload, arrivalTime);
+    }
+    break;
+```
+
+**Removed**:
+- IP address updates from L2Trace `reportFrom` field
+- Node activity tracking from L2Trace `srce`/`dest` fields
+- Any state modifications based on L2Trace data
+
+**What Updates Node State**:
+- `NodeUpEvent` - Node comes online
+- `NodeStatus` - Periodic status reports
+- `NodeDownEvent` - Node goes offline
+- `LinkUpEvent` / `LinkStatus` / `LinkDownEvent` - Link state changes
+- `CircuitUpEvent` / `CircuitStatus` / `CircuitDownEvent` - Circuit state changes
+
 ## Changes Made
 
 ### 1. `node-api/Services/DatagramProcessor.cs`
@@ -67,8 +103,9 @@ This meant that for every UDP packet received, the node's IP address, GeoIP coun
 
 **Modified**:
 - `OnMessageReceivedAsync()` now extracts IP/GeoIP user properties from MQTT messages
-- Calls new `UpdateNodeIpInfo()` method after processing each event type
+- Calls new `UpdateNodeIpInfo()` method after processing each **event type** (not L2Trace)
 - Added `UpdateNodeIpInfo()` helper method to conditionally update IP data
+- **Removed all state updates from L2Trace handling** - only saves to database
 
 ### 3. `node-api/Services/NetworkStateUpdater.cs`
 
@@ -86,6 +123,7 @@ This meant that for every UDP packet received, the node's IP address, GeoIP coun
 2. **Single source of truth**: All state updates flow through `MqttStateSubscriber` ? `NetworkStateUpdater`
 3. **Consistent architecture**: Follows the existing pattern where MQTT events drive state changes
 4. **Reduced memory churn**: State objects modified once per event instead of twice
+5. **Cleaner separation**: L2Trace = telemetry data, Events = state changes
 
 ## Testing
 
@@ -94,6 +132,7 @@ After deployment:
 - Verify IP address and GeoIP data still appears correctly on node details pages
 - Confirm `NetworkStatePersistenceService` database writes are reasonable (30-second interval)
 - Check that duplicate updates are no longer occurring
+- Verify L2Trace data is still being saved to database correctly
 
 ## Related Files
 

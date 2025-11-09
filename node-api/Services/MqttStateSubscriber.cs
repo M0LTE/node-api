@@ -173,10 +173,6 @@ public class MqttStateSubscriber : BackgroundService
                     if (l2Trace != null)
                     {
                         // L2Trace is saved to database only, no state updates
-                        if (l2Trace.ReportFrom != null)
-                        {
-                            UpdateNodeIpInfo(l2Trace.ReportFrom, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
-                        }
                         await _traceRepository.InsertTraceAsync(payload, arrivalTime);
                     }
                     break;
