@@ -44,7 +44,11 @@ builder.Services.AddSingleton<IGeoIpService, GeoIpService>();
 // Register MQTT client provider (must be initialized before DatagramProcessor)
 builder.Services.AddSingleton<IMqttClientProvider, MqttClientProvider>();
 
-// Register shared datagram processor
+// Register RabbitMQ services for UDP datagram persistence
+builder.Services.AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>();
+
+// Register DatagramProcessor for RabbitMQ consumer only
+// (UDP and HTTP ingestion go directly to RabbitMQ queue)
 builder.Services.AddSingleton<IDatagramProcessor>(serviceProvider =>
 {
     var logger = serviceProvider.GetRequiredService<ILogger<DatagramProcessor>>();
@@ -64,8 +68,7 @@ builder.Services.AddSingleton<IDatagramProcessor>(serviceProvider =>
     return new DatagramProcessor(logger, validationService, rateLimitService, geoIpService, mqttClient);
 });
 
-// Register RabbitMQ services for UDP datagram persistence
-builder.Services.AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>();
+// Register RabbitMQ consumer (uses DatagramProcessor)
 builder.Services.AddHostedService<RabbitMqConsumer>();
 
 // Register network state services
