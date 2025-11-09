@@ -231,6 +231,12 @@ public class NetworkStatePersistenceService : BackgroundService
         target.LastDownEvent = source.LastDownEvent;
         target.L2TraceCount = source.L2TraceCount;
         target.LastL2Trace = source.LastL2Trace;
+        target.IpAddressObfuscated = source.IpAddressObfuscated;
+        target.GeoIpCountryCode = source.GeoIpCountryCode;
+        target.GeoIpCountryName = source.GeoIpCountryName;
+        target.GeoIpCity = source.GeoIpCity;
+        target.LastIpUpdate = source.LastIpUpdate;
+        target.IsReportingNode = source.IsReportingNode;
     }
 
     private static void CopyLinkState(LinkState source, LinkState target)

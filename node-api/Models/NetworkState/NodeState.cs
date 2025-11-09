@@ -372,6 +372,24 @@ public class NodeState
         }
     }
     
+    /// <summary>
+    /// True if this node has sent UDP telemetry (NodeUpEvent or NodeStatus) to this API.
+    /// False means the node was only discovered via events from other nodes (e.g., in L2Traces, LinkEvents).
+    /// </summary>
+    private bool _isReportingNode;
+    public bool IsReportingNode
+    {
+        get => _isReportingNode;
+        set
+        {
+            if (_isReportingNode != value)
+            {
+                _isReportingNode = value;
+                MarkDirty();
+            }
+        }
+    }
+    
     // Dirty tracking for persistence optimization
     public bool IsDirty { get; private set; }
     

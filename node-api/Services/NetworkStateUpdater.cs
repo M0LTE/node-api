@@ -36,6 +36,9 @@ public partial class NetworkStateUpdater : IHostedService
     {
         var node = _networkState.GetOrCreateNode(evt.NodeCall);
         
+        // Mark as reporting node (sends UDP telemetry)
+        node.IsReportingNode = true;
+        
         node.Alias = evt.NodeAlias;
         node.Locator = evt.Locator;
         node.Latitude = evt.Latitude;
@@ -52,6 +55,9 @@ public partial class NetworkStateUpdater : IHostedService
     public void UpdateFromNodeStatus(NodeStatusReportEvent evt)
     {
         var node = _networkState.GetOrCreateNode(evt.NodeCall);
+        
+        // Mark as reporting node (sends UDP telemetry)
+        node.IsReportingNode = true;
         
         node.Alias = evt.NodeAlias;
         node.Locator = evt.Locator;

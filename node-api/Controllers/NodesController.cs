@@ -34,6 +34,23 @@ public class NodesController : ControllerBase
     }
 
     /// <summary>
+    /// Get only nodes that are actively reporting (sending UDP telemetry)
+    /// Excludes nodes that were only discovered via events from other nodes
+    /// </summary>
+    [HttpGet("reporting")]
+    public IActionResult GetReportingNodes()
+    {
+        var nodes = _networkState.GetAllNodes()
+            .Values
+            .Where(n => n.IsReportingNode &&
+                       !_networkState.IsTestCallsign(n.Callsign) &&
+                       !_networkState.IsHiddenCallsign(n.Callsign));
+        
+        _logger.LogInformation("GetReportingNodes called, returning {Count} reporting nodes", nodes.Count());
+        return Ok(nodes);
+    }
+
+    /// <summary>
     /// Get a specific node by callsign
     /// </summary>
     [HttpGet("{callsign}")]

@@ -618,10 +618,10 @@
         // Fetch initial node state from API
         async function loadInitialState() {
             try {
-                const response = await fetch('/api/network/nodes');
+                const response = await fetch('/api/network/nodes/reporting');
                 if (response.ok) {
                     const nodes = await response.json();
-                    console.log(`Loaded ${nodes.length} nodes from API`);
+                    console.log(`Loaded ${nodes.length} reporting nodes from API`);
                     
                     // Populate nodeTracker with existing nodes
                     nodes.forEach(node => {

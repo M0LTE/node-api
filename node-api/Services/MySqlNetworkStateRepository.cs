@@ -23,14 +23,16 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                 `circuits_in`, `circuits_out`, `l3_relayed`, `status`,
                 `last_seen`, `first_seen`, `last_status_update`,
                 `last_up_event`, `last_down_event`, `l2_trace_count`, `last_l2_trace`,
-                `ip_address_obfuscated`, `geoip_country_code`, `geoip_country_name`, `geoip_city`, `last_ip_update`
+                `ip_address_obfuscated`, `geoip_country_code`, `geoip_country_name`, `geoip_city`, `last_ip_update`,
+                `is_reporting_node`
             ) VALUES (
                 @Callsign, @Alias, @Locator, @Latitude, @Longitude,
                 @Software, @Version, @UptimeSecs, @LinksIn, @LinksOut,
                 @CircuitsIn, @CircuitsOut, @L3Relayed, @Status,
                 @LastSeen, @FirstSeen, @LastStatusUpdate,
                 @LastUpEvent, @LastDownEvent, @L2TraceCount, @LastL2Trace,
-                @IpAddressObfuscated, @GeoIpCountryCode, @GeoIpCountryName, @GeoIpCity, @LastIpUpdate
+                @IpAddressObfuscated, @GeoIpCountryCode, @GeoIpCountryName, @GeoIpCity, @LastIpUpdate,
+                @IsReportingNode
             )
             ON DUPLICATE KEY UPDATE
                 `alias` = VALUES(`alias`),
@@ -57,7 +59,8 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                 `geoip_country_code` = VALUES(`geoip_country_code`),
                 `geoip_country_name` = VALUES(`geoip_country_name`),
                 `geoip_city` = VALUES(`geoip_city`),
-                `last_ip_update` = VALUES(`last_ip_update`)";
+                `last_ip_update` = VALUES(`last_ip_update`),
+                `is_reporting_node` = VALUES(`is_reporting_node`)>";
 
         try
         {
@@ -93,7 +96,8 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                     node.GeoIpCountryCode,
                     node.GeoIpCountryName,
                     node.GeoIpCity,
-                    node.LastIpUpdate
+                    node.LastIpUpdate,
+                    node.IsReportingNode
                 }, cancellationToken: ct),
                 logger,
                 SlowQueryThresholdMs);
@@ -123,7 +127,8 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                 `geoip_country_code` AS GeoIpCountryCode,
                 `geoip_country_name` AS GeoIpCountryName,
                 `geoip_city` AS GeoIpCity,
-                `last_ip_update` AS LastIpUpdate
+                `last_ip_update` AS LastIpUpdate,
+                `is_reporting_node` AS IsReportingNode
             FROM `nodes`
             WHERE `callsign` = @callsign";
 
@@ -165,7 +170,8 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                 `geoip_country_code` AS GeoIpCountryCode,
                 `geoip_country_name` AS GeoIpCountryName,
                 `geoip_city` AS GeoIpCity,
-                `last_ip_update` AS LastIpUpdate
+                `last_ip_update` AS LastIpUpdate,
+                `is_reporting_node` AS IsReportingNode
             FROM `nodes`";
 
         try
@@ -217,7 +223,8 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
             GeoIpCountryCode = row.GeoIpCountryCode,
             GeoIpCountryName = row.GeoIpCountryName,
             GeoIpCity = row.GeoIpCity,
-            LastIpUpdate = row.LastIpUpdate
+            LastIpUpdate = row.LastIpUpdate,
+            IsReportingNode = row.IsReportingNode
         };
     }
 
@@ -249,6 +256,7 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
         public string? GeoIpCountryName { get; set; }
         public string? GeoIpCity { get; set; }
         public DateTime? LastIpUpdate { get; set; }
+        public bool IsReportingNode { get; set; }
     }
 
     #endregion
