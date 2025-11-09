@@ -9,6 +9,7 @@ A .NET 9.0 ASP.NET Core Web API service for real-time packet radio network monit
 ### Key Features
 
 - 📡 **UDP Datagram Ingestion** - Listens on port 13579 for network events
+- 🌐 **HTTP Ingestion API** - RESTful endpoints for event submission
 - ✅ **Comprehensive Validation** - FluentValidation for all event types
 - 📤 **Real-time MQTT Publishing** - Events published to MQTT topics
 - 💾 **Persistent State** - MySQL database for network state and history
@@ -69,6 +70,7 @@ See [Deployment Guide](docs/DEPLOYMENT.md) for production deployment instruction
 - 📊 [Link Flapping Detection](docs/LINK_FLAPPING.md) - Unstable connection tracking
 - 🧠 [AX.25 Link Inference](docs/AX25_LINK_INFERENCE.md) - Routing heuristics
 - ⏰ [Timestamp Tracking](docs/TIMESTAMP_TRACKING.md) - Datagram arrival times
+- 🌐 [HTTP Ingestion API](docs/HTTP_DATAGRAM_INGESTION.md) - REST endpoints for event submission
 
 ### Architecture
 - 🐰 [RabbitMQ Integration](docs/RABBITMQ_INTEGRATION.md) - Message queue support
@@ -137,10 +139,16 @@ The service processes the following AX.25 network events:
 
 ## 🌐 API Endpoints
 
+### Ingestion
+- `POST /api/ingest` - Ingest single datagram via HTTP
+- `POST /api/ingest/batch` - Ingest multiple datagrams
+- `GET /api/ingest/status` - Check ingestion service status
+
 ### Nodes
 - `GET /api/nodes` - List all nodes
 - `GET /api/nodes/{callsign}` - Get specific node
 - `GET /api/nodes/base/{baseCallsign}` - Get nodes by base callsign
+- `GET /api/nodes/reporting` - Get only reporting nodes
 
 ### Links
 - `GET /api/links` - List all links

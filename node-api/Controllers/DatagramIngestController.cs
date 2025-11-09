@@ -1,0 +1,273 @@
+using Microsoft.AspNetCore.Mvc;
+using node_api.Services;
+using System.Net;
+
+namespace node_api.Controllers;
+
+/// <summary>
+/// HTTP API for ingesting network event datagrams
+/// Data submitted here is published to RabbitMQ and processed identically to UDP datagrams
+/// </summary>
+[ApiController]
+[Route("api/ingest")]
+public class DatagramIngestController : ControllerBase
+{
+    private readonly ILogger<DatagramIngestController> _logger;
+    private readonly IRabbitMqPublisher _rabbitMqPublisher;
+    private readonly IDatagramProcessor _datagramProcessor;
+
+    public DatagramIngestController(
+        ILogger<DatagramIngestController> logger,
+        IRabbitMqPublisher rabbitMqPublisher,
+        IDatagramProcessor datagramProcessor)
+    {
+        _logger = logger;
+        _rabbitMqPublisher = rabbitMqPublisher;
+        _datagramProcessor = datagramProcessor;
+    }
+
+    /// <summary>
+    /// Ingest a single network event datagram via HTTP
+    /// </summary>
+    /// <param name="datagram">The event datagram (same format as UDP datagrams)</param>
+    /// <returns>202 Accepted if successfully queued, 503 if RabbitMQ unavailable</returns>
+    /// <remarks>
+    /// Accepts the same JSON format as UDP datagrams. The datagram will be published to RabbitMQ
+    /// and processed through the same pipeline as UDP-received events.
+    /// 
+    /// Example NodeUpEvent:
+    /// ```json
+    /// {
+    ///   "@type": "NodeUpEvent",
+    ///   "time": 1234567890,
+    ///   "nodeCall": "M0LTE-1",
+    ///   "nodeAlias": "MYLTE1",
+    ///   "locator": "IO91EC",
+    ///   "latitude": 51.5074,
+    ///   "longitude": -0.1278,
+    ///   "software": "xrlin",
+    ///   "version": "v504j"
+    /// }
+    /// ```
+    /// </remarks>
+    [HttpPost]
+    [Consumes("application/json")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> IngestDatagramAsync([FromBody] object datagram)
+    {
+        try
+        {
+            var arrivalTime = DateTime.UtcNow;
+            
+            // Serialize the datagram to JSON bytes (same format as UDP)
+            var jsonBytes = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(datagram);
+            
+            // Get the source IP from the HTTP request
+            var sourceIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            
+            // Get real IP if behind proxy (X-Forwarded-For header)
+            if (Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor))
+            {
+                var ips = forwardedFor.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                if (ips.Length > 0)
+                {
+                    sourceIp = ips[0];
+                }
+            }
+            
+            _logger.LogDebug("HTTP ingest from {SourceIp}: {Size} bytes", sourceIp, jsonBytes.Length);
+            
+            if (_rabbitMqPublisher.IsAvailable)
+            {
+                // RabbitMQ available: publish to queue (consumer will process)
+                await _rabbitMqPublisher.PublishDatagramAsync(jsonBytes, sourceIp);
+                _logger.LogDebug("Published HTTP datagram from {SourceIp} to RabbitMQ", sourceIp);
+                
+                return Accepted(new { 
+                    status = "queued", 
+                    message = "Datagram queued for processing via RabbitMQ",
+                    sourceIp = sourceIp,
+                    receivedAt = arrivalTime
+                });
+            }
+            else
+            {
+                // RabbitMQ not available: process directly as fallback
+                if (!IPAddress.TryParse(sourceIp, out var ipAddress))
+                {
+                    ipAddress = IPAddress.Parse("127.0.0.1"); // Fallback for invalid IPs
+                }
+                
+                await _datagramProcessor.ProcessDatagramAsync(jsonBytes, ipAddress, arrivalTime);
+                _logger.LogDebug("Processed HTTP datagram from {SourceIp} directly (RabbitMQ unavailable)", sourceIp);
+                
+                return Accepted(new { 
+                    status = "processed", 
+                    message = "Datagram processed directly (RabbitMQ unavailable)",
+                    sourceIp = sourceIp,
+                    receivedAt = arrivalTime
+                });
+            }
+        }
+        catch (System.Text.Json.JsonException ex)
+        {
+            _logger.LogWarning(ex, "Invalid JSON in HTTP datagram ingestion");
+            return BadRequest(new { error = "Invalid JSON", details = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error ingesting datagram via HTTP");
+            return StatusCode(500, new { error = "Internal server error", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Ingest multiple network event datagrams via HTTP in a single request
+    /// </summary>
+    /// <param name="datagrams">Array of event datagrams</param>
+    /// <returns>202 Accepted with count of queued datagrams</returns>
+    /// <remarks>
+    /// Accepts an array of datagrams in the same format as single ingestion.
+    /// All datagrams are published to RabbitMQ for processing.
+    /// 
+    /// Example:
+    /// ```json
+    /// [
+    ///   {
+    ///     "@type": "NodeUpEvent",
+    ///     "nodeCall": "M0LTE-1",
+    ///     "nodeAlias": "MYLTE1",
+    ///     ...
+    ///   },
+    ///   {
+    ///     "@type": "LinkUpEvent",
+    ///     "node": "M0LTE-1",
+    ///     "local": "M0LTE-1",
+    ///     "remote": "G0ABC-2",
+    ///     ...
+    ///   }
+    /// ]
+    /// ```
+    /// </remarks>
+    [HttpPost("batch")]
+    [Consumes("application/json")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> IngestDatagramBatchAsync([FromBody] object[] datagrams)
+    {
+        if (datagrams == null || datagrams.Length == 0)
+        {
+            return BadRequest(new { error = "Empty batch", message = "At least one datagram is required" });
+        }
+
+        try
+        {
+            var arrivalTime = DateTime.UtcNow;
+            var sourceIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            
+            // Get real IP if behind proxy
+            if (Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor))
+            {
+                var ips = forwardedFor.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                if (ips.Length > 0)
+                {
+                    sourceIp = ips[0];
+                }
+            }
+
+            var successCount = 0;
+            var failureCount = 0;
+            var errors = new List<string>();
+
+            for (int i = 0; i < datagrams.Length; i++)
+            {
+                try
+                {
+                    var jsonBytes = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(datagrams[i]);
+                    
+                    if (_rabbitMqPublisher.IsAvailable)
+                    {
+                        await _rabbitMqPublisher.PublishDatagramAsync(jsonBytes, sourceIp);
+                    }
+                    else
+                    {
+                        if (!IPAddress.TryParse(sourceIp, out var ipAddress))
+                        {
+                            ipAddress = IPAddress.Parse("127.0.0.1");
+                        }
+                        await _datagramProcessor.ProcessDatagramAsync(jsonBytes, ipAddress, arrivalTime);
+                    }
+                    
+                    successCount++;
+                }
+                catch (Exception ex)
+                {
+                    failureCount++;
+                    errors.Add($"Datagram {i}: {ex.Message}");
+                    _logger.LogWarning(ex, "Error processing datagram {Index} in batch from {SourceIp}", i, sourceIp);
+                }
+            }
+
+            _logger.LogInformation(
+                "HTTP batch ingest from {SourceIp}: {SuccessCount} succeeded, {FailureCount} failed",
+                sourceIp, successCount, failureCount);
+
+            var response = new
+            {
+                status = failureCount == 0 ? "queued" : "partial",
+                totalReceived = datagrams.Length,
+                successCount = successCount,
+                failureCount = failureCount,
+                errors = errors,
+                sourceIp = sourceIp,
+                receivedAt = arrivalTime,
+                processingMode = _rabbitMqPublisher.IsAvailable ? "rabbitmq" : "direct"
+            };
+
+            return failureCount == 0 
+                ? Accepted(response) 
+                : StatusCode(207, response); // 207 Multi-Status for partial success
+        }
+        catch (System.Text.Json.JsonException ex)
+        {
+            _logger.LogWarning(ex, "Invalid JSON in HTTP batch datagram ingestion");
+            return BadRequest(new { error = "Invalid JSON", details = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error ingesting batch datagrams via HTTP");
+            return StatusCode(500, new { error = "Internal server error", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Check the status of the ingestion service
+    /// </summary>
+    /// <returns>Service status including RabbitMQ availability</returns>
+    [HttpGet("status")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult GetStatus()
+    {
+        var status = new
+        {
+            service = "datagram-ingest",
+            status = "operational",
+            rabbitMq = new
+            {
+                available = _rabbitMqPublisher.IsAvailable,
+                mode = _rabbitMqPublisher.IsAvailable ? "queue-based" : "direct-processing"
+            },
+            endpoints = new
+            {
+                singleIngest = "/api/ingest",
+                batchIngest = "/api/ingest/batch",
+                status = "/api/ingest/status"
+            }
+        };
+
+        return Ok(status);
+    }
+}
