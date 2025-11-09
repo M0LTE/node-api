@@ -404,35 +404,6 @@
         <div id="reportingNodesContainer" class="nodes-grid">
             <div class="no-data">Waiting for node data...</div>
         </div>
-
-        <div class="expandable-section">
-            <div class="expand-toggle" onclick="toggleNeighborNodes()">
-                <span class="expand-toggle-title">📡 Neighbor Nodes (Seen in routing or traffic, not reporting)</span>
-                <span class="expand-toggle-icon" id="neighbor-icon">▶</span>
-            </div>
-            <div class="expand-content" id="neighbor-content">
-                <div class="summary-stats">
-                    <div class="summary-card">
-                        <div class="summary-number" id="activeNeighborNodesCount">0</div>
-                        <div class="summary-label">Active Neighbor Nodes</div>
-                    </div>
-                    <div class="summary-card">
-                        <div class="summary-number" id="totalNeighborNodesCount">0</div>
-                        <div class="summary-label">Total Neighbor Nodes</div>
-                    </div>
-                </div>
-                <div id="neighborNodesContainer" class="nodes-grid">
-                    <div class="no-data">No neighbor nodes seen</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="container">
-        <h2>Real-time MQTT Statistics</h2>
-        <div id="statsContainer" class="stats-grid">
-            <div class="no-data">Waiting for MQTT data...</div>
-        </div>
     </div>
 
     <div class="container">
@@ -524,40 +495,6 @@
 
     <script src="https://unpkg.com/mqtt@5.3.4/dist/mqtt.min.js"></script>
     <script>
-        // Topic statistics tracker
-        class TopicStats {
-            constructor(topic) {
-                this.topic = topic;
-                this.messageCount = 0;
-                this.timestamps = [];
-                this.windowSize = 10000; // 10 second rolling window
-            }
-
-            addMessage() {
-                const now = Date.now();
-                this.messageCount++;
-                this.timestamps.push(now);
-                
-                // Remove timestamps outside the rolling window
-                const cutoff = now - this.windowSize;
-                this.timestamps = this.timestamps.filter(t => t > cutoff);
-            }
-
-            getMessagesPerSecond() {
-                if (this.timestamps.length === 0) return 0;
-                
-                const now = Date.now();
-                const cutoff = now - this.windowSize;
-                const recentMessages = this.timestamps.filter(t => t > cutoff).length;
-                
-                return (recentMessages / (this.windowSize / 1000)).toFixed(2);
-            }
-
-            getTotalMessages() {
-                return this.messageCount;
-            }
-        }
-
         // Node tracker
         class NodeTracker {
             constructor() {
@@ -572,7 +509,8 @@
                 return match ? match[1].toUpperCase() : callsign.toUpperCase();
             }
 
-            updateNode(callsign) {
+            // Mark a node as actively reporting (sending telemetry)
+            markAsReporting(callsign) {
                 const existing = this.nodes.get(callsign);
                 if (existing) {
                     existing.lastSeen = Date.now();
@@ -581,23 +519,22 @@
                     this.nodes.set(callsign, {
                         lastSeen: Date.now(),
                         messageCount: 1,
-                        isReporting: false
+                        status: 'online'
                     });
                 }
             }
 
-            // Mark a node as actively reporting (sending L2Trace with reportFrom)
-            markAsReporting(callsign) {
+            // Update node status (online/offline)
+            updateNodeStatus(callsign, status) {
                 const existing = this.nodes.get(callsign);
                 if (existing) {
-                    existing.isReporting = true;
+                    existing.status = status;
                     existing.lastSeen = Date.now();
-                    existing.messageCount++;
                 } else {
                     this.nodes.set(callsign, {
                         lastSeen: Date.now(),
-                        messageCount: 1,
-                        isReporting: true
+                        messageCount: 0,
+                        status: status
                     });
                 }
             }
@@ -618,7 +555,7 @@
                             messageCount: 0,
                             lastSeen: data.lastSeen,
                             activeCount: 0,
-                            isReporting: false
+                            status: data.status || 'online'
                         });
                     }
                     
@@ -627,9 +564,9 @@
                     aggregated.messageCount += data.messageCount;
                     aggregated.lastSeen = Math.max(aggregated.lastSeen, data.lastSeen);
                     
-                    // Mark as reporting if ANY SSID is reporting
-                    if (data.isReporting) {
-                        aggregated.isReporting = true;
+                    // Update status - if any SSID is online, consider the base online
+                    if (data.status === 'online') {
+                        aggregated.status = 'online';
                     }
                     
                     // Count active SSIDs
@@ -643,13 +580,7 @@
             }
 
             getReportingNodes() {
-                return this.getAggregatedNodes()
-                    .filter(node => node.isReporting);
-            }
-
-            getNeighborNodes() {
-                return this.getAggregatedNodes()
-                    .filter(node => !node.isReporting);
+                return this.getAggregatedNodes();
             }
 
             getActiveReportingNodes() {
@@ -660,26 +591,16 @@
                     .filter(agg => agg.lastSeen > cutoff);
             }
 
-            getActiveNeighborNodes() {
-                const now = Date.now();
-                const cutoff = now - this.activeThreshold;
-                
-                return this.getNeighborNodes()
-                    .filter(agg => agg.lastSeen > cutoff);
-            }
-
             isActive(lastSeen) {
                 const now = Date.now();
                 return (now - lastSeen) < this.activeThreshold;
             }
         }
 
-        const topicStatsMap = new Map();
         const nodeTracker = new NodeTracker();
         let systemMetrics = null;
         const mqttUrl = 'wss://node-api.packet.oarc.uk:443/mqtt/';
         const statusElement = document.getElementById('mqttStatus');
-        const statsContainer = document.getElementById('statsContainer');
         const nodesContainer = document.getElementById('nodesContainer');
         const activeNodesCount = document.getElementById('activeNodesCount');
         const totalNodesCount = document.getElementById('totalNodesCount');
@@ -705,12 +626,13 @@
                     // Populate nodeTracker with existing nodes
                     nodes.forEach(node => {
                         const lastSeen = node.lastSeen ? new Date(node.lastSeen).getTime() : Date.now();
-                        const isReporting = node.l2TraceCount && node.l2TraceCount > 0;
+                        // Status: 0 = Unknown, 1 = Online, 2 = Offline (from NodeStatus enum)
+                        const status = node.status === 1 ? 'online' : node.status === 2 ? 'offline' : 'unknown';
                         
                         nodeTracker.nodes.set(node.callsign, {
                             lastSeen: lastSeen,
-                            messageCount: node.l2TraceCount || 0,
-                            isReporting: isReporting
+                            messageCount: 0, // Will be updated by MQTT events
+                            status: status
                         });
                     });
                     
@@ -758,12 +680,15 @@
             statusElement.textContent = 'Connected';
             statusElement.className = 'mqtt-status connected';
             
-            // Subscribe to all topics under in/# and out/#
-            client.subscribe('in/#', (err) => {
-                if (err) console.error('Error subscribing to in/#:', err);
+            // Subscribe to node events for tracking reporting nodes
+            client.subscribe('out/NodeUpEvent', (err) => {
+                if (err) console.error('Error subscribing to out/NodeUpEvent:', err);
             });
-            client.subscribe('out/#', (err) => {
-                if (err) console.error('Error subscribing to out/#:', err);
+            client.subscribe('out/NodeStatus', (err) => {
+                if (err) console.error('Error subscribing to out/NodeStatus:', err);
+            });
+            client.subscribe('out/NodeDownEvent', (err) => {
+                if (err) console.error('Error subscribing to out/NodeDownEvent:', err);
             });
             client.subscribe('metrics/system', (err) => {
                 if (err) console.error('Error subscribing to metrics/system:', err);
@@ -796,35 +721,23 @@
                 return;
             }
 
-            // Get or create stats for this topic
-            if (!topicStatsMap.has(topic)) {
-                topicStatsMap.set(topic, new TopicStats(topic));
-            }
-            
-            const stats = topicStatsMap.get(topic);
-            stats.addMessage();
-
-            // Parse L2Trace messages to extract node information
-            if (topic === 'out/L2Trace') {
-                try {
-                    const data = JSON.parse(message.toString());
-                    
-                    // Track the reporting node (node that sent this frame)
-                    if (data.reportFrom) {
-                        nodeTracker.markAsReporting(data.reportFrom);
-                    }
-                    
-                    // Also track source and destination as neighbor nodes
-                    // (they'll stay as neighbors unless they later send a reportFrom)
-                    if (data.srce && data.srce !== data.reportFrom) {
-                        nodeTracker.updateNode(data.srce);
-                    }
-                    if (data.dest && data.dest !== data.reportFrom) {
-                        nodeTracker.updateNode(data.dest);
-                    }
-                } catch (err) {
-                    console.error('Error parsing L2Trace message:', err);
+            // Handle node events
+            try {
+                const data = JSON.parse(message.toString());
+                
+                if (topic === 'out/NodeUpEvent' && data.nodeCall) {
+                    nodeTracker.markAsReporting(data.nodeCall);
+                    nodeTracker.updateNodeStatus(data.nodeCall, 'online');
                 }
+                else if (topic === 'out/NodeStatus' && data.nodeCall) {
+                    nodeTracker.markAsReporting(data.nodeCall);
+                    nodeTracker.updateNodeStatus(data.nodeCall, 'online');
+                }
+                else if (topic === 'out/NodeDownEvent' && data.nodeCall) {
+                    nodeTracker.updateNodeStatus(data.nodeCall, 'offline');
+                }
+            } catch (err) {
+                console.error('Error parsing node event:', err);
             }
         });
 
@@ -863,15 +776,11 @@
 
         function updateNodesDisplay() {
             const reportingNodes = nodeTracker.getReportingNodes();
-            const neighborNodes = nodeTracker.getNeighborNodes();
             const activeReporting = nodeTracker.getActiveReportingNodes();
-            const activeNeighbor = nodeTracker.getActiveNeighborNodes();
 
             // Update counts
             document.getElementById('activeReportingNodesCount').textContent = activeReporting.length;
             document.getElementById('totalReportingNodesCount').textContent = reportingNodes.length;
-            document.getElementById('activeNeighborNodesCount').textContent = activeNeighbor.length;
-            document.getElementById('totalNeighborNodesCount').textContent = neighborNodes.length;
 
             // Render reporting nodes
             const reportingNodesContainer = document.getElementById('reportingNodesContainer');
@@ -901,35 +810,6 @@
                 }).join('');
                 reportingNodesContainer.innerHTML = reportingHtml;
             }
-
-            // Render neighbor nodes
-            const neighborNodesContainer = document.getElementById('neighborNodesContainer');
-            if (neighborNodes.length === 0) {
-                neighborNodesContainer.innerHTML = '<div class="no-data">No neighbor nodes seen</div>';
-            } else {
-                const neighborHtml = neighborNodes.map(({ baseCallsign, ssids, lastSeen, messageCount, activeCount }) => {
-                    const isActive = nodeTracker.isActive(lastSeen);
-                    const staleClass = isActive ? '' : 'stale';
-                    
-                    // Build SSID summary
-                    const ssidCount = ssids.length;
-                    const ssidSummary = ssidCount === 1 ? 
-                        ssids[0] : 
-                        `${ssidCount} SSIDs (${activeCount} active)`;
-                    
-                    return `
-                        <a href="/node.html?callsign=${baseCallsign}" style="text-decoration: none; color: inherit;">
-                            <div class="node-badge ${staleClass}">
-                                <div class="node-callsign">${baseCallsign}</div>
-                                <div class="node-message-count">${messageCount.toLocaleString()} references</div>
-                                <div class="node-last-seen">${ssidSummary}</div>
-                                <div class="node-last-seen">${formatLastSeen(lastSeen)}</div>
-                            </div>
-                        </a>
-                    `;
-                }).join('');
-                neighborNodesContainer.innerHTML = neighborHtml;
-            }
         }
 
         function formatBytes(bytes) {
@@ -954,14 +834,6 @@
         function toggleSection(section) {
             const content = document.getElementById(`${section}-content`);
             const icon = document.getElementById(`${section}-icon`);
-            
-            content.classList.toggle('expanded');
-            icon.classList.toggle('expanded');
-        }
-
-        function toggleNeighborNodes() {
-            const content = document.getElementById('neighbor-content');
-            const icon = document.getElementById('neighbor-icon');
             
             content.classList.toggle('expanded');
             icon.classList.toggle('expanded');
@@ -1382,50 +1254,6 @@
         setInterval(() => {
             updateNodesDisplay();
         }, 1000);
-
-        // Update stats UI every 500ms
-        setInterval(() => {
-            if (topicStatsMap.size === 0) return;
-
-            // Sort topics: in/# first, then out/#
-            const sortedTopics = Array.from(topicStatsMap.entries()).sort((a, b) => {
-                const [topicA] = a;
-                const [topicB] = b;
-                
-                const aIsIn = topicA.startsWith('in/');
-                const bIsIn = topicB.startsWith('in/');
-                
-                if (aIsIn && !bIsIn) return -1;
-                if (!aIsIn && bIsIn) return 1;
-                return topicA.localeCompare(topicB);
-            });
-
-            const html = sortedTopics.map(([topic, stats]) => {
-                const mps = stats.getMessagesPerSecond();
-                const total = stats.getTotalMessages();
-                const isIn = topic.startsWith('in/');
-                const cardClass = isIn ? 'in-topic' : 'out-topic';
-                const valueClass = parseFloat(mps) > 1 ? 'high' : '';
-
-                return `
-                    <div class="topic-card ${cardClass}">
-                        <div class="topic-name">${topic}</div>
-                        <div class="topic-stats">
-                            <div class="stat-row">
-                                <span class="stat-label">Messages/sec:</span>
-                                <span class="stat-value ${valueClass}">${mps}</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-label">Total:</span>
-                                <span class="stat-value">${total.toLocaleString()}</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            statsContainer.innerHTML = html;
-        }, 500);
     </script>
 </body>
 </html>
