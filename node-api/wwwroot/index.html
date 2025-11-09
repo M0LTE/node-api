@@ -390,7 +390,7 @@
 
     <div class="container">
         <h2>Reporting Nodes</h2>
-        <p>Nodes actively sending UDP telemetry to this API</p>
+        <p>Nodes actively sending telemetry to this API</p>
         <div class="summary-stats">
             <div class="summary-card">
                 <div class="summary-number" id="activeReportingNodesCount">0</div>
@@ -499,7 +499,7 @@
         class NodeTracker {
             constructor() {
                 this.nodes = new Map(); // Map of individual callsigns
-                this.activeThreshold = 60000; // 60 seconds
+                this.activeThreshold = 1500000; // 25 minutes (20 min reporting interval + 5 min margin)
             }
 
             // Extract base callsign without SSID
