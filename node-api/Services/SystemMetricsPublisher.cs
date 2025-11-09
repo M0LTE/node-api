@@ -17,7 +17,6 @@ namespace node_api.Services;
 public class SystemMetricsPublisher : BackgroundService
 {
     private readonly ILogger<SystemMetricsPublisher> _logger;
-    private readonly QueryFrequencyTracker _tracker;
     private const int PublishIntervalSeconds = 10;
     private const int SlowQueryThresholdMs = 1000;
     private IManagedMqttClient? _mqttClient;
@@ -29,10 +28,9 @@ public class SystemMetricsPublisher : BackgroundService
     private long _previousTotalCpuTime;
     private long _previousIdleCpuTime;
 
-    public SystemMetricsPublisher(ILogger<SystemMetricsPublisher> logger, QueryFrequencyTracker tracker)
+    public SystemMetricsPublisher(ILogger<SystemMetricsPublisher> logger)
     {
         _logger = logger;
-        _tracker = tracker;
         _startTime = DateTime.UtcNow;
         _systemStartTime = DateTime.UtcNow - TimeSpan.FromMilliseconds(Environment.TickCount64);
 
@@ -153,16 +151,14 @@ public class SystemMetricsPublisher : BackgroundService
                 conn,
                 new CommandDefinition("SHOW GLOBAL STATUS", cancellationToken: ct),
                 _logger,
-                SlowQueryThresholdMs,
-                _tracker)).ToDictionary(x => x.Variable_name, x => x.Value);
+                SlowQueryThresholdMs)).ToDictionary(x => x.Variable_name, x => x.Value);
 
             // Fetch global variables for configuration info
             var globalVars = (await QueryLogger.QueryWithLoggingAsync<StatusVariable>(
                 conn,
                 new CommandDefinition("SHOW GLOBAL VARIABLES WHERE Variable_name IN ('version', 'innodb_buffer_pool_size')", cancellationToken: ct),
                 _logger,
-                SlowQueryThresholdMs,
-                _tracker)).ToDictionary(x => x.Variable_name, x => x.Value);
+                SlowQueryThresholdMs)).ToDictionary(x => x.Variable_name, x => x.Value);
 
             // Calculate database sizes
             var sizeQuery = @"
@@ -175,8 +171,7 @@ public class SystemMetricsPublisher : BackgroundService
                 conn,
                 new CommandDefinition(sizeQuery, cancellationToken: ct),
                 _logger,
-                SlowQueryThresholdMs,
-                _tracker);
+                SlowQueryThresholdMs);
 
             // Calculate metrics
             long? uptime = statusVars.TryGetValue("Uptime", out var uptimeStr) && long.TryParse(uptimeStr, out var u) ? u : null;

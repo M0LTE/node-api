@@ -166,7 +166,7 @@ public class MqttStateSubscriber : BackgroundService
                     var l2Trace = JsonSerializer.Deserialize<L2Trace>(payload);
                     if (l2Trace != null)
                     {
-                        _networkStateUpdater.UpdateFromL2Trace(l2Trace);
+                        // L2Trace is saved to database only, no state updates
                         if (l2Trace.ReportFrom != null)
                         {
                             UpdateNodeIpInfo(l2Trace.ReportFrom, ipObfuscated, geoCountryCode, geoCountryName, geoCity);

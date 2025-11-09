@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace node_api.Services;
 
-public class MySqlEventRepository(ILogger<MySqlEventRepository> logger, QueryFrequencyTracker tracker) : IEventRepository
+public class MySqlEventRepository(ILogger<MySqlEventRepository> logger) : IEventRepository
 {
     private const int SlowQueryThresholdMs = 5000;
 
@@ -23,8 +23,7 @@ public class MySqlEventRepository(ILogger<MySqlEventRepository> logger, QueryFre
                     conn,
                     new CommandDefinition(sql, new { json, timestamp = timestamp.Value }, cancellationToken: ct),
                     logger,
-                    SlowQueryThresholdMs,
-                    tracker);
+                    SlowQueryThresholdMs);
             }
             else
             {
@@ -33,8 +32,7 @@ public class MySqlEventRepository(ILogger<MySqlEventRepository> logger, QueryFre
                     conn,
                     new CommandDefinition(sql, new { json }, cancellationToken: ct),
                     logger,
-                    SlowQueryThresholdMs,
-                    tracker);
+                    SlowQueryThresholdMs);
             }
         }
         catch (Exception ex)
@@ -147,8 +145,7 @@ public class MySqlEventRepository(ILogger<MySqlEventRepository> logger, QueryFre
                 _conn,
                 new CommandDefinition(sql, p, cancellationToken: ct),
                 logger,
-                SlowQueryThresholdMs,
-                tracker)).ToList();
+                SlowQueryThresholdMs)).ToList();
 
             // Materialize JSON column to JsonElement
             var data = new List<EventsController.EventDto>(rows.Count);
@@ -204,8 +201,7 @@ public class MySqlEventRepository(ILogger<MySqlEventRepository> logger, QueryFre
                 countConn,
                 new CommandDefinition(countSql, p, cancellationToken: ct),
                 logger,
-                SlowQueryThresholdMs,
-                tracker);
+                SlowQueryThresholdMs);
             
             return CountResult.Success(count);
         }
@@ -248,8 +244,7 @@ public class MySqlEventRepository(ILogger<MySqlEventRepository> logger, QueryFre
             conn,
             new CommandDefinition(sql, p, cancellationToken: ct),
             logger,
-            SlowQueryThresholdMs,
-            tracker);
+            SlowQueryThresholdMs);
 
         var data = new List<EventsController.EventDto>();
         foreach (var r in rows)

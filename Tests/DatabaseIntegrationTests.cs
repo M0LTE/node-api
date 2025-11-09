@@ -39,7 +39,6 @@ public class DatabaseIntegrationTests : IDisposable
     private readonly ILogger<MySqlEventRepository> _eventLogger;
     private readonly ILogger<MySqlNetworkStateRepository> _stateLogger;
     private readonly ILogger<MySqlErroredMessageRepository> _errorLogger;
-    private readonly QueryFrequencyTracker _tracker;
     
     // Unique test run identifier to safely distinguish test data from production data
     private readonly string _testRunId;
@@ -68,7 +67,6 @@ public class DatabaseIntegrationTests : IDisposable
         _eventLogger = loggerFactory.CreateLogger<MySqlEventRepository>();
         _stateLogger = loggerFactory.CreateLogger<MySqlNetworkStateRepository>();
         _errorLogger = loggerFactory.CreateLogger<MySqlErroredMessageRepository>();
-        _tracker = new QueryFrequencyTracker();
     }
 
     public void Dispose()
@@ -208,7 +206,7 @@ public class DatabaseIntegrationTests : IDisposable
     public async Task TraceRepository_Should_Insert_And_Query()
     {
         // Arrange
-        var repository = new MySqlTraceRepository(_traceLogger, _tracker);
+        var repository = new MySqlTraceRepository(_traceLogger);
         var testCallsign = $"TEST-INT-{_testRunId}";
         var json = JsonSerializer.Serialize(new { type = "L2Trace", reportFrom = testCallsign });
         
@@ -228,7 +226,7 @@ public class DatabaseIntegrationTests : IDisposable
     public async Task TraceRepository_Schema_Should_Support_All_Filters()
     {
         // Arrange
-        var repository = new MySqlTraceRepository(_traceLogger, _tracker);
+        var repository = new MySqlTraceRepository(_traceLogger);
         
         // Act & Assert - Should not throw
         var (traces, _, totalCount) = await repository.GetTracesAsync(
@@ -255,7 +253,7 @@ public class DatabaseIntegrationTests : IDisposable
     public async Task EventRepository_Should_Insert_And_Query()
     {
         // Arrange
-        var repository = new MySqlEventRepository(_eventLogger, _tracker);
+        var repository = new MySqlEventRepository(_eventLogger);
         var testNode = $"TEST-NODE-{_testRunId}";
         var json = JsonSerializer.Serialize(new { type = "LinkUpEvent", node = testNode });
         
@@ -275,7 +273,7 @@ public class DatabaseIntegrationTests : IDisposable
     public async Task EventRepository_Schema_Should_Support_All_Filters()
     {
         // Arrange
-        var repository = new MySqlEventRepository(_eventLogger, _tracker);
+        var repository = new MySqlEventRepository(_eventLogger);
         
         // Act & Assert - Should not throw
         var (events, _, _) = await repository.GetEventsAsync(
@@ -304,7 +302,7 @@ public class DatabaseIntegrationTests : IDisposable
     public async Task NetworkStateRepository_Should_Query_Nodes()
     {
         // Arrange
-        var repository = new MySqlNetworkStateRepository(_stateLogger, _tracker);
+        var repository = new MySqlNetworkStateRepository(_stateLogger);
         
         // Act & Assert - Should not throw
         var nodes = await repository.GetAllNodesAsync();
@@ -315,7 +313,7 @@ public class DatabaseIntegrationTests : IDisposable
     public async Task NetworkStateRepository_Should_Query_Links()
     {
         // Arrange
-        var repository = new MySqlNetworkStateRepository(_stateLogger, _tracker);
+        var repository = new MySqlNetworkStateRepository(_stateLogger);
         
         // Act & Assert - Should not throw
         var links = await repository.GetAllLinksAsync();
@@ -326,7 +324,7 @@ public class DatabaseIntegrationTests : IDisposable
     public async Task NetworkStateRepository_Should_Query_Circuits()
     {
         // Arrange
-        var repository = new MySqlNetworkStateRepository(_stateLogger, _tracker);
+        var repository = new MySqlNetworkStateRepository(_stateLogger);
         
         // Act & Assert - Should not throw
         var circuits = await repository.GetAllCircuitsAsync();
@@ -341,7 +339,7 @@ public class DatabaseIntegrationTests : IDisposable
     public async Task ErroredMessageRepository_Should_Insert_Validation_Error()
     {
         // Arrange
-        var repository = new MySqlErroredMessageRepository(_errorLogger, _tracker);
+        var repository = new MySqlErroredMessageRepository(_errorLogger);
 
         // Act & Assert - Should not throw
         await repository.InsertErroredMessageAsync(
@@ -356,7 +354,7 @@ public class DatabaseIntegrationTests : IDisposable
     public async Task ErroredMessageRepository_Should_Insert_Generic_Error()
     {
         // Arrange
-        var repository = new MySqlErroredMessageRepository(_errorLogger, _tracker);
+        var repository = new MySqlErroredMessageRepository(_errorLogger);
 
         // Act & Assert - Should not throw
         await repository.InsertErroredMessageAsync(
@@ -375,9 +373,9 @@ public class DatabaseIntegrationTests : IDisposable
     public async Task Database_Should_Handle_Multiple_Sequential_Operations()
     {
         // Arrange
-        var traceRepo = new MySqlTraceRepository(_traceLogger, _tracker);
-        var eventRepo = new MySqlEventRepository(_eventLogger, _tracker);
-        var stateRepo = new MySqlNetworkStateRepository(_stateLogger, _tracker);
+        var traceRepo = new MySqlTraceRepository(_traceLogger);
+        var eventRepo = new MySqlEventRepository(_eventLogger);
+        var stateRepo = new MySqlNetworkStateRepository(_stateLogger);
 
         // Act & Assert - Should complete without errors
         await traceRepo.GetTracesAsync(null, null, null, null, null, null, 1, null, false, "ASC", default);
@@ -389,7 +387,7 @@ public class DatabaseIntegrationTests : IDisposable
     public async Task Database_Should_Handle_Concurrent_Read_Operations()
     {
         // Arrange
-        var traceRepo = new MySqlTraceRepository(_traceLogger, _tracker);
+        var traceRepo = new MySqlTraceRepository(_traceLogger);
         var tasks = new List<Task>();
 
         // Act
@@ -407,7 +405,7 @@ public class DatabaseIntegrationTests : IDisposable
     public async Task Database_Connection_Should_Support_Long_Running_Query()
     {
         // Arrange
-        var repository = new MySqlTraceRepository(_traceLogger, _tracker);
+        var repository = new MySqlTraceRepository(_traceLogger);
 
         // Act
         var (traces, _, _) = await repository.GetTracesAsync(
@@ -435,10 +433,10 @@ public class DatabaseIntegrationTests : IDisposable
     public async Task All_Repositories_Should_Execute_Without_Schema_Errors()
     {
         // Arrange
-        var traceRepo = new MySqlTraceRepository(_traceLogger, _tracker);
-        var eventRepo = new MySqlEventRepository(_eventLogger, _tracker);
-        var stateRepo = new MySqlNetworkStateRepository(_stateLogger, _tracker);
-        var errorRepo = new MySqlErroredMessageRepository(_errorLogger, _tracker);
+        var traceRepo = new MySqlTraceRepository(_traceLogger);
+        var eventRepo = new MySqlEventRepository(_eventLogger);
+        var stateRepo = new MySqlNetworkStateRepository(_stateLogger);
+        var errorRepo = new MySqlErroredMessageRepository(_errorLogger);
 
         // Act & Assert - Each operation should succeed
         await traceRepo.GetTracesAsync(null, null, null, null, null, null, 1, null, true, "ASC", default);

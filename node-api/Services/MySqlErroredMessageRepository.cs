@@ -8,15 +8,12 @@ namespace node_api.Services;
 public class MySqlErroredMessageRepository
 {
     private readonly ILogger<MySqlErroredMessageRepository> _logger;
-    private readonly QueryFrequencyTracker _tracker;
     private const int SlowQueryThresholdMs = 1000;
 
     public MySqlErroredMessageRepository(
-        ILogger<MySqlErroredMessageRepository> logger,
-        QueryFrequencyTracker tracker)
+        ILogger<MySqlErroredMessageRepository> logger)
     {
         _logger = logger;
-        _tracker = tracker;
     }
 
     public async Task InsertErroredMessageAsync(
@@ -40,8 +37,7 @@ public class MySqlErroredMessageRepository
                     conn,
                     new CommandDefinition(sql, new { reason, datagram, type, errors }, cancellationToken: ct),
                     _logger,
-                    SlowQueryThresholdMs,
-                    _tracker);
+                    SlowQueryThresholdMs);
             }
             else
             {
@@ -51,8 +47,7 @@ public class MySqlErroredMessageRepository
                     conn,
                     new CommandDefinition(sql, new { reason, json }, cancellationToken: ct),
                     _logger,
-                    SlowQueryThresholdMs,
-                    _tracker);
+                    SlowQueryThresholdMs);
             }
         }
         catch (Exception ex)

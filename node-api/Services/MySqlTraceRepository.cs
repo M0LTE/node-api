@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 
 namespace node_api.Services;
 
-public partial class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger, QueryFrequencyTracker tracker) : ITraceRepository
+public partial class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger) : ITraceRepository
 {
     private const int SlowQueryThresholdMs = 5000;
 
@@ -35,8 +35,7 @@ public partial class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger, 
                     conn,
                     new CommandDefinition(sql, new { json, timestamp = timestamp.Value }, cancellationToken: ct),
                     logger,
-                    SlowQueryThresholdMs,
-                    tracker);
+                    SlowQueryThresholdMs);
             }
             else
             {
@@ -45,8 +44,7 @@ public partial class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger, 
                     conn,
                     new CommandDefinition(sql, new { json }, cancellationToken: ct),
                     logger,
-                    SlowQueryThresholdMs,
-                    tracker);
+                    SlowQueryThresholdMs);
             }
         }
         catch (Exception ex)
@@ -163,8 +161,7 @@ public partial class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger, 
                 _conn, 
                 new CommandDefinition(sql, p, cancellationToken: ct),
                 logger,
-                SlowQueryThresholdMs,
-                tracker)).ToList();
+                SlowQueryThresholdMs)).ToList();
 
             // Materialize JSON column to JsonElement
             var data = new List<TracesController.TraceDto>(rows.Count);
@@ -220,8 +217,7 @@ public partial class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger, 
                 countConn,
                 new CommandDefinition(countSql, p, cancellationToken: ct),
                 logger,
-                SlowQueryThresholdMs,
-                tracker);
+                SlowQueryThresholdMs);
             
             return CountResult.Success(count);
         }
@@ -306,8 +302,7 @@ public partial class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger, 
             conn,
             new CommandDefinition(sql, p, cancellationToken: ct),
             logger,
-            SlowQueryThresholdMs,
-            tracker)).ToList();
+            SlowQueryThresholdMs)).ToList();
 
         var data = new List<TracesController.TraceDto>();
         foreach (var r in rows)
@@ -362,8 +357,7 @@ public partial class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger, 
             conn,
             new CommandDefinition(sql, p, cancellationToken: ct),
             logger,
-            SlowQueryThresholdMs,
-            tracker);
+            SlowQueryThresholdMs);
 
         // Calculate statistics in C# from JSON
         var stats = new Dictionary<(string source, string dest, string? frameType), FrameStatBuilder>();

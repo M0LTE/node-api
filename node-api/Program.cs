@@ -85,9 +85,6 @@ builder.Services.AddHostedService<MqttStateSubscriber>();
 // Register system metrics publisher
 builder.Services.AddHostedService<SystemMetricsPublisher>();
 
-// Register query frequency tracker for diagnostics
-builder.Services.AddSingleton<QueryFrequencyTracker>();
-
 // Register repositories
 builder.Services.AddSingleton<MySqlTraceRepository>();
 builder.Services.AddSingleton<ITraceRepository>(sp => sp.GetRequiredService<MySqlTraceRepository>());

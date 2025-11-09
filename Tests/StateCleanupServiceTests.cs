@@ -38,7 +38,7 @@ public class StateCleanupServiceTests
         public bool ThrowOnDelete { get; set; }
 
         public TestableRepository() 
-            : base(Substitute.For<ILogger<MySqlNetworkStateRepository>>(), new QueryFrequencyTracker())
+            : base(Substitute.For<ILogger<MySqlNetworkStateRepository>>())
         {
         }
 

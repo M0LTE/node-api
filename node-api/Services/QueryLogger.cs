@@ -19,15 +19,11 @@ internal static partial class QueryLogger
         CommandDefinition command,
         ILogger logger,
         int slowQueryThresholdMs,
-        QueryFrequencyTracker? tracker = null,
         [CallerMemberName] string callerMethod = "")
     {
         var sw = Stopwatch.StartNew();
         try
         {
-            var sanitizedQuery = SanitizeSql(command.CommandText);
-            tracker?.RecordQuery(callerMethod, sanitizedQuery);
-            
             var result = await connection.QueryAsync<T>(command);
             sw.Stop();
 
@@ -56,15 +52,11 @@ internal static partial class QueryLogger
         CommandDefinition command,
         ILogger logger,
         int slowQueryThresholdMs,
-        QueryFrequencyTracker? tracker = null,
         [CallerMemberName] string callerMethod = "")
     {
         var sw = Stopwatch.StartNew();
         try
         {
-            var sanitizedQuery = SanitizeSql(command.CommandText);
-            tracker?.RecordQuery(callerMethod, sanitizedQuery);
-            
             var result = await connection.QuerySingleOrDefaultAsync<T>(command);
             sw.Stop();
 
@@ -93,15 +85,11 @@ internal static partial class QueryLogger
         CommandDefinition command,
         ILogger logger,
         int slowQueryThresholdMs,
-        QueryFrequencyTracker? tracker = null,
         [CallerMemberName] string callerMethod = "")
     {
         var sw = Stopwatch.StartNew();
         try
         {
-            var sanitizedQuery = SanitizeSql(command.CommandText);
-            tracker?.RecordQuery(callerMethod, sanitizedQuery);
-            
             var result = await connection.ExecuteScalarAsync<T>(command);
             sw.Stop();
 
@@ -130,15 +118,11 @@ internal static partial class QueryLogger
         CommandDefinition command,
         ILogger logger,
         int slowQueryThresholdMs,
-        QueryFrequencyTracker? tracker = null,
         [CallerMemberName] string callerMethod = "")
     {
         var sw = Stopwatch.StartNew();
         try
         {
-            var sanitizedQuery = SanitizeSql(command.CommandText);
-            tracker?.RecordQuery(callerMethod, sanitizedQuery);
-            
             var result = await connection.ExecuteAsync(command);
             sw.Stop();
 

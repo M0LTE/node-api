@@ -278,15 +278,4 @@ public class DiagnosticsController : ControllerBase
     {
         return Ok(new { serverTime = DateTime.UtcNow });
     }
-
-    /// <summary>
-    /// Gets database query frequency statistics showing which queries are being called how often per hour
-    /// </summary>
-    [HttpGet("db/query-frequency")]
-    [Produces("application/json")]
-    public IActionResult GetQueryFrequencyStats([FromServices] Services.QueryFrequencyTracker tracker)
-    {
-        var stats = tracker.GetStatsWithServerTime();
-        return Ok(stats);
-    }
 }
