@@ -215,6 +215,21 @@ If issues occur, rollback to previous version which had fallback logic.
 ### Build Status
 ? **Build successful** - all changes compile cleanly
 
+### Test Updates
+
+**Created `MockRabbitMqPublisher`** to allow tests to run without a real RabbitMQ instance:
+- Tests no longer require RabbitMQ to be running
+- Mock returns `IsAvailable = true` so ingestion services work
+- Mock captures published datagrams for verification in tests
+- Updated `TestWebApplicationFactory` to use the mock
+
+**Test Behavior**:
+- ? HTTP ingestion tests work (mock RabbitMQ available)
+- ? Validation tests work (no RabbitMQ needed)
+- ? Deserialization tests work (no RabbitMQ needed)
+- ? Integration tests work (mock RabbitMQ)
+- ?? UDP listener tests will **not start** without RabbitMQ mock (by design - requires queue)
+
 ### Manual Testing Needed
 
 1. **UDP Ingestion**:
@@ -230,12 +245,23 @@ If issues occur, rollback to previous version which had fallback logic.
    - Check MQTT topics receive events
    - Monitor network state updates
 
+4. **Automated Tests**:
+   ```bash
+   cd Tests
+   dotnet test
+   ```
+   All tests should pass with the mock RabbitMQ publisher
+
 ## Files Modified
 
 ### Changed
 - `node-api/Services/UdpNodeInfoListener.cs` - Removed DatagramProcessor fallback
 - `node-api/Controllers/DatagramIngestController.cs` - Removed DatagramProcessor fallback
 - `node-api/Program.cs` - Updated DI registration comments
+- `Tests/Integration/TestWebApplicationFactory.cs` - Added MockRabbitMqPublisher for testing
+
+### Created
+- `Tests/Mocks/MockRabbitMqPublisher.cs` - Mock RabbitMQ for tests without real instance
 
 ### Unchanged
 - `node-api/Services/DatagramProcessor.cs` - Still used by RabbitMQ consumer

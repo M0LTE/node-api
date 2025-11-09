@@ -1,7 +1,9 @@
+using Microsoft.Extensions.Options;
 using MQTTnet;
 using MQTTnet.Client;
 using MQTTnet.Extensions.ManagedClient;
 using MQTTnet.Formatter;
+using node_api.Configuration;
 
 namespace node_api.Services;
 
@@ -11,15 +13,19 @@ namespace node_api.Services;
 public class MqttClientProvider : IMqttClientProvider, IAsyncDisposable
 {
     private readonly ILogger<MqttClientProvider> _logger;
+    private readonly MqttSettings _mqttSettings;
     private IManagedMqttClient? _mqttClient;
     private readonly SemaphoreSlim _initLock = new(1, 1);
     private bool _isInitialized;
 
     public bool IsInitialized => _isInitialized;
 
-    public MqttClientProvider(ILogger<MqttClientProvider> logger)
+    public MqttClientProvider(
+        ILogger<MqttClientProvider> logger,
+        IOptions<MqttSettings> mqttSettings)
     {
         _logger = logger;
+        _mqttSettings = mqttSettings.Value;
     }
 
     public IManagedMqttClient GetClient()
@@ -42,16 +48,22 @@ public class MqttClientProvider : IMqttClientProvider, IAsyncDisposable
             if (_isInitialized) // Double-check after acquiring lock
                 return;
 
+            if (string.IsNullOrWhiteSpace(_mqttSettings.Password))
+            {
+                throw new InvalidOperationException(
+                    "MQTT password is not configured. Set MqttSettings:Password in appsettings.json, " +
+                    "User Secrets, or MQTT_WRITER_PASSWORD environment variable.");
+            }
+
             var factory = new MqttFactory();
             _mqttClient = factory.CreateManagedMqttClient();
             
             var options = new ManagedMqttClientOptionsBuilder()
-                .WithAutoReconnectDelay(TimeSpan.FromSeconds(5))
+                .WithAutoReconnectDelay(TimeSpan.FromSeconds(_mqttSettings.AutoReconnectDelaySeconds))
                 .WithClientOptions(new MqttClientOptionsBuilder()
-                    .WithTcpServer("node-api.packet.oarc.uk", 1883)
-                    .WithCredentials("writer", Environment.GetEnvironmentVariable("MQTT_WRITER_PASSWORD") 
-                        ?? throw new InvalidOperationException("MQTT_WRITER_PASSWORD environment variable is not set"))
-                    .WithCleanSession(true)
+                    .WithTcpServer(_mqttSettings.Host, _mqttSettings.Port)
+                    .WithCredentials(_mqttSettings.Username, _mqttSettings.Password)
+                    .WithCleanSession(_mqttSettings.CleanSession)
                     .WithProtocolVersion(MqttProtocolVersion.V500)
                     .Build())
                 .Build();
@@ -59,7 +71,8 @@ public class MqttClientProvider : IMqttClientProvider, IAsyncDisposable
             await _mqttClient.StartAsync(options);
             _isInitialized = true;
             
-            _logger.LogInformation("MQTT client initialized and connected");
+            _logger.LogInformation("MQTT client initialized and connected to {Host}:{Port}", 
+                _mqttSettings.Host, _mqttSettings.Port);
         }
         finally
         {

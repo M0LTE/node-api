@@ -1,6 +1,7 @@
 using FluentValidation;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Logging.Console;
+using node_api.Configuration;
 using node_api.Models;
 using node_api.Services;
 using node_api.Validators;
@@ -12,6 +13,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Initialize database configuration (supports User Secrets in Development)
 Database.Initialize(builder.Configuration);
+
+// Configure MQTT settings from configuration with fallback to environment variable
+builder.Services.Configure<MqttSettings>(options =>
+{
+    builder.Configuration.GetSection("MqttSettings").Bind(options);
+    
+    // Fallback to environment variable if password not set in config
+    if (string.IsNullOrWhiteSpace(options.Password))
+    {
+        options.Password = Environment.GetEnvironmentVariable("MQTT_WRITER_PASSWORD");
+    }
+});
 
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole(options =>

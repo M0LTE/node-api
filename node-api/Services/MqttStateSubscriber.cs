@@ -1,7 +1,9 @@
+using Microsoft.Extensions.Options;
 using MQTTnet;
 using MQTTnet.Client;
 using MQTTnet.Extensions.ManagedClient;
 using MQTTnet.Formatter;
+using node_api.Configuration;
 using node_api.Models;
 using System.Text.Json;
 
@@ -16,6 +18,7 @@ namespace node_api.Services;
 public class MqttStateSubscriber : BackgroundService
 {
     private readonly ILogger<MqttStateSubscriber> _logger;
+    private readonly MqttSettings _mqttSettings;
     private readonly NetworkStateUpdater _networkStateUpdater;
     private readonly MySqlTraceRepository _traceRepository;
     private readonly MySqlEventRepository _eventRepository;
@@ -24,12 +27,14 @@ public class MqttStateSubscriber : BackgroundService
 
     public MqttStateSubscriber(
         ILogger<MqttStateSubscriber> logger,
+        IOptions<MqttSettings> mqttSettings,
         NetworkStateUpdater networkStateUpdater,
         MySqlTraceRepository traceRepository,
         MySqlEventRepository eventRepository,
         MySqlErroredMessageRepository erroredMessageRepository)
     {
         _logger = logger;
+        _mqttSettings = mqttSettings.Value;
         _networkStateUpdater = networkStateUpdater;
         _traceRepository = traceRepository;
         _eventRepository = eventRepository;
@@ -41,12 +46,12 @@ public class MqttStateSubscriber : BackgroundService
         var factory = new MQTTnet.MqttFactory();
         _mqttClient = factory.CreateManagedMqttClient();
 
-        // Set up MQTT client options
+        // Set up MQTT client options - subscriber doesn't need credentials for read-only access
         var options = new ManagedMqttClientOptionsBuilder()
-            .WithAutoReconnectDelay(TimeSpan.FromSeconds(5))
+            .WithAutoReconnectDelay(TimeSpan.FromSeconds(_mqttSettings.AutoReconnectDelaySeconds))
             .WithClientOptions(new MqttClientOptionsBuilder()
-                .WithTcpServer("node-api.packet.oarc.uk", 1883)
-                .WithClientId($"node-api-state-subscriber-{Environment.MachineName}-{Guid.NewGuid()}")
+                .WithTcpServer(_mqttSettings.Host, _mqttSettings.Port)
+                .WithClientId($"{_mqttSettings.ClientIdPrefix}-state-subscriber-{Environment.MachineName}-{Guid.NewGuid()}")
                 .WithCleanSession(false) // Persist session to avoid missing messages during reconnect
                 .WithProtocolVersion(MqttProtocolVersion.V500) // Enable MQTT v5 for user properties support
                 .Build())
@@ -58,7 +63,8 @@ public class MqttStateSubscriber : BackgroundService
         // Connect and subscribe
         await _mqttClient.StartAsync(options);
         
-        _logger.LogInformation("MQTT state subscriber connecting to broker...");
+        _logger.LogInformation("MQTT state subscriber connecting to {Host}:{Port}...", 
+            _mqttSettings.Host, _mqttSettings.Port);
 
         // Subscribe to all output topics for state updates
         await _mqttClient.SubscribeAsync(new[]

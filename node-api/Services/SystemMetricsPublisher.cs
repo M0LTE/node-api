@@ -1,8 +1,10 @@
 using Dapper;
+using Microsoft.Extensions.Options;
 using MQTTnet;
 using MQTTnet.Client;
 using MQTTnet.Extensions.ManagedClient;
 using MQTTnet.Formatter;
+using node_api.Configuration;
 using node_api.Models;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -17,6 +19,7 @@ namespace node_api.Services;
 public class SystemMetricsPublisher : BackgroundService
 {
     private readonly ILogger<SystemMetricsPublisher> _logger;
+    private readonly MqttSettings _mqttSettings;
     private const int PublishIntervalSeconds = 10;
     private const int SlowQueryThresholdMs = 1000;
     private IManagedMqttClient? _mqttClient;
@@ -28,9 +31,12 @@ public class SystemMetricsPublisher : BackgroundService
     private long _previousTotalCpuTime;
     private long _previousIdleCpuTime;
 
-    public SystemMetricsPublisher(ILogger<SystemMetricsPublisher> logger)
+    public SystemMetricsPublisher(
+        ILogger<SystemMetricsPublisher> logger,
+        IOptions<MqttSettings> mqttSettings)
     {
         _logger = logger;
+        _mqttSettings = mqttSettings.Value;
         _startTime = DateTime.UtcNow;
         _systemStartTime = DateTime.UtcNow - TimeSpan.FromMilliseconds(Environment.TickCount64);
 
@@ -92,22 +98,29 @@ public class SystemMetricsPublisher : BackgroundService
 
     private async Task InitializeMqttClientAsync(CancellationToken ct)
     {
+        if (string.IsNullOrWhiteSpace(_mqttSettings.Password))
+        {
+            throw new InvalidOperationException(
+                "MQTT password is not configured. Set MqttSettings:Password in appsettings.json, " +
+                "User Secrets, or MQTT_WRITER_PASSWORD environment variable.");
+        }
+
         var factory = new MQTTnet.MqttFactory();
         _mqttClient = factory.CreateManagedMqttClient();
 
         var options = new ManagedMqttClientOptionsBuilder()
-            .WithAutoReconnectDelay(TimeSpan.FromSeconds(5))
+            .WithAutoReconnectDelay(TimeSpan.FromSeconds(_mqttSettings.AutoReconnectDelaySeconds))
             .WithClientOptions(new MqttClientOptionsBuilder()
-                .WithTcpServer("node-api.packet.oarc.uk", 1883)
-                .WithCredentials("writer", Environment.GetEnvironmentVariable("MQTT_WRITER_PASSWORD") 
-                    ?? throw new InvalidOperationException("MQTT_WRITER_PASSWORD environment variable is not set"))
+                .WithTcpServer(_mqttSettings.Host, _mqttSettings.Port)
+                .WithCredentials(_mqttSettings.Username, _mqttSettings.Password)
                 .WithCleanSession(true)
                 .WithProtocolVersion(MqttProtocolVersion.V500)
                 .Build())
             .Build();
 
         await _mqttClient.StartAsync(options);
-        _logger.LogInformation("MQTT client initialized for metrics publishing");
+        _logger.LogInformation("MQTT client initialized for metrics publishing to {Host}:{Port}", 
+            _mqttSettings.Host, _mqttSettings.Port);
     }
 
     private async Task CollectAndPublishMetricsAsync(CancellationToken ct)
