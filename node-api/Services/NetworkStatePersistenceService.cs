@@ -98,8 +98,11 @@ public class NetworkStatePersistenceService : BackgroundService
             foreach (var node in nodes)
             {
                 var existingNode = _networkState.GetOrCreateNode(node.Callsign);
+                // Copy all state from database (including IsCb and IsTest)
                 CopyNodeState(node, existingNode);
-                _networkState.MarkNodeClean(existingNode); // Mark as clean since we just loaded it
+                // CRITICAL: Mark clean AFTER copying to prevent overwriting database with default values
+                // This fixes race condition where UDP packets arrive before database load completes
+                _networkState.MarkNodeClean(existingNode);
                 nodeCount++;
             }
 
@@ -110,7 +113,7 @@ public class NetworkStatePersistenceService : BackgroundService
             {
                 var existingLink = _networkState.GetOrCreateLink(link.Endpoint1, link.Endpoint2);
                 CopyLinkState(link, existingLink);
-                _networkState.MarkLinkClean(existingLink); // Mark as clean since we just loaded it
+                _networkState.MarkLinkClean(existingLink);
                 linkCount++;
             }
 
@@ -121,7 +124,7 @@ public class NetworkStatePersistenceService : BackgroundService
             {
                 var existingCircuit = _networkState.GetOrCreateCircuit(circuit.Endpoint1, circuit.Endpoint2);
                 CopyCircuitState(circuit, existingCircuit);
-                _networkState.MarkCircuitClean(existingCircuit); // Mark as clean since we just loaded it
+                _networkState.MarkCircuitClean(existingCircuit);
                 circuitCount++;
             }
 
@@ -152,6 +155,11 @@ public class NetworkStatePersistenceService : BackgroundService
             var dirtyNodes = _networkState.GetDirtyNodes().ToList();
             foreach (var node in dirtyNodes)
             {
+                // DEBUG: Log what we're about to persist
+                _logger.LogInformation(
+                    "Persisting node {Callsign}: IsCb={IsCb}, IsTest={IsTest}", 
+                    node.Callsign, node.IsCb, node.IsTest);
+                    
                 await _repository.UpsertNodeAsync(node, ct);
                 _networkState.MarkNodeClean(node);
                 nodeCount++;

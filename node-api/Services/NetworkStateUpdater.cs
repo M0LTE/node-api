@@ -48,6 +48,9 @@ public partial class NetworkStateUpdater : IHostedService
         node.Status = NodeStatus.Online;
         node.LastSeen = DateTime.UtcNow;
         node.LastUpEvent = DateTime.UtcNow;
+        
+        // NOTE: IsCb and IsTest are NOT updated from events - they are administrative fields
+        // set manually via database or admin API, and must be preserved across telemetry updates
 
         _logger.LogDebug("Updated node state from NodeUpEvent: {Callsign}", evt.NodeCall);
     }
@@ -55,6 +58,11 @@ public partial class NetworkStateUpdater : IHostedService
     public void UpdateFromNodeStatus(NodeStatusReportEvent evt)
     {
         var node = _networkState.GetOrCreateNode(evt.NodeCall);
+        
+        // DEBUG: Log current values before update
+        _logger.LogInformation(
+            "UpdateFromNodeStatus for {Callsign}: IsCb={IsCb}, IsTest={IsTest} BEFORE update", 
+            evt.NodeCall, node.IsCb, node.IsTest);
         
         // Mark as reporting node (sends UDP telemetry)
         node.IsReportingNode = true;
@@ -74,6 +82,14 @@ public partial class NetworkStateUpdater : IHostedService
         node.Status = NodeStatus.Online;
         node.LastSeen = DateTime.UtcNow;
         node.LastStatusUpdate = DateTime.UtcNow;
+        
+        // DEBUG: Log values after update
+        _logger.LogInformation(
+            "UpdateFromNodeStatus for {Callsign}: IsCb={IsCb}, IsTest={IsTest} AFTER update", 
+            evt.NodeCall, node.IsCb, node.IsTest);
+        
+        // NOTE: IsCb and IsTest are NOT updated from events - they are administrative fields
+        // set manually via database or admin API, and must be preserved across telemetry updates
 
         _logger.LogDebug("Updated node state from NodeStatus: {Callsign}", evt.NodeCall);
     }
@@ -86,6 +102,9 @@ public partial class NetworkStateUpdater : IHostedService
         node.Status = NodeStatus.Offline;
         node.LastSeen = DateTime.UtcNow;
         node.LastDownEvent = DateTime.UtcNow;
+        
+        // NOTE: IsCb and IsTest are NOT updated from events - they are administrative fields
+        // set manually via database or admin API, and must be preserved across telemetry updates
 
         _logger.LogDebug("Updated node state from NodeDownEvent: {Callsign}", evt.NodeCall);
     }
