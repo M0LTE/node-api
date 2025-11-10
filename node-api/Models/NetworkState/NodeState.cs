@@ -407,6 +407,23 @@ public class NodeState
         }
     }
     
+    /// <summary>
+    /// True if this is a test node used for development/testing purposes
+    /// </summary>
+    private bool _isTest;
+    public bool IsTest
+    {
+        get => _isTest;
+        set
+        {
+            if (_isTest != value)
+            {
+                _isTest = value;
+                MarkDirty();
+            }
+        }
+    }
+    
     // Dirty tracking for persistence optimization
     public bool IsDirty { get; private set; }
     

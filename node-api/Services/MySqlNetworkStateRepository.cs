@@ -24,7 +24,7 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                 `last_seen`, `first_seen`, `last_status_update`,
                 `last_up_event`, `last_down_event`, `l2_trace_count`, `last_l2_trace`,
                 `ip_address_obfuscated`, `geoip_country_code`, `geoip_country_name`, `geoip_city`, `last_ip_update`,
-                `is_reporting_node`, `is_cb`
+                `is_reporting_node`, `is_cb`, `is_test`
             ) VALUES (
                 @Callsign, @Alias, @Locator, @Latitude, @Longitude,
                 @Software, @Version, @UptimeSecs, @LinksIn, @LinksOut,
@@ -32,7 +32,7 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                 @LastSeen, @FirstSeen, @LastStatusUpdate,
                 @LastUpEvent, @LastDownEvent, @L2TraceCount, @LastL2Trace,
                 @IpAddressObfuscated, @GeoIpCountryCode, @GeoIpCountryName, @GeoIpCity, @LastIpUpdate,
-                @IsReportingNode, @IsCb
+                @IsReportingNode, @IsCb, @IsTest
             )
             ON DUPLICATE KEY UPDATE
                 `alias` = VALUES(`alias`),
@@ -61,7 +61,8 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                 `geoip_city` = VALUES(`geoip_city`),
                 `last_ip_update` = VALUES(`last_ip_update`),
                 `is_reporting_node` = VALUES(`is_reporting_node`),
-                `is_cb` = VALUES(`is_cb`)>";
+                `is_cb` = VALUES(`is_cb`),
+                `is_test` = VALUES(`is_test`)";
 
         try
         {
@@ -99,7 +100,8 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                     node.GeoIpCity,
                     node.LastIpUpdate,
                     node.IsReportingNode,
-                    node.IsCb
+                    node.IsCb,
+                    node.IsTest
                 }, cancellationToken: ct),
                 logger,
                 SlowQueryThresholdMs);
@@ -131,7 +133,8 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                 `geoip_city` AS GeoIpCity,
                 `last_ip_update` AS LastIpUpdate,
                 `is_reporting_node` AS IsReportingNode,
-                `is_cb` AS IsCb
+                `is_cb` AS IsCb,
+                `is_test` AS IsTest
             FROM `nodes`
             WHERE `callsign` = @callsign";
 
@@ -175,7 +178,8 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
                 `geoip_city` AS GeoIpCity,
                 `last_ip_update` AS LastIpUpdate,
                 `is_reporting_node` AS IsReportingNode,
-                `is_cb` AS IsCb
+                `is_cb` AS IsCb,
+                `is_test` AS IsTest
             FROM `nodes`";
 
         try
@@ -229,7 +233,8 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
             GeoIpCity = row.GeoIpCity,
             LastIpUpdate = row.LastIpUpdate,
             IsReportingNode = row.IsReportingNode,
-            IsCb = row.IsCb
+            IsCb = row.IsCb,
+            IsTest = row.IsTest
         };
     }
 
@@ -263,6 +268,7 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
         public DateTime? LastIpUpdate { get; set; }
         public bool IsReportingNode { get; set; }
         public bool IsCb { get; set; }
+        public bool IsTest { get; set; }
     }
 
     #endregion

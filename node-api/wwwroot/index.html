@@ -523,45 +523,52 @@
             }
 
             // Mark a node as actively reporting (sending telemetry)
-            markAsReporting(callsign, isCb = false) {
+            markAsReporting(callsign, isCb = false, isTest = false) {
                 const existing = this.nodes.get(callsign);
                 if (existing) {
                     existing.lastSeen = Date.now();
                     existing.messageCount++;
                     existing.isCb = isCb; // Update CB status
+                    existing.isTest = isTest; // Update test status
                 } else {
                     this.nodes.set(callsign, {
                         lastSeen: Date.now(),
                         messageCount: 1,
                         status: 'online',
-                        isCb: isCb
+                        isCb: isCb,
+                        isTest: isTest
                     });
                 }
             }
 
             // Update node status (online/offline)
-            updateNodeStatus(callsign, status, isCb = false) {
+            updateNodeStatus(callsign, status, isCb = false, isTest = false) {
                 const existing = this.nodes.get(callsign);
                 if (existing) {
                     existing.status = status;
                     existing.lastSeen = Date.now();
                     existing.isCb = isCb;
+                    existing.isTest = isTest;
                 } else {
                     this.nodes.set(callsign, {
                         lastSeen: Date.now(),
                         messageCount: 0,
                         status: status,
-                        isCb: isCb
+                        isCb: isCb,
+                        isTest: isTest
                     });
                 }
             }
 
-            // Get aggregated stats by base callsign (filtered by CB status)
+            // Get aggregated stats by base callsign (filtered by CB status, excluding test nodes)
             getAggregatedNodes(cbOnly = false) {
                 const baseCallsigns = new Map();
                 
                 // Aggregate all SSIDs by base callsign
                 for (const [callsign, data] of this.nodes.entries()) {
+                    // EXCLUDE TEST NODES
+                    if (data.isTest) continue;
+                    
                     // Filter by CB status
                     if (data.isCb !== cbOnly) continue;
                     
@@ -650,12 +657,14 @@
                         // Status: 0 = Unknown, 1 = Online, 2 = Offline (from NodeStatus enum)
                         const status = node.status === 1 ? 'online' : node.status === 2 ? 'offline' : 'unknown';
                         const isCb = node.isCb || false; // Get CB status from API
+                        const isTest = node.isTest || false; // Get test status from API
                         
                         nodeTracker.nodes.set(node.callsign, {
                             lastSeen: lastSeen,
                             messageCount: 0, // Will be updated by MQTT events
                             status: status,
-                            isCb: isCb
+                            isCb: isCb,
+                            isTest: isTest
                         });
                     });
                     
@@ -749,19 +758,22 @@
                 const data = JSON.parse(message.toString());
                 
                 if (topic === 'out/NodeUpEvent' && data.nodeCall) {
-                    // Extract isCb if present in the event (optional - depends on whether we add it to events)
+                    // Extract isCb and isTest if present in the event
                     const isCb = data.isCb || false;
-                    nodeTracker.markAsReporting(data.nodeCall, isCb);
-                    nodeTracker.updateNodeStatus(data.nodeCall, 'online', isCb);
+                    const isTest = data.isTest || false;
+                    nodeTracker.markAsReporting(data.nodeCall, isCb, isTest);
+                    nodeTracker.updateNodeStatus(data.nodeCall, 'online', isCb, isTest);
                 }
                 else if (topic === 'out/NodeStatus' && data.nodeCall) {
                     const isCb = data.isCb || false;
-                    nodeTracker.markAsReporting(data.nodeCall, isCb);
-                    nodeTracker.updateNodeStatus(data.nodeCall, 'online', isCb);
+                    const isTest = data.isTest || false;
+                    nodeTracker.markAsReporting(data.nodeCall, isCb, isTest);
+                    nodeTracker.updateNodeStatus(data.nodeCall, 'online', isCb, isTest);
                 }
                 else if (topic === 'out/NodeDownEvent' && data.nodeCall) {
                     const isCb = data.isCb || false;
-                    nodeTracker.updateNodeStatus(data.nodeCall, 'offline', isCb);
+                    const isTest = data.isTest || false;
+                    nodeTracker.updateNodeStatus(data.nodeCall, 'offline', isCb, isTest);
                 }
             } catch (err) {
                 console.error('Error parsing node event:', err);
@@ -1224,11 +1236,11 @@
                         </div>
                         <div class="detail-item">
                             <div class="detail-label">Total CPU Time</div>
-                            <div class="detail-value">${app.total_processor_time_seconds?.toFixed(1) || 'N/A'}s</div>
+                            <div class="detail-value">${app.total_processor_time_seconds?.toFixed(1) || 'N/A'}</div>
                         </div>
                         <div class="detail-item">
                             <div class="detail-label">User CPU Time</div>
-                            <div class="detail-value">${app.user_processor_time_seconds?.toFixed(1) || 'N/A'}s</div>
+                            <div class="detail-value">${app.user_processor_time_seconds?.toFixed(1) || 'N/A'}</div>
                         </div>
                     </div>
                 `;
