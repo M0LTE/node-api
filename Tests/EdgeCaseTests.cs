@@ -20,8 +20,8 @@ public class EdgeCaseTests
             DatagramType = "L2Trace",
             ReportFrom = "G8PZT-1",
             Port = "1",
-            Source = "Tëst-1", // Unicode character - not valid in AX.25
-            Destination = "Dëst",
+            Source = "Tï¿½st-1", // Unicode character - not valid in AX.25
+            Destination = "Dï¿½st",
             Control = 3,
             L2Type = "UI",
             CommandResponse = "C"
@@ -564,7 +564,8 @@ public class EdgeCaseTests
         var validator = new L2TraceValidator();
         var model = new L2Trace
         {
-            DatagramType = "WrongType",
+            // NOTE: DatagramType validation removed - it's now a computed property
+            // that automatically returns "L2Trace" for L2Trace instances
             ReportFrom = "",
             Port = "",
             Source = "",
@@ -580,7 +581,7 @@ public class EdgeCaseTests
         Assert.False(result.IsValid);
         Assert.True(result.Errors.Count >= 5);
         
-        result.ShouldHaveValidationErrorFor(x => x.DatagramType);
+        // NOTE: No longer checking DatagramType - it's always correct for the type
         result.ShouldHaveValidationErrorFor(x => x.ReportFrom);
         result.ShouldHaveValidationErrorFor(x => x.Port);
         result.ShouldHaveValidationErrorFor(x => x.Control);

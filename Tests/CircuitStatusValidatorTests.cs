@@ -9,29 +9,6 @@ public class CircuitStatusValidatorTests
     private readonly CircuitStatusValidator _validator = new();
 
     [Fact]
-    public void Should_Have_Error_When_DatagramType_Is_Wrong()
-    {
-        var model = new CircuitStatus
-        {
-            DatagramType = "WrongType",
-            TimeUnixSeconds = 1759688220,
-            Node = "G8PZT-1",
-            Id = 1,
-            Direction = "incoming",
-            Remote = "G8PZT@G8PZT:14c0",
-            Local = "G8PZT-4:0001",
-            SegmentsSent = 5,
-            SegmentsReceived = 27,
-            SegmentsResent = 0,
-            SegmentsQueued = 0
-        };
-
-        var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(x => x.DatagramType)
-            .WithErrorMessage("DatagramType must be 'CircuitStatus'");
-    }
-
-    [Fact]
     public void Should_Have_Error_When_Node_Is_Empty()
     {
         var model = new CircuitStatus

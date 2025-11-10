@@ -163,7 +163,7 @@ public class DatagramValidationServiceTests
     [Fact]
     public void Should_Validate_All_Datagram_Types()
     {
-        var datagrams = new UdpNodeInfoJsonDatagram[]
+        var datagrams = new NetworkEventDatagram[]
         {
             new L2Trace
             {

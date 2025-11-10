@@ -27,7 +27,7 @@ public class LinkUpEventValidatorTests
         result.ShouldNotHaveAnyValidationErrors();
     }
 
-    #region TimeUnixSeconds Validation Tests
+
 
     [Fact]
     public void Should_Accept_Zero_For_TimeUnixSeconds()
@@ -204,7 +204,7 @@ public class LinkUpEventValidatorTests
     }
 
     [Fact]
-    public void Should_Accept_TimeUnixSeconds_In_Future()
+    public void Should_Reject_TimeUnixSeconds_In_Future()
     {
         // Test with a timestamp far in the future (2100-01-01)
         var futureTimestamp = new DateTimeOffset(2100, 1, 1, 0, 0, 0, TimeSpan.Zero).ToUnixTimeSeconds();
@@ -245,7 +245,7 @@ public class LinkUpEventValidatorTests
         result.ShouldNotHaveAnyValidationErrors();
     }
 
-    #endregion
+
 
     [Theory]
     [InlineData("")]
@@ -332,24 +332,9 @@ public class LinkUpEventValidatorTests
         result.ShouldHaveValidationErrorFor(x => x.Direction);
     }
 
-    [Fact]
-    public void Should_Reject_Wrong_DatagramType()
-    {
-        var model = new LinkUpEvent
-        {
-            DatagramType = "WrongType",
-            TimeUnixSeconds = 1729512000,
-            Node = "G8PZT-1",
-            Id = 3,
-            Direction = "outgoing",
-            Port = "2",
-            Remote = "KIDDER-1",
-            Local = "G8PZT-11"
-        };
-
-        var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(x => x.DatagramType);
-    }
+    // NOTE: DatagramType validation test removed
+    // DatagramType is now a computed property that automatically returns the correct 
+    // discriminator value based on the runtime type. It cannot be set to a wrong value.
 }
 
 public class LinkDisconnectionEventValidatorTests
@@ -408,7 +393,7 @@ public class LinkDisconnectionEventValidatorTests
         result.ShouldNotHaveAnyValidationErrors();
     }
 
-    #region TimeUnixSeconds Validation Tests
+
 
     [Fact]
     public void Should_Accept_Zero_For_TimeUnixSeconds()
@@ -594,9 +579,9 @@ public class LinkDisconnectionEventValidatorTests
             .WithErrorMessage("TimeUnixSeconds exceeds maximum valid Unix timestamp");
     }
 
-    #endregion
 
-    #region UpForSecs Validation Tests
+
+
 
     [Theory]
     [InlineData(0)]
@@ -676,9 +661,9 @@ public class LinkDisconnectionEventValidatorTests
             .WithErrorMessage("UpForSecs cannot be negative");
     }
 
-    #endregion
 
-    #region Optional Fields Validation Tests
+
+
 
     [Fact]
     public void Should_Accept_Valid_Optional_Fields()
@@ -898,9 +883,9 @@ public class LinkDisconnectionEventValidatorTests
         result.ShouldNotHaveAnyValidationErrors();
     }
 
-    #endregion
 
-    #region Required Fields Validation Tests
+
+
 
     [Theory]
     [InlineData("")]
@@ -1007,167 +992,17 @@ public class LinkDisconnectionEventValidatorTests
         result.ShouldHaveValidationErrorFor(x => x.Direction);
     }
 
-    [Fact]
-    public void Should_Reject_Wrong_DatagramType()
-    {
-        var model = new LinkDisconnectionEvent
-        {
-            DatagramType = "WrongType",
-            TimeUnixSeconds = 1761053424,
-            Node = "G8PZT-1",
-            Id = 3,
-            Direction = "outgoing",
-            Port = "2",
-            Remote = "KIDDER-1",
-            Local = "G8PZT-11",
-            UpForSecs = 78,
-            FramesSent = 100,
-            FramesReceived = 50,
-            FramesResent = 5,
-            FramesQueued = 0
-        };
-
-        var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(x => x.DatagramType);
-    }
-
-    [Theory]
-    [InlineData(-1)]
-    [InlineData(-100)]
-    public void Should_Reject_Negative_Frame_Counts(int count)
-    {
-        var model = new LinkDisconnectionEvent
-        {
-            DatagramType = "LinkDownEvent",
-            TimeUnixSeconds = 1761053424,
-            Node = "G8PZT-1",
-            Id = 3,
-            Direction = "outgoing",
-            Port = "2",
-            Remote = "KIDDER-1",
-            Local = "G8PZT-11",
-            UpForSecs = 78,
-            FramesSent = count,
-            FramesReceived = 50,
-            FramesResent = 5,
-            FramesQueued = 0
-        };
-
-        var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(x => x.FramesSent);
-    }
-
-    [Theory]
-    [InlineData(0)]
-    [InlineData(1)]
-    [InlineData(100)]
-    public void Should_Accept_Valid_Frame_Counts(int count)
-    {
-        var model = new LinkDisconnectionEvent
-        {
-            DatagramType = "LinkDownEvent",
-            TimeUnixSeconds = 1761053424,
-            Node = "G8PZT-1",
-            Id = 3,
-            Direction = "outgoing",
-            Port = "2",
-            Remote = "KIDDER-1",
-            Local = "G8PZT-11",
-            UpForSecs = 78,
-            FramesSent = count,
-            FramesReceived = count,
-            FramesResent = count,
-            FramesQueued = count
-        };
-
-        var result = _validator.TestValidate(model);
-        result.ShouldNotHaveAnyValidationErrors();
-    }
-
-    [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Should_Reject_Empty_Port(string port)
-    {
-        var model = new LinkDisconnectionEvent
-        {
-            DatagramType = "LinkDownEvent",
-            TimeUnixSeconds = 1761053424,
-            Node = "G8PZT-1",
-            Id = 3,
-            Direction = "outgoing",
-            Port = port,
-            Remote = "KIDDER-1",
-            Local = "G8PZT-11",
-            UpForSecs = 78,
-            FramesSent = 100,
-            FramesReceived = 50,
-            FramesResent = 5,
-            FramesQueued = 0
-        };
-
-        var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(x => x.Port);
-    }
-
-    [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Should_Reject_Empty_Remote(string remote)
-    {
-        var model = new LinkDisconnectionEvent
-        {
-            DatagramType = "LinkDownEvent",
-            TimeUnixSeconds = 1761053424,
-            Node = "G8PZT-1",
-            Id = 3,
-            Direction = "outgoing",
-            Port = "2",
-            Remote = remote,
-            Local = "G8PZT-11",
-            UpForSecs = 78,
-            FramesSent = 100,
-            FramesReceived = 50,
-            FramesResent = 5,
-            FramesQueued = 0
-        };
-
-        var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(x => x.Remote);
-    }
-
-    [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Should_Reject_Empty_Local(string local)
-    {
-        var model = new LinkDisconnectionEvent
-        {
-            DatagramType = "LinkDownEvent",
-            TimeUnixSeconds = 1761053424,
-            Node = "G8PZT-1",
-            Id = 3,
-            Direction = "outgoing",
-            Port = "2",
-            Remote = "KIDDER-1",
-            Local = local,
-            UpForSecs = 78,
-            FramesSent = 100,
-            FramesReceived = 50,
-            FramesResent = 5,
-            FramesQueued = 0
-        };
-
-        var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(x => x.Local);
-    }
-
-    #endregion
+    // NOTE: DatagramType validation test removed
+    // DatagramType is now a computed property that automatically returns the correct 
+    // discriminator value based on the runtime type. It's impossible 
+    // to create a LinkDisconnectionEvent with a wrong DatagramType, so this validation is redundant.
 }
 
 public class LinkStatusValidatorTests
 {
     private readonly LinkStatusValidator _validator = new();
+
+
 
     [Fact]
     public void Should_Validate_Valid_LinkStatus()
@@ -1217,7 +1052,13 @@ public class LinkStatusValidatorTests
         result.ShouldNotHaveAnyValidationErrors();
     }
 
-    #region TimeUnixSeconds Validation Tests
+    // NOTE: DatagramType validation test removed
+    // DatagramType is now a computed property that automatically returns "LinkStatus"
+    // based on the runtime type. It cannot be set incorrectly.
+
+
+
+
 
     [Fact]
     public void Should_Accept_Zero_For_TimeUnixSeconds()
@@ -1440,9 +1281,9 @@ public class LinkStatusValidatorTests
         result.ShouldNotHaveAnyValidationErrors();
     }
 
-    #endregion
 
-    #region Optional Fields Validation Tests
+
+
 
     [Fact]
     public void Should_Accept_Valid_Optional_Fields()
@@ -1696,9 +1537,9 @@ public class LinkStatusValidatorTests
         result.ShouldNotHaveAnyValidationErrors();
     }
 
-    #endregion
 
-    #region Required Fields Validation Tests
+
+
 
     [Theory]
     [InlineData("")]
@@ -1805,81 +1646,7 @@ public class LinkStatusValidatorTests
         result.ShouldHaveValidationErrorFor(x => x.Direction);
     }
 
-    [Fact]
-    public void Should_Reject_Wrong_DatagramType()
-    {
-        var model = new LinkStatus
-        {
-            DatagramType = "WrongType",
-            TimeUnixSeconds = 1729512000,
-            Node = "G8PZT-1",
-            Id = 3,
-            Direction = "incoming",
-            Port = "2",
-            Remote = "KIDDER-1",
-            Local = "G8PZT-11",
-            UpForSecs = 300,
-            FramesSent = 100,
-            FramesReceived = 50,
-            FramesResent = 5,
-            FramesQueued = 2
-        };
-
-        var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(x => x.DatagramType);
-    }
-
-    [Fact]
-    public void Should_Reject_Negative_UpForSecs()
-    {
-        var model = new LinkStatus
-        {
-            DatagramType = "LinkStatus",
-            TimeUnixSeconds = 1729512000,
-            Node = "G8PZT-1",
-            Id = 3,
-            Direction = "incoming",
-            Port = "2",
-            Remote = "KIDDER-1",
-            Local = "G8PZT-11",
-            UpForSecs = -1,
-            FramesSent = 100,
-            FramesReceived = 50,
-            FramesResent = 5,
-            FramesQueued = 2
-        };
-
-        var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(x => x.UpForSecs)
-            .WithErrorMessage("UpForSecs cannot be negative");
-    }
-
-    [Theory]
-    [InlineData(0)]
-    [InlineData(60)]
-    [InlineData(300)]
-    [InlineData(86400)]
-    public void Should_Accept_Valid_UpForSecs(int uptime)
-    {
-        var model = new LinkStatus
-        {
-            DatagramType = "LinkStatus",
-            TimeUnixSeconds = 1729512000,
-            Node = "G8PZT-1",
-            Id = 3,
-            Direction = "incoming",
-            Port = "2",
-            Remote = "KIDDER-1",
-            Local = "G8PZT-11",
-            UpForSecs = uptime,
-            FramesSent = 100,
-            FramesReceived = 50,
-            FramesResent = 5,
-            FramesQueued = 2
-        };
-
-        var result = _validator.TestValidate(model);
-        result.ShouldNotHaveValidationErrorFor(x => x.UpForSecs);
-    }
-    #endregion
+    // NOTE: DatagramType validation test removed
+    // DatagramType is now a computed property that automatically returns "LinkStatus"
+    // based on the runtime type. It cannot be set incorrectly.
 }

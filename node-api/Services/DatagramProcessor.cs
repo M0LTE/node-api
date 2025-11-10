@@ -21,7 +21,7 @@ public class DatagramProcessor : IDatagramProcessor
     private readonly IUdpRateLimitService _rateLimitService;
     private readonly IGeoIpService _geoIpService;
     private readonly IManagedMqttClient _mqttClient;
-    private readonly Channel<(UdpNodeInfoJsonDatagram Frame, IPEndPoint RemoteEndPoint, DateTime ArrivalTime)> _processingChannel;
+    private readonly Channel<(NetworkEventDatagram Frame, IPEndPoint RemoteEndPoint, DateTime ArrivalTime)> _processingChannel;
     private readonly SemaphoreSlim _processingSemaphore;
 
     private const string udpTopic = "in/udp";
@@ -58,7 +58,7 @@ public class DatagramProcessor : IDatagramProcessor
             SingleWriter = true
         };
 
-        _processingChannel = Channel.CreateBounded<(UdpNodeInfoJsonDatagram, IPEndPoint, DateTime)>(channelOptions);
+        _processingChannel = Channel.CreateBounded<(NetworkEventDatagram, IPEndPoint, DateTime)>(channelOptions);
         _processingSemaphore = new SemaphoreSlim(MaxConcurrentProcessing, MaxConcurrentProcessing);
 
         // Start the frame processing task
@@ -117,7 +117,7 @@ public class DatagramProcessor : IDatagramProcessor
 
             _logger.LogDebug("Sent UDP datagram from {Endpoint} to {Topic}", remoteEndPoint, udpTopic);
 
-            if (UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json!, out var frame, out var jsonException) && frame != null)
+            if (NetworkEventDatagramDeserialiser.TryDeserialise(json!, out var frame, out var jsonException) && frame != null)
             {
                 _logger.LogDebug("Validating from {Endpoint}...", remoteEndPoint);
                 // Validate the deserialized datagram
@@ -237,7 +237,7 @@ public class DatagramProcessor : IDatagramProcessor
         }
     }
 
-    private async Task HandleFrame(UdpNodeInfoJsonDatagram frame, IPEndPoint remoteEndPoint, DateTime arrivalTime)
+    private async Task HandleFrame(NetworkEventDatagram frame, IPEndPoint remoteEndPoint, DateTime arrivalTime)
     {
         _logger.LogDebug("Handling frame of type {Type} from {RemoteEndPoint}", frame.DatagramType, remoteEndPoint);
 
@@ -296,7 +296,7 @@ public class DatagramProcessor : IDatagramProcessor
         }
     }
 
-    private static string? ExtractReportingCallsign(UdpNodeInfoJsonDatagram frame)
+    private static string? ExtractReportingCallsign(NetworkEventDatagram frame)
     {
         return frame switch
         {

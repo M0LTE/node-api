@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace node_api.Models;
 
@@ -6,7 +6,7 @@ namespace node_api.Models;
 /// 3.7. Circuit Connection Event
 /// This report is sent when a NetRom Layer 4 connection enters the fully connected state.
 /// </summary>
-public record CircuitUpEvent : UdpNodeInfoJsonDatagram
+public record CircuitUpEvent : NetworkEventDatagram
 {
     /// <summary>
     /// Timestamp (secs since 1/1/70) (Optional)

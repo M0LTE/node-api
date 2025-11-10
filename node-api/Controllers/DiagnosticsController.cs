@@ -55,7 +55,7 @@ public class DiagnosticsController : ControllerBase
             }
 
             // Try to deserialize using the same logic as UDP processing
-            if (UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagram, out var jsonException))
+            if (NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagram, out var jsonException))
             {
                 if (datagram == null)
                 {

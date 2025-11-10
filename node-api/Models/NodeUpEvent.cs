@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace node_api.Models;
 
@@ -6,7 +6,7 @@ namespace node_api.Models;
 /// 3.1.  Node Up Event
 /// This report is sent when a node software starts running.
 /// </summary>
-public record NodeUpEvent : UdpNodeInfoJsonDatagram
+public record NodeUpEvent : NetworkEventDatagram
 {
     /// <summary>
     /// Timestamp (secs since 1/1/70) (Optional)

@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace node_api.Models;
 
@@ -9,7 +9,7 @@ namespace node_api.Models;
 /// However a crash may be inferred if a node fails to report within a reasonable interval,
 /// or if a subsequent NodeUpEvent is received with the same callsign and alias.
 /// </summary>
-public record NodeDownEvent : UdpNodeInfoJsonDatagram
+public record NodeDownEvent : NetworkEventDatagram
 {
     /// <summary>
     /// Timestamp (secs since 1/1/70) (Optional)

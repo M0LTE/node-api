@@ -43,7 +43,16 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Enable case-insensitive property names
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+        
+        // .NET's System.Text.Json automatically handles [JsonPolymorphic] attributes
+        // No additional configuration needed for discriminator-based deserialization
+    });
+
 builder.Services.AddOpenApi();
 
 // Register UDP rate limiting

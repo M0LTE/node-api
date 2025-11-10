@@ -27,7 +27,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
 
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert
@@ -92,7 +92,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
 
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var frameUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var frameUntyped, out _);
         var frame = frameUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert
@@ -168,7 +168,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
 
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert
@@ -210,7 +210,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
 
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert
@@ -250,7 +250,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
 
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert
@@ -294,7 +294,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
 
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert
@@ -338,7 +338,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
 
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert
@@ -380,7 +380,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
 
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert
@@ -439,7 +439,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
         
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert L2 fields
@@ -500,7 +500,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
 
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert L2 fields
@@ -554,7 +554,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
 
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert L2 fields
@@ -607,7 +607,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
         
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert L2 fields
@@ -657,7 +657,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
         
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert L2 fields
@@ -706,7 +706,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
         
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert L2 fields
@@ -780,7 +780,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
 
 
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert L2 fields
@@ -871,7 +871,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
 
 
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert L2 fields
@@ -917,7 +917,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         var invalidJson = "{ invalid json }";
 
         // Act & Assert
-        UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(invalidJson, out var frame, out var exception).Should().BeFalse();
+        NetworkEventDatagramDeserialiser.TryDeserialise(invalidJson, out var frame, out var exception).Should().BeFalse();
         frame.Should().BeNull();
         exception.Should().NotBeNull();
         exception.Should().BeAssignableTo<JsonException>();
@@ -935,7 +935,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
 
         // Act & Assert
-        UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var frame, out _).Should().BeFalse();
+        NetworkEventDatagramDeserialiser.TryDeserialise(json, out var frame, out _).Should().BeFalse();
         frame.Should().BeNull();
     }
 
@@ -952,7 +952,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
 
         // Act & Assert
-        UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var frame, out _).Should().BeFalse();
+        NetworkEventDatagramDeserialiser.TryDeserialise(json, out var frame, out _).Should().BeFalse();
         frame.Should().BeNull();
     }
 
@@ -984,7 +984,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
         
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert L3 fields
@@ -1020,7 +1020,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
 
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert
@@ -1058,7 +1058,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
 
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert
@@ -1097,7 +1097,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
 
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert
@@ -1137,7 +1137,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
 
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var frame = datagramUntyped.Should().BeOfType<L2Trace>().Subject;
 
         // Assert
@@ -1178,7 +1178,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
 
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var evt = datagramUntyped.Should().BeOfType<NodeUpEvent>().Subject;
 
         // Assert
@@ -1209,7 +1209,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
 
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var evt = datagramUntyped.Should().BeOfType<NodeDownEvent>().Subject;
 
         // Assert
@@ -1236,7 +1236,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
         //
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var evt = datagramUntyped.Should().BeOfType<NodeDownEvent>().Subject;
 
         // Assert
@@ -1268,7 +1268,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
 
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var evt = datagramUntyped.Should().BeOfType<NodeStatusReportEvent>().Subject;
 
         // Assert
@@ -1302,7 +1302,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
         //
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var evt = datagramUntyped.Should().BeOfType<NodeStatusReportEvent>().Subject;
 
         // Assert
@@ -1337,7 +1337,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
         //
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var evt = datagramUntyped.Should().BeOfType<LinkUpEvent>().Subject;
 
         // Assert
@@ -1371,7 +1371,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
 
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var evt = datagramUntyped.Should().BeOfType<CircuitUpEvent>().Subject;
 
         // Assert
@@ -1411,7 +1411,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
         //
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var evt = datagramUntyped.Should().BeOfType<CircuitStatus>().Subject;
 
         // Assert
@@ -1458,7 +1458,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
         //
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var evt = datagramUntyped.Should().BeOfType<CircuitDisconnectionEvent>().Subject;
 
         // Assert
@@ -1500,7 +1500,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
 
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var evt = datagramUntyped.Should().BeOfType<NodeUpEvent>().Subject;
 
         // Assert
@@ -1542,7 +1542,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
 
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var evt = datagramUntyped.Should().BeOfType<NodeStatusReportEvent>().Subject;
 
         // Assert
@@ -1586,7 +1586,7 @@ public class UdpNodeInfoJsonFrameDeserialiserTests
         """;
         //
         // Act
-        var parsed = UdpNodeInfoJsonDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
+        var parsed = NetworkEventDatagramDeserialiser.TryDeserialise(json, out var datagramUntyped, out _);
         var evt = datagramUntyped.Should().BeOfType<NodeDownEvent>().Subject;
 
         // Assert

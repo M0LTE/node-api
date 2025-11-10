@@ -1,7 +1,7 @@
 # HTTP Datagram Ingestion API
 
 **Date**: 2025-01-21  
-**Status**: ? Implemented
+**Status**: ? Implemented with **OpenAPI Schema Support**
 
 ## Overview
 
@@ -22,6 +22,51 @@ HTTP POST ? RabbitMQ Queue ? Consumer ? DatagramProcessor ? MQTT ? Network State
 - ? **Fallback**: Automatically processes directly if RabbitMQ unavailable
 - ? **Rate Limiting**: Uses the same rate limiting as UDP (via DatagramProcessor)
 - ? **IP Tracking**: Preserves source IP for GeoIP and security
+- ? **OpenAPI Schema**: Full OpenAPI/Swagger documentation with polymorphic discriminator support
+- ? **Strongly Typed**: Validates against specific event type schemas
+
+## OpenAPI Documentation
+
+The API provides **full OpenAPI 3.0 schema documentation** with support for polymorphic types using JSON discriminators.
+
+### Access OpenAPI Documentation
+
+- **Scalar UI**: `https://node-api.packet.oarc.uk/scalar/v1`
+- **Swagger JSON**: `https://node-api.packet.oarc.uk/swagger/v1/swagger.json`
+- **Swagger UI** (if enabled): `https://node-api.packet.oarc.uk/swagger`
+
+### Polymorphic Type Support
+
+The API uses **JSON polymorphism** with the `@type` discriminator field to support multiple event types:
+
+```json
+{
+  "@type": "NodeUpEvent",  // Discriminator field
+  "nodeCall": "M0LTE-1",
+  // ... other NodeUpEvent-specific fields
+}
+```
+
+OpenAPI automatically generates:
+- **Separate schemas** for each event type (NodeUpEvent, LinkUpEvent, L2Trace, etc.)
+- **Union type** at the endpoint level (oneOf discriminator)
+- **Type-specific validation** based on the `@type` field
+- **IntelliSense/autocomplete** in API clients
+
+### Supported Event Types (Discriminated by `@type`)
+
+| @type | Schema | Description |
+|-------|--------|-------------|
+| `NodeUpEvent` | [NodeUpEvent](#nodeupevent-schema) | Node comes online |
+| `NodeStatus` | [NodeStatusReportEvent](#nodestatusreportevent-schema) | Periodic node status |
+| `NodeDownEvent` | [NodeDownEvent](#nodedownevent-schema) | Node goes offline |
+| `LinkUpEvent` | [LinkUpEvent](#linkupevent-schema) | Layer 2 link established |
+| `LinkStatus` | [LinkStatus](#linkstatus-schema) | Periodic link status |
+| `LinkDownEvent` | [LinkDisconnectionEvent](#linkdisconnectionevent-schema) | Link disconnected |
+| `CircuitUpEvent` | [CircuitUpEvent](#circuitupevent-schema) | Layer 4 circuit established |
+| `CircuitStatus` | [CircuitStatus](#circuitstatus-schema) | Periodic circuit status |
+| `CircuitDownEvent` | [CircuitDisconnectionEvent](#circuitdisconnectionevent-schema) | Circuit disconnected |
+| `L2Trace` | [L2Trace](#l2trace-schema) | Layer 2 frame trace |
 
 ## API Endpoints
 
@@ -34,8 +79,9 @@ Ingest a single network event datagram.
 
 #### Request Body
 
-Any valid network event datagram type:
+Accepts `UdpNodeInfoJsonDatagram` (polymorphic type discriminated by `@type` field).
 
+**Example: NodeUpEvent**
 ```json
 {
   "@type": "NodeUpEvent",
@@ -50,33 +96,64 @@ Any valid network event datagram type:
 }
 ```
 
+**Example: LinkUpEvent**
+```json
+{
+  "@type": "LinkUpEvent",
+  "time": 1234567890,
+  "node": "M0LTE-1",
+  "id": 123,
+  "direction": "outgoing",
+  "port": "1",
+  "local": "M0LTE-1",
+  "remote": "G0ABC-2"
+}
+```
+
+**Example: L2Trace**
+```json
+{
+  "@type": "L2Trace",
+  "reportFrom": "M0LTE-1",
+  "time": 1234567890,
+  "port": "1",
+  "srce": "M0LTE-1",
+  "dest": "G0ABC",
+  "ctrl": 3,
+  "l2Type": "UI",
+  "cr": "C",
+  "ilen": 64,
+  "pid": 240,
+  "ptcl": "DATA"
+}
+```
+
 #### Response
 
-**202 Accepted** (RabbitMQ available):
+**202 Accepted**:
 ```json
 {
   "status": "queued",
   "message": "Datagram queued for processing via RabbitMQ",
+  "type": "NodeUpEvent",
   "sourceIp": "192.0.2.1",
   "receivedAt": "2025-01-21T12:00:00.0000000Z"
 }
 ```
 
-**202 Accepted** (RabbitMQ unavailable - direct processing):
-```json
-{
-  "status": "processed",
-  "message": "Datagram processed directly (RabbitMQ unavailable)",
-  "sourceIp": "192.0.2.1",
-  "receivedAt": "2025-01-21T12:00:00.0000000Z"
-}
-```
-
-**400 Bad Request** (Invalid JSON):
+**400 Bad Request** (Invalid JSON or failed validation):
 ```json
 {
   "error": "Invalid JSON",
   "details": "..."
+}
+```
+
+**503 Service Unavailable** (RabbitMQ unavailable):
+```json
+{
+  "error": "Service unavailable",
+  "message": "Message queue is not available"
 }
 ```
 
@@ -87,7 +164,7 @@ Any valid network event datagram type:
 curl -X POST https://node-api.packet.oarc.uk/api/ingest \
   -H "Content-Type: application/json" \
   -d '{
-    "@type": "NodeStatusReportEvent",
+    "@type": "NodeStatus",
     "time": 1737465600,
     "nodeCall": "M0LTE-1",
     "nodeAlias": "MYLTE1",
@@ -121,7 +198,7 @@ Invoke-RestMethod -Uri "https://node-api.packet.oarc.uk/api/ingest" `
   -ContentType "application/json" `
   -Body $body
 
-# Using Python
+# Using Python with requests
 import requests
 import json
 
@@ -155,7 +232,7 @@ Ingest multiple network event datagrams in a single request.
 
 #### Request Body
 
-Array of datagram objects:
+Array of `UdpNodeInfoJsonDatagram` objects (each discriminated by `@type`):
 
 ```json
 [
@@ -183,9 +260,12 @@ Array of datagram objects:
     "@type": "L2Trace",
     "time": 1234567890,
     "reportFrom": "M0LTE-1",
-    "l2Type": "I",
+    "port": "1",
     "srce": "M0LTE-1",
-    "dest": "G0ABC-2"
+    "dest": "G0ABC-2",
+    "ctrl": 0,
+    "l2Type": "I",
+    "cr": "C"
   }
 ]
 ```
@@ -214,7 +294,7 @@ Array of datagram objects:
   "successCount": 2,
   "failureCount": 1,
   "errors": [
-    "Datagram 1: Invalid JSON format"
+    "Datagram 1 (LinkUpEvent): Invalid JSON format"
   ],
   "sourceIp": "192.0.2.1",
   "receivedAt": "2025-01-21T12:00:00.0000000Z",
@@ -227,7 +307,7 @@ Array of datagram objects:
 ```bash
 # Using curl
 curl -X POST https://node-api.packet.oarc.uk/api/ingest/batch \
-  -H "Content-Type: application/json" \
+  -H "Content-Type": application/json" \
   -d '[
     {
       "@type": "NodeUpEvent",
@@ -297,6 +377,18 @@ Check the status of the ingestion service.
     "available": true,
     "mode": "queue-based"
   },
+  "supportedTypes": [
+    "NodeUpEvent",
+    "NodeStatus",
+    "NodeDownEvent",
+    "LinkUpEvent",
+    "LinkStatus",
+    "LinkDownEvent",
+    "CircuitUpEvent",
+    "CircuitStatus",
+    "CircuitDownEvent",
+    "L2Trace"
+  ],
   "endpoints": {
     "singleIngest": "/api/ingest",
     "batchIngest": "/api/ingest/batch",
@@ -312,29 +404,105 @@ Check the status of the ingestion service.
 curl https://node-api.packet.oarc.uk/api/ingest/status
 ```
 
-## Supported Event Types
+## Event Type Schemas
 
-All existing UDP datagram types are supported:
+### NodeUpEvent Schema
 
-### Node Events
-- `NodeUpEvent` - Node comes online
-- `NodeStatusReportEvent` - Periodic node status
-- `NodeDownEvent` - Node goes offline
+```json
+{
+  "@type": "NodeUpEvent",
+  "time": 1234567890,          // Unix timestamp (optional)
+  "nodeCall": "M0LTE-1",       // Required
+  "nodeAlias": "MYLTE1",       // Required
+  "locator": "IO91EC",         // Required (Maidenhead locator)
+  "latitude": 51.5074,         // Optional (decimal degrees)
+  "longitude": -0.1278,        // Optional (decimal degrees)
+  "software": "xrlin",         // Required
+  "version": "v504j"           // Required
+}
+```
 
-### Link Events
-- `LinkUpEvent` - Layer 2 link established
-- `LinkStatus` - Periodic link status
-- `LinkDisconnectionEvent` - Link disconnected
+### LinkUpEvent Schema
 
-### Circuit Events
-- `CircuitUpEvent` - NetROM Layer 4 circuit established
-- `CircuitStatus` - Periodic circuit status
-- `CircuitDisconnectionEvent` - Circuit disconnected
+```json
+{
+  "@type": "LinkUpEvent",
+  "time": 1234567890,          // Unix timestamp (optional)
+  "node": "M0LTE-1",           // Required
+  "id": 123,                   // Required (link ID > 0)
+  "direction": "outgoing",     // Required ("incoming" or "outgoing")
+  "port": "1",                 // Required
+  "local": "M0LTE-1",          // Required
+  "remote": "G0ABC-2"          // Required
+}
+```
 
-### Trace Events
-- `L2Trace` - Layer 2 frame trace
+### L2Trace Schema
 
-For detailed schemas, see the [Event Types Documentation](../README.md#event-types).
+```json
+{
+  "@type": "L2Trace",
+  "reportFrom": "M0LTE-1",     // Required
+  "time": 1234567890,          // Unix timestamp (optional)
+  "port": "1",                 // Required
+  "dirn": "sent",              // Optional ("sent" or "rcvd")
+  "isRF": true,                // Optional (boolean)
+  "srce": "M0LTE-1",           // Required
+  "dest": "G0ABC",             // Required
+  "ctrl": 3,                   // Required (>= 0)
+  "l2Type": "UI",              // Required (SABME, C, D, DM, UA, UI, I, FRMR, RR, RNR, REJ, TEST, XID, SREJ, ?)
+  "cr": "C",                   // Required (C, R, or V1)
+  "modulo": 8,                 // Optional (8 or 128)
+  "ilen": 64,                  // Optional (>= 0, for I and UI frames)
+  "pid": 240,                  // Optional
+  "ptcl": "DATA",              // Optional (SEG, DATA, NET/ROM, IP, ARP, FLEXNET, ?)
+  "digis": [                   // Optional
+    {
+      "call": "DIGI1",
+      "rptd": true
+    }
+  ]
+  // ... many more optional fields for NET/ROM, routing, etc.
+}
+```
+
+For complete schemas, refer to the OpenAPI documentation at `/scalar/v1`.
+
+## Benefits of Strong Typing
+
+### 1. **Better Developer Experience**
+
+- **IntelliSense**: IDEs can autocomplete fields based on the `@type`
+- **Type safety**: Client libraries can generate strongly-typed classes
+- **Validation**: Errors caught at serialization time, not processing time
+
+### 2. **Automatic Documentation**
+
+- **OpenAPI/Swagger**: Full schema documentation generated automatically
+- **Examples**: Each event type has example payloads
+- **Field descriptions**: Every field documented with types and constraints
+
+### 3. **Client Generation**
+
+Generate strongly-typed clients in any language:
+
+```bash
+# Generate TypeScript client
+npx @openapitools/openapi-generator-cli generate \
+  -i https://node-api.packet.oarc.uk/swagger/v1/swagger.json \
+  -g typescript-fetch \
+  -o ./src/api
+
+# Generate C# client
+dotnet swagger tofile --output swagger.json node-api.dll v1
+NSwag openapi2csclient /input:swagger.json /classname:NodeApiClient /namespace:NodeApi.Client
+```
+
+### 4. **Validation at Multiple Layers**
+
+1. **JSON Schema Validation**: ASP.NET Core validates against OpenAPI schema
+2. **FluentValidation**: Business rule validation (callsign format, ranges, etc.)
+3. **Type Safety**: Compiler ensures correct field types
 
 ## Processing Pipeline
 
@@ -342,16 +510,16 @@ For detailed schemas, see the [Event Types Documentation](../README.md#event-typ
 
 ```
 HTTP POST ? DatagramIngestController
-              ?
+              ? (deserialize to strongly-typed model)
           RabbitMQ Publisher
-              ? (queue: udp-datagram-queue)
+              ? (serialize to JSON, queue: udp-datagram-queue)
           RabbitMQ Queue
               ?
           RabbitMQ Consumer
-              ?
+              ? (deserialize to strongly-typed model)
           DatagramProcessor
               ?
-          Rate Limiting & Validation
+          FluentValidation
               ?
           MQTT Publisher
               ?
@@ -359,221 +527,6 @@ HTTP POST ? DatagramIngestController
               ?
           Network State Updated
 ```
-
-### Without RabbitMQ (Fallback)
-
-```
-HTTP POST ? DatagramIngestController
-              ?
-          DatagramProcessor
-              ?
-          Rate Limiting & Validation
-              ?
-          MQTT Publisher
-              ?
-          MqttStateSubscriber
-              ?
-          Network State Updated
-```
-
-## Rate Limiting
-
-HTTP ingestion uses the **same rate limiting** as UDP ingestion:
-
-- Per-IP rate limiting (default: 25 requests/second with burst support)
-- CIDR blacklist for malicious sources
-- Automatic temporary blocks for excessive rates
-- All rate limiting is handled in `DatagramProcessor`
-
-Source IP is extracted from:
-1. `X-Forwarded-For` header (if present, uses first IP)
-2. `HttpContext.Connection.RemoteIpAddress` (direct connection)
-
-## Security Considerations
-
-### IP Address Handling
-
-- Source IP is extracted from HTTP headers for rate limiting
-- GeoIP tracking uses the same obfuscation as UDP (last 2 octets only)
-- Supports `X-Forwarded-For` header for proxy/load balancer scenarios
-
-### Authentication
-
-Currently **no authentication** is required. Consider adding:
-
-1. **API Key Authentication**:
-```csharp
-[Authorize(AuthenticationSchemes = "ApiKey")]
-[HttpPost]
-public async Task<IActionResult> IngestDatagramAsync(...)
-```
-
-2. **Rate Limiting per API Key**:
-- Track usage by API key instead of IP
-- Enforce different rate limits per key
-
-3. **IP Whitelist**:
-- Only allow submissions from known nodes
-- Reject unknown IPs at ingress
-
-### CORS
-
-If accessed from web browsers, configure CORS in `Program.cs`:
-
-```csharp
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("IngestPolicy", policy =>
-    {
-        policy.WithOrigins("https://trusted-source.example.com")
-              .AllowAnyHeader()
-              .WithMethods("POST");
-    });
-});
-
-// ...
-
-app.UseCors("IngestPolicy");
-```
-
-## Use Cases
-
-### 1. Node Software Integration
-
-XRouter nodes can submit telemetry via HTTP in addition to UDP:
-
-```python
-# Python example for XRouter node
-import requests
-import json
-
-def send_node_status(callsign, alias, locator, software, version, uptime_secs):
-    datagram = {
-        "@type": "NodeStatusReportEvent",
-        "time": int(time.time()),
-        "nodeCall": callsign,
-        "nodeAlias": alias,
-        "locator": locator,
-        "software": software,
-        "version": version,
-        "uptimeSecs": uptime_secs
-    }
-    
-    response = requests.post(
-        "https://node-api.packet.oarc.uk/api/ingest",
-        headers={"Content-Type": "application/json"},
-        data=json.dumps(datagram)
-    )
-    
-    return response.status_code == 202
-
-# Send status every 60 seconds
-while True:
-    send_node_status("M0LTE-1", "MYLTE1", "IO91EC", "xrlin", "v504j", 12345)
-    time.sleep(60)
-```
-
-### 2. Bulk Historical Import
-
-Import historical data from logs:
-
-```bash
-# Convert log file to JSON array
-cat historical_events.log | jq -s '.' > batch.json
-
-# Submit as batch
-curl -X POST https://node-api.packet.oarc.uk/api/ingest/batch \
-  -H "Content-Type: application/json" \
-  --data @batch.json
-```
-
-### 3. External Monitoring Tools
-
-Integrate with existing monitoring systems:
-
-```javascript
-// Node.js example
-const axios = require('axios');
-
-async function reportNodeUp(nodeData) {
-  try {
-    const response = await axios.post(
-      'https://node-api.packet.oarc.uk/api/ingest',
-      {
-        "@type": "NodeUpEvent",
-        ...nodeData
-      },
-      {
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
-    
-    console.log('Status:', response.data.status);
-    return true;
-  } catch (error) {
-    console.error('Error:', error.message);
-    return false;
-  }
-}
-```
-
-### 4. Testing & Development
-
-Easy testing without UDP client:
-
-```bash
-# Quick test of a NodeUpEvent
-curl -X POST http://localhost:5000/api/ingest \
-  -H "Content-Type: application/json" \
-  -d '{"@type":"NodeUpEvent","nodeCall":"TEST-1","nodeAlias":"TEST","locator":"IO91EC","software":"test","version":"v1"}'
-
-# Verify in MQTT
-mosquitto_sub -h localhost -t "out/#" -v
-```
-
-## Monitoring
-
-### Logs
-
-HTTP ingestion logs to the same logger as UDP:
-
-```
-info: DatagramIngestController[0]
-      HTTP ingest from 192.0.2.1: 256 bytes
-
-debug: DatagramIngestController[0]
-       Published HTTP datagram from 192.0.2.1 to RabbitMQ
-
-debug: DatagramProcessor[0]
-       Processing datagram from RabbitMQ: 192.0.2.1
-```
-
-### Metrics
-
-Same metrics as UDP ingestion:
-- MQTT topic: `metrics/system/{hostname}`
-- Rate limit blocks: `metrics/ratelimit`
-- Network state updates: MQTT `out/#` topics
-
-## Performance
-
-### Single Datagram Ingestion
-
-- **Latency**: ~10-50ms (RabbitMQ queue)
-- **Throughput**: Limited by rate limiting (25/sec per IP by default)
-- **Overhead**: Similar to UDP ingestion + HTTP overhead
-
-### Batch Ingestion
-
-- **Latency**: ~50-200ms (depends on batch size)
-- **Throughput**: Much higher than single ingestion
-- **Recommended**: Use batch endpoint for bulk imports
-
-### Scalability
-
-- HTTP ingestion scales horizontally (multiple instances)
-- RabbitMQ queue ensures messages aren't lost during scaling
-- Same concurrency controls as UDP (100 concurrent processing by default)
 
 ## Comparison: HTTP vs UDP
 
@@ -582,67 +535,22 @@ Same metrics as UDP ingestion:
 | **Protocol** | UDP datagrams (port 13579) | HTTP POST (port 443/80) |
 | **Reliability** | Fire-and-forget | Acknowledged (202 response) |
 | **Firewall** | May be blocked | Usually allowed |
-| **Authentication** | None | Can add API keys |
+| **Schema Documentation** | None | Full OpenAPI/Swagger |
+| **Type Safety** | Runtime only | Compile-time + Runtime |
 | **Batch Support** | No | Yes (`/api/ingest/batch`) |
 | **Processing** | Identical (via DatagramProcessor) | Identical (via DatagramProcessor) |
 | **Rate Limiting** | Yes | Yes (same limits) |
-| **RabbitMQ** | Publishes to queue | Publishes to same queue |
-| **Use Case** | Real-time node telemetry | External tools, testing, bulk import |
-
-## Troubleshooting
-
-### "503 Service Unavailable" Error
-
-**Cause**: RabbitMQ is configured but unavailable  
-**Solution**: Check RabbitMQ connection, or remove RabbitMQ environment variables to use direct processing
-
-### Datagrams Not Appearing in Network State
-
-**Cause**: Validation failure  
-**Solution**: Check MQTT topic `in/udp/errored/validation` for validation errors
-
-### Rate Limited
-
-**Cause**: Exceeding 25 requests/second from single IP  
-**Solution**: Use batch endpoint, or increase rate limit in configuration
-
-### "Invalid JSON" Error
-
-**Cause**: Malformed JSON in request  
-**Solution**: Validate JSON format, check for syntax errors
-
-## Future Enhancements
-
-1. **Authentication**:
-   - API key authentication
-   - OAuth2 / JWT tokens
-   - Per-key rate limiting
-
-2. **Compression**:
-   - Accept gzip/deflate compressed payloads
-   - Reduce bandwidth for large batches
-
-3. **WebSocket Support**:
-   - Bidirectional real-time streaming
-   - Receive acknowledgments instantly
-
-4. **GraphQL Endpoint**:
-   - Flexible ingestion with schema validation
-   - Query capabilities alongside ingestion
-
-5. **Async Processing Status**:
-   - Return job ID for batch operations
-   - Query processing status via `/api/ingest/jobs/{id}`
+| **Client Generation** | Manual | Automatic (from OpenAPI) |
 
 ## Related Documentation
 
-- [RabbitMQ Integration](RABBITMQ_INTEGRATION.md)
-- [Event Types](../README.md#event-types)
-- [Rate Limiting](RATE_LIMITING.md)
-- [API Documentation](../README.md#api-endpoints)
+- [RabbitMQ Integration](RABBITMQ_REFACTORING.md)
+- [Packet Network Monitoring Spec](../Tests/Packet_Network_Monitoring_Project_v0.8.txt)
+- [OpenAPI Specification](https://node-api.packet.oarc.uk/swagger/v1/swagger.json)
 
 ---
 
-**Status**: ? **Production Ready**  
-**Version**: 1.0  
-**Compatibility**: All existing event types supported
+**Status**: ? **Production Ready with Full OpenAPI Schema Support**  
+**Version**: 2.0  
+**Breaking Change**: None (backward compatible)
+**New Feature**: Strongly-typed schemas with OpenAPI polymorphism

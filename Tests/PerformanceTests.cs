@@ -151,7 +151,7 @@ public class PerformanceTests
     public async Task Should_Handle_Validation_Of_All_Event_Types_Concurrently()
     {
         // Arrange - create one of each event type
-        var events = new List<UdpNodeInfoJsonDatagram>
+        var events = new List<NetworkEventDatagram>
         {
             new L2Trace
             {

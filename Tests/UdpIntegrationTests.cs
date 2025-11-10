@@ -57,7 +57,7 @@ public class UdpIntegrationTests : IDisposable
     public void Should_Serialize_All_Event_Types_To_Valid_JSON()
     {
         // Test that all event types can be serialized
-        var events = new List<UdpNodeInfoJsonDatagram>
+        var events = new List<NetworkEventDatagram>
         {
             new L2Trace
             {
@@ -102,9 +102,15 @@ public class UdpIntegrationTests : IDisposable
 
         foreach (var evt in events)
         {
-            var json = JsonSerializer.Serialize(evt, evt.GetType());
+            // Serialize as the base NetworkEventDatagram type to trigger polymorphic serialization
+            // This will include the @type discriminator in the JSON
+            var json = JsonSerializer.Serialize<NetworkEventDatagram>(evt);
             Assert.False(string.IsNullOrWhiteSpace(json));
-            Assert.Contains("\"@type\"", json);
+            
+            // NOTE: DatagramType property is [JsonIgnore] because the polymorphic
+            // serialization infrastructure automatically writes "@type" in the JSON.
+            // So we check for "@type" in the JSON string, not "DatagramType".
+            Assert.Contains("@type", json);
         }
     }
 

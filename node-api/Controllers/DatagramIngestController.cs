@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using node_api.Services;
+using node_api.Models;
 using System.Net;
+using System.Text.Json;
 
 namespace node_api.Controllers;
 
@@ -26,11 +28,23 @@ public class DatagramIngestController : ControllerBase
     /// <summary>
     /// Ingest a single network event datagram via HTTP
     /// </summary>
-    /// <param name="datagram">The event datagram (same format as UDP datagrams)</param>
+    /// <param name="datagram">The event datagram (NodeUpEvent, LinkUpEvent, L2Trace, etc.)</param>
     /// <returns>202 Accepted if successfully queued, 503 if RabbitMQ unavailable</returns>
     /// <remarks>
-    /// Accepts the same JSON format as UDP datagrams. The datagram will be published to RabbitMQ
-    /// and processed through the same pipeline as UDP-received events.
+    /// Accepts any datagram type supported by the packet network monitoring system.
+    /// The datagram will be published to RabbitMQ and processed through the same pipeline as UDP-received events.
+    /// 
+    /// Supported datagram types (discriminated by "@type" field):
+    /// - **NodeUpEvent**: Node startup notification
+    /// - **NodeStatus**: Periodic node status report  
+    /// - **NodeDownEvent**: Node shutdown notification
+    /// - **LinkUpEvent**: AX.25 link connection established
+    /// - **LinkStatus**: Link status report
+    /// - **LinkDownEvent**: AX.25 link disconnected
+    /// - **CircuitUpEvent**: NetRom circuit established
+    /// - **CircuitStatus**: Circuit status report
+    /// - **CircuitDownEvent**: NetRom circuit disconnected
+    /// - **L2Trace**: Layer 2 frame trace (detailed packet analysis)
     /// 
     /// Example NodeUpEvent:
     /// ```json
@@ -46,13 +60,45 @@ public class DatagramIngestController : ControllerBase
     ///   "version": "v504j"
     /// }
     /// ```
+    /// 
+    /// Example LinkUpEvent:
+    /// ```json
+    /// {
+    ///   "@type": "LinkUpEvent",
+    ///   "time": 1234567890,
+    ///   "node": "M0LTE-1",
+    ///   "id": 123,
+    ///   "direction": "outgoing",
+    ///   "port": "1",
+    ///   "local": "M0LTE-1",
+    ///   "remote": "G0ABC-2"
+    /// }
+    /// ```
+    /// 
+    /// Example L2Trace:
+    /// ```json
+    /// {
+    ///   "@type": "L2Trace",
+    ///   "reportFrom": "M0LTE-1",
+    ///   "time": 1234567890,
+    ///   "port": "1",
+    ///   "srce": "M0LTE-1",
+    ///   "dest": "G0ABC",
+    ///   "ctrl": 3,
+    ///   "l2Type": "UI",
+    ///   "cr": "C",
+    ///   "ilen": 64,
+    ///   "pid": 240,
+    ///   "ptcl": "DATA"
+    /// }
+    /// ```
     /// </remarks>
     [HttpPost]
     [Consumes("application/json")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
-    public async Task<IActionResult> IngestDatagramAsync([FromBody] object datagram)
+    public async Task<IActionResult> IngestDatagramAsync([FromBody] NetworkEventDatagram datagram)
     {
         try
         {
@@ -65,7 +111,7 @@ public class DatagramIngestController : ControllerBase
             var arrivalTime = DateTime.UtcNow;
             
             // Serialize the datagram to JSON bytes (same format as UDP)
-            var jsonBytes = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(datagram);
+            var jsonBytes = JsonSerializer.SerializeToUtf8Bytes<object>(datagram);
             
             // Get the source IP from the HTTP request
             var sourceIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
@@ -80,7 +126,8 @@ public class DatagramIngestController : ControllerBase
                 }
             }
             
-            _logger.LogDebug("HTTP ingest from {SourceIp}: {Size} bytes", sourceIp, jsonBytes.Length);
+            _logger.LogDebug("HTTP ingest from {SourceIp}: {Type}, {Size} bytes", 
+                sourceIp, datagram.DatagramType, jsonBytes.Length);
             
             // Publish to RabbitMQ
             await _rabbitMqPublisher.PublishDatagramAsync(jsonBytes, sourceIp);
@@ -89,11 +136,12 @@ public class DatagramIngestController : ControllerBase
             return Accepted(new { 
                 status = "queued", 
                 message = "Datagram queued for processing via RabbitMQ",
+                type = datagram.DatagramType,
                 sourceIp = sourceIp,
                 receivedAt = arrivalTime
             });
         }
-        catch (System.Text.Json.JsonException ex)
+        catch (JsonException ex)
         {
             _logger.LogWarning(ex, "Invalid JSON in HTTP datagram ingestion");
             return BadRequest(new { error = "Invalid JSON", details = ex.Message });
@@ -109,7 +157,7 @@ public class DatagramIngestController : ControllerBase
     /// Ingest multiple network event datagrams via HTTP in a single request
     /// </summary>
     /// <param name="datagrams">Array of event datagrams</param>
-    /// <returns">202 Accepted with count of queued datagrams</returns>
+    /// <returns>202 Accepted with count of queued datagrams</returns>
     /// <remarks>
     /// Accepts an array of datagrams in the same format as single ingestion.
     /// All datagrams are published to RabbitMQ for processing.
@@ -121,7 +169,9 @@ public class DatagramIngestController : ControllerBase
     ///     "@type": "NodeUpEvent",
     ///     "nodeCall": "M0LTE-1",
     ///     "nodeAlias": "MYLTE1",
-    ///     ...
+    ///     "locator": "IO91EC",
+    ///     "software": "xrlin",
+    ///     "version": "v504j"
     ///   },
     ///   {
     ///     "@type": "LinkUpEvent",
@@ -140,7 +190,7 @@ public class DatagramIngestController : ControllerBase
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
-    public async Task<IActionResult> IngestDatagramBatchAsync([FromBody] object[] datagrams)
+    public async Task<IActionResult> IngestDatagramBatchAsync([FromBody] NetworkEventDatagram[] datagrams)
     {
         if (datagrams == null || datagrams.Length == 0)
         {
@@ -176,15 +226,16 @@ public class DatagramIngestController : ControllerBase
             {
                 try
                 {
-                    var jsonBytes = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(datagrams[i]);
+                    var jsonBytes = JsonSerializer.SerializeToUtf8Bytes<object>(datagrams[i]);
                     await _rabbitMqPublisher.PublishDatagramAsync(jsonBytes, sourceIp);
                     successCount++;
                 }
                 catch (Exception ex)
                 {
                     failureCount++;
-                    errors.Add($"Datagram {i}: {ex.Message}");
-                    _logger.LogWarning(ex, "Error processing datagram {Index} in batch from {SourceIp}", i, sourceIp);
+                    errors.Add($"Datagram {i} ({datagrams[i].DatagramType}): {ex.Message}");
+                    _logger.LogWarning(ex, "Error processing datagram {Index} ({Type}) in batch from {SourceIp}", 
+                        i, datagrams[i].DatagramType, sourceIp);
                 }
             }
 
@@ -208,7 +259,7 @@ public class DatagramIngestController : ControllerBase
                 ? Accepted(response) 
                 : StatusCode(207, response); // 207 Multi-Status for partial success
         }
-        catch (System.Text.Json.JsonException ex)
+        catch (JsonException ex)
         {
             _logger.LogWarning(ex, "Invalid JSON in HTTP batch datagram ingestion");
             return BadRequest(new { error = "Invalid JSON", details = ex.Message });
@@ -236,6 +287,19 @@ public class DatagramIngestController : ControllerBase
             {
                 available = _rabbitMqPublisher.IsAvailable,
                 mode = _rabbitMqPublisher.IsAvailable ? "queue-based" : "direct-processing"
+            },
+            supportedTypes = new[]
+            {
+                "NodeUpEvent",
+                "NodeStatus", 
+                "NodeDownEvent",
+                "LinkUpEvent",
+                "LinkStatus",
+                "LinkDownEvent",
+                "CircuitUpEvent",
+                "CircuitStatus",
+                "CircuitDownEvent",
+                "L2Trace"
             },
             endpoints = new
             {

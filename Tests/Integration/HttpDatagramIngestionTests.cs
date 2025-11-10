@@ -60,7 +60,7 @@ public class HttpDatagramIngestionTests : IClassFixture<TestWebApplicationFactor
         // Arrange
         var datagram = new
         {
-            @type = "NodeStatusReportEvent",
+            @type = "NodeStatus",  // Fixed: use "NodeStatus" not "NodeStatusReportEvent"
             time = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
             nodeCall = "TEST-2",
             nodeAlias = "TESTNODE2",
@@ -114,11 +114,14 @@ public class HttpDatagramIngestionTests : IClassFixture<TestWebApplicationFactor
         var datagram = new
         {
             @type = "L2Trace",
-            time = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
             reportFrom = "TEST-5",
-            l2Type = "I",
+            time = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+            port = "1",
             srce = "TEST-5",
-            dest = "TEST-6"
+            dest = "TEST-6",
+            ctrl = 3,
+            l2Type = "UI",
+            cr = "C"
         };
 
         // Act
@@ -295,11 +298,14 @@ public class HttpDatagramIngestionTests : IClassFixture<TestWebApplicationFactor
         var datagrams = Enumerable.Range(1, 100).Select(i => new
         {
             @type = "L2Trace",
-            time = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
             reportFrom = $"LARGE-{i}",
-            l2Type = "I",
+            time = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+            port = "1",
             srce = $"LARGE-{i}",
-            dest = $"LARGE-{i + 1}"
+            dest = $"LARGE-{i + 1}",
+            ctrl = 3,
+            l2Type = "UI",
+            cr = "C"
         }).ToArray();
 
         // Act

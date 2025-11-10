@@ -15,7 +15,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000, // Valid timestamp: 2024-10-21 12:00:00 UTC
             Port = "1",
@@ -33,27 +32,6 @@ public class L2TraceValidatorTests
         result.ShouldNotHaveAnyValidationErrors();
     }
 
-    [Fact]
-    public void Should_Have_Error_When_DatagramType_Is_Wrong()
-    {
-        var model = new L2Trace
-        {
-            DatagramType = "WrongType",
-            ReportFrom = "G9XXX",
-            TimeUnixSeconds = 1729512000,
-            Port = "1",
-            Source = "G8PZT-1",
-            Destination = "ID",
-            Control = 3,
-            L2Type = "UI",
-            // Modulo is now optional
-            CommandResponse = "C"
-        };
-
-        var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(x => x.DatagramType);
-    }
-
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
@@ -61,7 +39,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = callsign,
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -83,7 +60,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = port,
@@ -103,7 +79,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -128,7 +103,6 @@ public class L2TraceValidatorTests
         // Unix epoch (1970-01-01 00:00:00 UTC)
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 0,
             Port = "1",
@@ -148,7 +122,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = -1,
             Port = "1",
@@ -172,7 +145,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = timestamp,
             Port = "1",
@@ -199,7 +171,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = timestamp,
             Port = "1",
@@ -221,7 +192,6 @@ public class L2TraceValidatorTests
         
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = currentTimestamp,
             Port = "1",
@@ -243,7 +213,6 @@ public class L2TraceValidatorTests
         
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = maxTimestamp,
             Port = "1",
@@ -266,7 +235,6 @@ public class L2TraceValidatorTests
         
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = exceedingTimestamp,
             Port = "1",
@@ -288,7 +256,6 @@ public class L2TraceValidatorTests
         // Test with a timestamp from 1980 (315532800 = 1980-01-01 00:00:00 UTC)
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 315532800,
             Port = "1",
@@ -311,7 +278,6 @@ public class L2TraceValidatorTests
         
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = futureTimestamp,
             Port = "1",
@@ -331,7 +297,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -378,7 +343,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -398,7 +362,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -423,7 +386,6 @@ public class L2TraceValidatorTests
         // Example from specification section 1.1.7
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G8PZT-1",
             TimeUnixSeconds = 1761058466,
             Port = "2",
@@ -443,7 +405,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G8PZT-3",
             TimeUnixSeconds = 1761058467,
             Port = "2",
@@ -463,7 +424,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "M0LTE",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -484,7 +444,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "M0ABC",
             TimeUnixSeconds = 1729512001,
             Port = "1",
@@ -505,7 +464,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G8PZT-1",
             TimeUnixSeconds = 1729512000,
             Port = "3",
@@ -527,7 +485,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G8PZT-1",
             TimeUnixSeconds = 1761058466,
             Port = "2",
@@ -552,7 +509,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -575,7 +531,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -600,7 +555,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -629,7 +583,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -652,7 +605,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -683,7 +635,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -704,7 +655,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -729,7 +679,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -750,7 +699,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -771,7 +719,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -796,7 +743,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -821,7 +767,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -849,7 +794,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT",
@@ -874,7 +818,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT",
@@ -895,7 +838,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT-1",
@@ -922,7 +864,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT-1",
@@ -953,7 +894,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT-1",
@@ -981,7 +921,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT-1",
@@ -1019,7 +958,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT-1",
@@ -1061,7 +999,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT-1",
@@ -1086,7 +1023,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT-1",
@@ -1115,7 +1051,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT",
@@ -1149,7 +1084,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT",
@@ -1179,7 +1113,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT",
@@ -1212,7 +1145,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT",
@@ -1238,7 +1170,6 @@ public class L2TraceValidatorTests
         // Real-world datagrams don't include FromAlias despite spec v0.8a saying it's required
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT",
@@ -1272,7 +1203,6 @@ public class L2TraceValidatorTests
         // FromAlias is optional but should be accepted when present
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             Port = "2",
             Source = "G8PZT",
@@ -1311,7 +1241,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -1332,7 +1261,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -1362,7 +1290,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -1384,7 +1311,6 @@ public class L2TraceValidatorTests
         // Test scenario where reportFrom differs from source (port call case)
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G8PZT-1",
             TimeUnixSeconds = 1729512000,
             Port = "2",
@@ -1412,7 +1338,6 @@ public class L2TraceValidatorTests
         // Test scenario where packet was overheard (rcvd but not destined for the reporting node)
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G8PZT-1",
             TimeUnixSeconds = 1729512000,
             Port = "2",
@@ -1437,7 +1362,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -1460,7 +1384,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -1552,7 +1475,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -1574,7 +1496,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -1608,7 +1529,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -1629,7 +1549,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -1653,7 +1572,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -1681,7 +1599,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -1753,7 +1670,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -1779,7 +1695,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -1808,7 +1723,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -1833,7 +1747,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -1858,7 +1771,6 @@ public class L2TraceValidatorTests
         // Icrc should only be present on I frames
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -1929,7 +1841,6 @@ public class L2TraceValidatorTests
         // Icrc is allowed on I frames only
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -1981,7 +1892,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -2019,7 +1929,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -2049,7 +1958,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -2071,14 +1979,13 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
             Source = "G8PZT-1",
             Destination = "ID",
             Control = 0,
-            L2Type = "I",
+            L2Type = "UI",
             CommandResponse = "C",
             Info = null
         };
@@ -2096,7 +2003,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -2127,7 +2033,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -2149,7 +2054,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",
@@ -2170,7 +2074,6 @@ public class L2TraceValidatorTests
     {
         var model = new L2Trace
         {
-            DatagramType = "L2Trace",
             ReportFrom = "G9XXX",
             TimeUnixSeconds = 1729512000,
             Port = "1",

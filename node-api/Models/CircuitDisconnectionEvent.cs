@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace node_api.Models;
 
@@ -6,7 +6,7 @@ namespace node_api.Models;
 /// 3.8. Circuit Disconnection Event
 /// This report is sent when a NetRom Layer 4 connection is torn down.
 /// </summary>
-public record CircuitDisconnectionEvent : UdpNodeInfoJsonDatagram
+public record CircuitDisconnectionEvent : NetworkEventDatagram
 {
     /// <summary>
     /// Timestamp (secs since 1/1/70) (Optional)

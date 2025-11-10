@@ -88,50 +88,10 @@ public class CircuitUpEventValidatorTests
 
     #endregion
 
-    #region DatagramType Validation
-
-    [Fact]
-    public void Should_Reject_Wrong_DatagramType()
-    {
-        var model = new CircuitUpEvent
-        {
-            DatagramType = "WrongType",
-            TimeUnixSeconds = 1759688220,
-            Node = "G8PZT",
-            Id = 1,
-            Direction = "incoming",
-            Remote = "G8PZT@G8PZT:14c0",
-            Local = "G8PZT-4:0001"
-        };
-
-        var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(x => x.DatagramType)
-            .WithErrorMessage("DatagramType must be 'CircuitUpEvent'");
-    }
-
-    [Theory]
-    [InlineData("CircuitDownEvent")]
-    [InlineData("CircuitStatus")]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Should_Reject_Invalid_DatagramTypes(string type)
-    {
-        var model = new CircuitUpEvent
-        {
-            DatagramType = type,
-            TimeUnixSeconds = 1759688220,
-            Node = "G8PZT",
-            Id = 1,
-            Direction = "incoming",
-            Remote = "G8PZT@G8PZT:14c0",
-            Local = "G8PZT-4:0001"
-        };
-
-        var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(x => x.DatagramType);
-    }
-
-    #endregion
+    // NOTE: DatagramType validation tests removed
+    // DatagramType is now a computed property that automatically returns the correct
+    // discriminator value ("CircuitUpEvent") based on the runtime type. It's computed 
+    // from the JsonDerivedType attribute and cannot be set to a wrong value.
 
     #region TimeUnixSeconds Validation
 
@@ -619,32 +579,8 @@ public class CircuitDisconnectionEventValidatorTests
 
     #endregion
 
-    #region DatagramType Validation
-
-    [Fact]
-    public void Should_Reject_Wrong_DatagramType()
-    {
-        var model = new CircuitDisconnectionEvent
-        {
-            DatagramType = "WrongType",
-            TimeUnixSeconds = 1759688220,
-            Node = "G8PZT",
-            Id = 1,
-            Direction = "incoming",
-            Remote = "G8PZT@G8PZT:14c0",
-            Local = "G8PZT-4:0001",
-            SegmentsSent = 5,
-            SegmentsReceived = 27,
-            SegmentsResent = 0,
-            SegmentsQueued = 0
-        };
-
-        var result = _validator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(x => x.DatagramType)
-            .WithErrorMessage("DatagramType must be 'CircuitDownEvent'");
-    }
-
-    #endregion
+    // NOTE: DatagramType validation test removed  
+    // DatagramType is now a computed property that returns "CircuitDownEvent" automatically.
 
     #region TimeUnixSeconds Validation
 

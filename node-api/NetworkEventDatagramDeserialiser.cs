@@ -1,11 +1,15 @@
-﻿using node_api.Models;
+using node_api.Models;
 using node_api.Constants;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace node_api;
 
-public static class UdpNodeInfoJsonDatagramDeserialiser
+/// <summary>
+/// Deserializes JSON strings into strongly-typed NetworkEventDatagram objects.
+/// Supports multiple transport protocols (UDP, HTTP, etc.)
+/// </summary>
+public static class NetworkEventDatagramDeserialiser
 {
     private static readonly JsonSerializerOptions options = new()
     {
@@ -13,7 +17,7 @@ public static class UdpNodeInfoJsonDatagramDeserialiser
         DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
     };
 
-    public static bool TryDeserialise(string json, out UdpNodeInfoJsonDatagram? frame, out JsonException? jsonException)
+    public static bool TryDeserialise(string json, out NetworkEventDatagram? frame, out JsonException? jsonException)
     {
         string? typeString;
         try
@@ -22,7 +26,6 @@ public static class UdpNodeInfoJsonDatagramDeserialiser
         }
         catch (JsonException ex)
         {
-            //throw;
             frame = null;
             jsonException = ex;
             return false;

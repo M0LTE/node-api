@@ -8,7 +8,7 @@ namespace node_api.Models;
 /// to convey additional information about the performance of the circuit.
 /// The interval between status reports is currently 5 minutes.
 /// </summary>
-public record CircuitStatus : UdpNodeInfoJsonDatagram
+public record CircuitStatus : NetworkEventDatagram
 {
     /// <summary>
     /// Timestamp (secs since 1/1/70) (Optional)

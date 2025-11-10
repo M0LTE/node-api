@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 using node_api.Converters;
 
 namespace node_api.Models;
@@ -8,7 +8,7 @@ namespace node_api.Models;
 /// Each message or "report" is sent by XRouter upon transmitting or receiving an AX25 frame of any type.
 /// Reports have a variable format, depending on the AX25 frame contents.
 /// </summary>
-public record L2Trace : UdpNodeInfoJsonDatagram
+public record L2Trace : NetworkEventDatagram
 {
     /// <summary>
     /// Reporter's callsign, e.g. nodecall (Required)

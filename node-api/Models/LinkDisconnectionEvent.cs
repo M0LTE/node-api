@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace node_api.Models;
 
@@ -8,7 +8,7 @@ namespace node_api.Models;
 /// For the "direction" field, "incoming" indicates that the disconnection was initiated from the remote end,
 /// and "outgoing" means that it was initiated from the local end.
 /// </summary>
-public record LinkDisconnectionEvent : UdpNodeInfoJsonDatagram
+public record LinkDisconnectionEvent : NetworkEventDatagram
 {
     /// <summary>
     /// Timestamp (secs since 1/1/70) (Optional)

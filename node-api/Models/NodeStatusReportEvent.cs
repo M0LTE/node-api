@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace node_api.Models;
 
@@ -10,7 +10,7 @@ namespace node_api.Models;
 /// 3. It is sent at regular intervals, so a sudden lack of reports could indicate that a node had crashed without sending a NodeDownEvent.
 /// This allows the consumer of the data to purge expired nodes from the database, and maybe to alert people that a node was potentially down.
 /// </summary>
-public record NodeStatusReportEvent : UdpNodeInfoJsonDatagram
+public record NodeStatusReportEvent : NetworkEventDatagram
 {
     /// <summary>
     /// Timestamp (secs since 1/1/70) (Optional)

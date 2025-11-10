@@ -47,7 +47,7 @@ public class DatagramValidationService
     /// <summary>
     /// Validates a datagram and returns the validation result
     /// </summary>
-    public ValidationResult Validate(UdpNodeInfoJsonDatagram datagram)
+    public ValidationResult Validate(NetworkEventDatagram datagram)
     {
         return datagram switch
         {
@@ -68,7 +68,7 @@ public class DatagramValidationService
     /// <summary>
     /// Validates a datagram and returns whether it's valid
     /// </summary>
-    public bool IsValid(UdpNodeInfoJsonDatagram datagram, out ValidationResult validationResult)
+    public bool IsValid(NetworkEventDatagram datagram, out ValidationResult validationResult)
     {
         validationResult = Validate(datagram);
         return validationResult.IsValid;
