@@ -390,6 +390,23 @@ public class NodeState
         }
     }
     
+    /// <summary>
+    /// True if this is a CB (Citizens Band) station, false for amateur radio stations
+    /// </summary>
+    private bool _isCb;
+    public bool IsCb
+    {
+        get => _isCb;
+        set
+        {
+            if (_isCb != value)
+            {
+                _isCb = value;
+                MarkDirty();
+            }
+        }
+    }
+    
     // Dirty tracking for persistence optimization
     public bool IsDirty { get; private set; }
     

@@ -237,6 +237,7 @@ public class NetworkStatePersistenceService : BackgroundService
         target.GeoIpCity = source.GeoIpCity;
         target.LastIpUpdate = source.LastIpUpdate;
         target.IsReportingNode = source.IsReportingNode;
+        target.IsCb = source.IsCb;
     }
 
     private static void CopyLinkState(LinkState source, LinkState target)
