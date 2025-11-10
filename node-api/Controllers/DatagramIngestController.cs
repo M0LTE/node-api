@@ -98,60 +98,288 @@ public class DatagramIngestController : ControllerBase
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
-    public async Task<IActionResult> IngestDatagramAsync([FromBody] NetworkEventDatagram datagram)
-    {
-        try
-        {
-            if (!_rabbitMqPublisher.IsAvailable)
-            {
-                _logger.LogWarning("HTTP ingestion rejected - RabbitMQ is not available");
-                return StatusCode(503, new { error = "Service unavailable", message = "Message queue is not available" });
-            }
+    public Task<IActionResult> IngestDatagramAsync([FromBody] NetworkEventDatagram datagram)
+        => IngestTypedDatagramAsync(datagram);
 
-            var arrivalTime = DateTime.UtcNow;
-            
-            // Serialize the datagram to JSON bytes (same format as UDP)
-            var jsonBytes = JsonSerializer.SerializeToUtf8Bytes<object>(datagram);
-            
-            // Get the source IP from the HTTP request
-            var sourceIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-            
-            // Get real IP if behind proxy (X-Forwarded-For header)
-            if (Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor))
-            {
-                var ips = forwardedFor.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                if (ips.Length > 0)
-                {
-                    sourceIp = ips[0];
-                }
-            }
-            
-            _logger.LogDebug("HTTP ingest from {SourceIp}: {Type}, {Size} bytes", 
-                sourceIp, datagram.DatagramType, jsonBytes.Length);
-            
-            // Publish to RabbitMQ
-            await _rabbitMqPublisher.PublishDatagramAsync(jsonBytes, sourceIp);
-            _logger.LogDebug("Published HTTP datagram from {SourceIp} to RabbitMQ", sourceIp);
-            
-            return Accepted(new { 
-                status = "queued", 
-                message = "Datagram queued for processing via RabbitMQ",
-                type = datagram.DatagramType,
-                sourceIp = sourceIp,
-                receivedAt = arrivalTime
-            });
-        }
-        catch (JsonException ex)
-        {
-            _logger.LogWarning(ex, "Invalid JSON in HTTP datagram ingestion");
-            return BadRequest(new { error = "Invalid JSON", details = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error ingesting datagram via HTTP");
-            return StatusCode(500, new { error = "Internal server error", details = ex.Message });
-        }
-    }
+    // ========== Typed Endpoints for Better OpenAPI Documentation ==========
+
+    /// <summary>
+    /// Ingest a NodeUpEvent datagram
+    /// </summary>
+    /// <remarks>
+    /// Reports a node coming online. Required fields: nodeCall, nodeAlias, locator, software, version.
+    /// 
+    /// Example:
+    /// ```json
+    /// {
+    ///   "time": 1234567890,
+    ///   "nodeCall": "M0LTE-1",
+    ///   "nodeAlias": "MYLTE1",
+    ///   "locator": "IO91EC",
+    ///   "latitude": 51.5074,
+    ///   "longitude": -0.1278,
+    ///   "software": "xrlin",
+    ///   "version": "v504j"
+    /// }
+    /// ```
+    /// </remarks>
+    [HttpPost("node-up")]
+    [Consumes("application/json")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public Task<IActionResult> IngestNodeUpEventAsync([FromBody] NodeUpEvent datagram)
+        => IngestTypedDatagramAsync(datagram);
+
+    /// <summary>
+    /// Ingest a NodeStatus datagram
+    /// </summary>
+    /// <remarks>
+    /// Periodic status report from an active node. Includes uptime, link counts, circuit counts.
+    /// 
+    /// Example:
+    /// ```json
+    /// {
+    ///   "time": 1234567890,
+    ///   "nodeCall": "M0LTE-1",
+    ///   "nodeAlias": "MYLTE1",
+    ///   "locator": "IO91EC",
+    ///   "software": "xrlin",
+    ///   "version": "v504j",
+    ///   "uptimeSecs": 12345,
+    ///   "linksIn": 2,
+    ///   "linksOut": 3,
+    ///   "cctsIn": 1,
+    ///   "cctsOut": 2
+    /// }
+    /// ```
+    /// </remarks>
+    [HttpPost("node-status")]
+    [Consumes("application/json")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public Task<IActionResult> IngestNodeStatusAsync([FromBody] NodeStatusReportEvent datagram)
+        => IngestTypedDatagramAsync(datagram);
+
+    /// <summary>
+    /// Ingest a NodeDownEvent datagram
+    /// </summary>
+    /// <remarks>
+    /// Reports a node going offline/shutting down.
+    /// 
+    /// Example:
+    /// ```json
+    /// {
+    ///   "time": 1234567890,
+    ///   "nodeCall": "M0LTE-1"
+    /// }
+    /// ```
+    /// </remarks>
+    [HttpPost("node-down")]
+    [Consumes("application/json")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public Task<IActionResult> IngestNodeDownEventAsync([FromBody] NodeDownEvent datagram)
+        => IngestTypedDatagramAsync(datagram);
+
+    /// <summary>
+    /// Ingest a LinkUpEvent datagram
+    /// </summary>
+    /// <remarks>
+    /// Reports establishment of an AX.25 link between two stations.
+    /// 
+    /// Example:
+    /// ```json
+    /// {
+    ///   "time": 1234567890,
+    ///   "node": "M0LTE-1",
+    ///   "id": 123,
+    ///   "direction": "outgoing",
+    ///   "port": "1",
+    ///   "local": "M0LTE-1",
+    ///   "remote": "G0ABC-2"
+    /// }
+    /// ```
+    /// </remarks>
+    [HttpPost("link-up")]
+    [Consumes("application/json")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public Task<IActionResult> IngestLinkUpEventAsync([FromBody] LinkUpEvent datagram)
+        => IngestTypedDatagramAsync(datagram);
+
+    /// <summary>
+    /// Ingest a LinkStatus datagram
+    /// </summary>
+    /// <remarks>
+    /// Periodic status report for an active AX.25 link.
+    /// 
+    /// Example:
+    /// ```json
+    /// {
+    ///   "time": 1234567890,
+    ///   "node": "M0LTE-1",
+    ///   "id": 123,
+    ///   "port": "1",
+    ///   "local": "M0LTE-1",
+    ///   "remote": "G0ABC-2",
+    ///   "inPkts": 42,
+    ///   "outPkts": 38
+    /// }
+    /// ```
+    /// </remarks>
+    [HttpPost("link-status")]
+    [Consumes("application/json")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public Task<IActionResult> IngestLinkStatusAsync([FromBody] LinkStatus datagram)
+        => IngestTypedDatagramAsync(datagram);
+
+    /// <summary>
+    /// Ingest a LinkDownEvent datagram
+    /// </summary>
+    /// <remarks>
+    /// Reports disconnection of an AX.25 link.
+    /// 
+    /// Example:
+    /// ```json
+    /// {
+    ///   "time": 1234567890,
+    ///   "node": "M0LTE-1",
+    ///   "id": 123,
+    ///   "port": "1",
+    ///   "local": "M0LTE-1",
+    ///   "remote": "G0ABC-2"
+    /// }
+    /// ```
+    /// </remarks>
+    [HttpPost("link-down")]
+    [Consumes("application/json")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public Task<IActionResult> IngestLinkDownEventAsync([FromBody] LinkDisconnectionEvent datagram)
+        => IngestTypedDatagramAsync(datagram);
+
+    /// <summary>
+    /// Ingest a CircuitUpEvent datagram
+    /// </summary>
+    /// <remarks>
+    /// Reports establishment of a NetROM Layer 4 circuit.
+    /// 
+    /// Example:
+    /// ```json
+    /// {
+    ///   "time": 1234567890,
+    ///   "node": "M0LTE-1",
+    ///   "id": 456,
+    ///   "direction": "outgoing",
+    ///   "port": "1",
+    ///   "local": "M0LTE-1",
+    ///   "remote": "G0ABC"
+    /// }
+    /// ```
+    /// </remarks>
+    [HttpPost("circuit-up")]
+    [Consumes("application/json")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public Task<IActionResult> IngestCircuitUpEventAsync([FromBody] CircuitUpEvent datagram)
+        => IngestTypedDatagramAsync(datagram);
+
+    /// <summary>
+    /// Ingest a CircuitStatus datagram
+    /// </summary>
+    /// <remarks>
+    /// Periodic status report for an active NetROM circuit.
+    /// 
+    /// Example:
+    /// ```json
+    /// {
+    ///   "time": 1234567890,
+    ///   "node": "M0LTE-1",
+    ///   "id": 456,
+    ///   "port": "1",
+    ///   "local": "M0LTE-1",
+    ///   "remote": "G0ABC",
+    ///   "inBytes": 1024,
+    ///   "outBytes": 2048
+    /// }
+    /// ```
+    /// </remarks>
+    [HttpPost("circuit-status")]
+    [Consumes("application/json")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public Task<IActionResult> IngestCircuitStatusAsync([FromBody] CircuitStatus datagram)
+        => IngestTypedDatagramAsync(datagram);
+
+    /// <summary>
+    /// Ingest a CircuitDownEvent datagram
+    /// </summary>
+    /// <remarks>
+    /// Reports disconnection of a NetROM circuit.
+    /// 
+    /// Example:
+    /// ```json
+    /// {
+    ///   "time": 1234567890,
+    ///   "node": "M0LTE-1",
+    ///   "id": 456,
+    ///   "port": "1",
+    ///   "local": "M0LTE-1",
+    ///   "remote": "G0ABC"
+    /// }
+    /// ```
+    /// </remarks>
+    [HttpPost("circuit-down")]
+    [Consumes("application/json")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public Task<IActionResult> IngestCircuitDownEventAsync([FromBody] CircuitDisconnectionEvent datagram)
+        => IngestTypedDatagramAsync(datagram);
+
+    /// <summary>
+    /// Ingest an L2Trace datagram
+    /// </summary>
+    /// <remarks>
+    /// Detailed trace of a Layer 2 AX.25 frame. Contains full packet analysis including digipeaters.
+    /// 
+    /// Example:
+    /// ```json
+    /// {
+    ///   "reportFrom": "M0LTE-1",
+    ///   "time": 1234567890,
+    ///   "port": "1",
+    ///   "dirn": "sent",
+    ///   "srce": "M0LTE-1",
+    ///   "dest": "G0ABC",
+    ///   "ctrl": 3,
+    ///   "l2Type": "UI",
+    ///   "cr": "C",
+    ///   "ilen": 64,
+    ///   "pid": 240,
+    ///   "ptcl": "DATA",
+    ///   "digis": [
+    ///     { "call": "DIGI1", "rptd": true }
+    ///   ]
+    /// }
+    /// ```
+    /// </remarks>
+    [HttpPost("l2trace")]
+    [Consumes("application/json")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public Task<IActionResult> IngestL2TraceAsync([FromBody] L2Trace datagram)
+        => IngestTypedDatagramAsync(datagram);
 
     /// <summary>
     /// Ingest multiple network event datagrams via HTTP in a single request
@@ -303,12 +531,79 @@ public class DatagramIngestController : ControllerBase
             },
             endpoints = new
             {
-                singleIngest = "/api/ingest",
-                batchIngest = "/api/ingest/batch",
+                generic = "/api/ingest",
+                batch = "/api/ingest/batch",
+                nodeUp = "/api/ingest/node-up",
+                nodeStatus = "/api/ingest/node-status",
+                nodeDown = "/api/ingest/node-down",
+                linkUp = "/api/ingest/link-up",
+                linkStatus = "/api/ingest/link-status",
+                linkDown = "/api/ingest/link-down",
+                circuitUp = "/api/ingest/circuit-up",
+                circuitStatus = "/api/ingest/circuit-status",
+                circuitDown = "/api/ingest/circuit-down",
+                l2trace = "/api/ingest/l2trace",
                 status = "/api/ingest/status"
             }
         };
 
         return Ok(status);
+    }
+
+    // ========== Shared Implementation ==========
+
+    private async Task<IActionResult> IngestTypedDatagramAsync(NetworkEventDatagram datagram)
+    {
+        try
+        {
+            if (!_rabbitMqPublisher.IsAvailable)
+            {
+                _logger.LogWarning("HTTP ingestion rejected - RabbitMQ is not available");
+                return StatusCode(503, new { error = "Service unavailable", message = "Message queue is not available" });
+            }
+
+            var arrivalTime = DateTime.UtcNow;
+            
+            // Serialize the datagram to JSON bytes (same format as UDP)
+            var jsonBytes = JsonSerializer.SerializeToUtf8Bytes<object>(datagram);
+            
+            // Get the source IP from the HTTP request
+            var sourceIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            
+            // Get real IP if behind proxy (X-Forwarded-For header)
+            if (Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor))
+            {
+                var ips = forwardedFor.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                if (ips.Length > 0)
+                {
+                    sourceIp = ips[0];
+                }
+            }
+            
+            _logger.LogDebug("HTTP ingest from {SourceIp}: {Type}, {Size} bytes", 
+                sourceIp, datagram.DatagramType, jsonBytes.Length);
+            
+            // Publish to RabbitMQ
+            await _rabbitMqPublisher.PublishDatagramAsync(jsonBytes, sourceIp);
+            _logger.LogDebug("Published HTTP datagram from {SourceIp} to RabbitMQ", sourceIp);
+            
+            return Accepted(new { 
+                status = "queued", 
+                message = "Datagram queued for processing via RabbitMQ",
+                type = datagram.DatagramType,
+                sourceIp = sourceIp,
+                receivedAt = arrivalTime
+            });
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogWarning(ex, "Invalid JSON in HTTP datagram ingestion");
+            return BadRequest(new { error = "Invalid JSON", details = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error ingesting datagram via HTTP");
+            return StatusCode(500, new { error = "Internal server error", details = ex.Message });
+        }
     }
 }

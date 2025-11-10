@@ -1,7 +1,7 @@
 # HTTP Datagram Ingestion API
 
 **Date**: 2025-01-21  
-**Status**: ? Implemented with **OpenAPI Schema Support**
+**Status**: ? Implemented with **Full OpenAPI Schema Support via Typed Endpoints**
 
 ## Overview
 
@@ -17,17 +17,18 @@ HTTP POST ? RabbitMQ Queue ? Consumer ? DatagramProcessor ? MQTT ? Network State
 
 - ? **Identical Processing**: Uses the same `DatagramProcessor` as UDP ingestion
 - ? **RabbitMQ Integration**: Publishes to the same queue as UDP datagrams
-- ? **Same Event Types**: Accepts all existing datagram types (NodeUpEvent, LinkStatus, etc.)
+- ? **Typed Endpoints**: Individual endpoints per event type for perfect OpenAPI documentation
+- ? **Generic Endpoint**: Polymorphic endpoint that accepts any event type
 - ? **Batch Support**: Can ingest multiple datagrams in a single request
 - ? **Fallback**: Automatically processes directly if RabbitMQ unavailable
 - ? **Rate Limiting**: Uses the same rate limiting as UDP (via DatagramProcessor)
 - ? **IP Tracking**: Preserves source IP for GeoIP and security
-- ? **OpenAPI Schema**: Full OpenAPI/Swagger documentation with polymorphic discriminator support
-- ? **Strongly Typed**: Validates against specific event type schemas
+- ? **Full OpenAPI Schema**: Comprehensive documentation with examples in Scalar
+- ? **Strongly Typed**: Each endpoint validates against its specific schema
 
 ## OpenAPI Documentation
 
-The API provides **full OpenAPI 3.0 schema documentation** with support for polymorphic types using JSON discriminators.
+The API provides **full OpenAPI 3.0 schema documentation** with individual schemas for each event type.
 
 ### Access OpenAPI Documentation
 
@@ -35,100 +36,127 @@ The API provides **full OpenAPI 3.0 schema documentation** with support for poly
 - **Swagger JSON**: `https://node-api.packet.oarc.uk/swagger/v1/swagger.json`
 - **Swagger UI** (if enabled): `https://node-api.packet.oarc.uk/swagger`
 
-### Polymorphic Type Support
+### Endpoint Design
 
-The API uses **JSON polymorphism** with the `@type` discriminator field to support multiple event types:
+The API provides **two ways** to submit datagrams:
 
-```json
-{
-  "@type": "NodeUpEvent",  // Discriminator field
-  "nodeCall": "M0LTE-1",
-  // ... other NodeUpEvent-specific fields
-}
-```
+1. **Typed Endpoints** (? Recommended for Scalar):
+   - `/api/ingest/node-up` - POST NodeUpEvent
+   - `/api/ingest/link-up` - POST LinkUpEvent
+   - `/api/ingest/l2trace` - POST L2Trace
+   - etc.
+   - **Benefits**: Perfect OpenAPI schema, clear documentation, type-specific examples
 
-OpenAPI automatically generates:
-- **Separate schemas** for each event type (NodeUpEvent, LinkUpEvent, L2Trace, etc.)
-- **Union type** at the endpoint level (oneOf discriminator)
-- **Type-specific validation** based on the `@type` field
-- **IntelliSense/autocomplete** in API clients
+2. **Generic Polymorphic Endpoint**:
+   - `/api/ingest` - POST any NetworkEventDatagram (discriminated by `@type` field)
+   - **Benefits**: Single endpoint for all types, flexible for generic clients
 
-### Supported Event Types (Discriminated by `@type`)
-
-| @type | Schema | Description |
-|-------|--------|-------------|
-| `NodeUpEvent` | [NodeUpEvent](#nodeupevent-schema) | Node comes online |
-| `NodeStatus` | [NodeStatusReportEvent](#nodestatusreportevent-schema) | Periodic node status |
-| `NodeDownEvent` | [NodeDownEvent](#nodedownevent-schema) | Node goes offline |
-| `LinkUpEvent` | [LinkUpEvent](#linkupevent-schema) | Layer 2 link established |
-| `LinkStatus` | [LinkStatus](#linkstatus-schema) | Periodic link status |
-| `LinkDownEvent` | [LinkDisconnectionEvent](#linkdisconnectionevent-schema) | Link disconnected |
-| `CircuitUpEvent` | [CircuitUpEvent](#circuitupevent-schema) | Layer 4 circuit established |
-| `CircuitStatus` | [CircuitStatus](#circuitstatus-schema) | Periodic circuit status |
-| `CircuitDownEvent` | [CircuitDisconnectionEvent](#circuitdisconnectionevent-schema) | Circuit disconnected |
-| `L2Trace` | [L2Trace](#l2trace-schema) | Layer 2 frame trace |
+Both approaches use the exact same processing logic internally.
 
 ## API Endpoints
 
-### 1. Single Datagram Ingestion
+### Typed Endpoints (Recommended)
+
+Each event type has its own dedicated endpoint with perfect OpenAPI documentation:
+
+| Endpoint | Event Type | Description |
+|----------|------------|-------------|
+| `POST /api/ingest/node-up` | NodeUpEvent | Node comes online |
+| `POST /api/ingest/node-status` | NodeStatus | Periodic node status |
+| `POST /api/ingest/node-down` | NodeDownEvent | Node goes offline |
+| `POST /api/ingest/link-up` | LinkUpEvent | Layer 2 link established |
+| `POST /api/ingest/link-status` | LinkStatus | Periodic link status |
+| `POST /api/ingest/link-down` | LinkDownEvent | Link disconnected |
+| `POST /api/ingest/circuit-up` | CircuitUpEvent | Layer 4 circuit established |
+| `POST /api/ingest/circuit-status` | CircuitStatus | Periodic circuit status |
+| `POST /api/ingest/circuit-down` | CircuitDownEvent | Circuit disconnected |
+| `POST /api/ingest/l2trace` | L2Trace | Layer 2 frame trace |
+
+#### Example: POST /api/ingest/node-up
+
+```bash
+curl -X POST https://node-api.packet.oarc.uk/api/ingest/node-up \
+  -H "Content-Type: application/json" \
+  -d '{
+    "time": 1234567890,
+    "nodeCall": "M0LTE-1",
+    "nodeAlias": "MYLTE1",
+    "locator": "IO91EC",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
+    "software": "xrlin",
+    "version": "v504j"
+  }'
+```
+
+**Note**: The `@type` discriminator field is NOT required for typed endpoints (it's implied by the endpoint URL).
+
+#### Example: POST /api/ingest/link-up
+
+```bash
+curl -X POST https://node-api.packet.oarc.uk/api/ingest/link-up \
+  -H "Content-Type: application/json" \
+  -d '{
+    "time": 1234567890,
+    "node": "M0LTE-1",
+    "id": 123,
+    "direction": "outgoing",
+    "port": "1",
+    "local": "M0LTE-1",
+    "remote": "G0ABC-2"
+  }'
+```
+
+#### Example: POST /api/ingest/l2trace
+
+```bash
+curl -X POST https://node-api.packet.oarc.uk/api/ingest/l2trace \
+  -H "Content-Type: application/json" \
+  -d '{
+    "reportFrom": "M0LTE-1",
+    "time": 1234567890,
+    "port": "1",
+    "srce": "M0LTE-1",
+    "dest": "G0ABC",
+    "ctrl": 3,
+    "l2Type": "UI",
+    "cr": "C",
+    "ilen": 64,
+    "pid": 240,
+    "ptcl": "DATA"
+  }'
+```
+
+### Generic Polymorphic Endpoint
 
 **Endpoint**: `POST /api/ingest`  
 **Content-Type**: `application/json`
 
-Ingest a single network event datagram.
+Accepts any datagram type, discriminated by the `@type` field.
 
-#### Request Body
+#### Example with @type discriminator:
 
-Accepts `UdpNodeInfoJsonDatagram` (polymorphic type discriminated by `@type` field).
-
-**Example: NodeUpEvent**
-```json
-{
-  "@type": "NodeUpEvent",
-  "time": 1234567890,
-  "nodeCall": "M0LTE-1",
-  "nodeAlias": "MYLTE1",
-  "locator": "IO91EC",
-  "latitude": 51.5074,
-  "longitude": -0.1278,
-  "software": "xrlin",
-  "version": "v504j"
-}
+```bash
+curl -X POST https://node-api.packet.oarc.uk/api/ingest \
+  -H "Content-Type: application/json" \
+  -d '{
+    "@type": "NodeUpEvent",
+    "time": 1234567890,
+    "nodeCall": "M0LTE-1",
+    "nodeAlias": "MYLTE1",
+    "locator": "IO91EC",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
+    "software": "xrlin",
+    "version": "v504j"
+  }'
 ```
 
-**Example: LinkUpEvent**
-```json
-{
-  "@type": "LinkUpEvent",
-  "time": 1234567890,
-  "node": "M0LTE-1",
-  "id": 123,
-  "direction": "outgoing",
-  "port": "1",
-  "local": "M0LTE-1",
-  "remote": "G0ABC-2"
-}
-```
+**Note**: When using the generic endpoint, the `@type` field is REQUIRED.
 
-**Example: L2Trace**
-```json
-{
-  "@type": "L2Trace",
-  "reportFrom": "M0LTE-1",
-  "time": 1234567890,
-  "port": "1",
-  "srce": "M0LTE-1",
-  "dest": "G0ABC",
-  "ctrl": 3,
-  "l2Type": "UI",
-  "cr": "C",
-  "ilen": 64,
-  "pid": 240,
-  "ptcl": "DATA"
-}
-```
+### Response Format
 
-#### Response
+All ingestion endpoints return the same response format:
 
 **202 Accepted**:
 ```json
@@ -157,157 +185,16 @@ Accepts `UdpNodeInfoJsonDatagram` (polymorphic type discriminated by `@type` fie
 }
 ```
 
-#### Example Usage
-
-```bash
-# Using curl
-curl -X POST https://node-api.packet.oarc.uk/api/ingest \
-  -H "Content-Type: application/json" \
-  -d '{
-    "@type": "NodeStatus",
-    "time": 1737465600,
-    "nodeCall": "M0LTE-1",
-    "nodeAlias": "MYLTE1",
-    "locator": "IO91EC",
-    "latitude": 51.5074,
-    "longitude": -0.1278,
-    "software": "xrlin",
-    "version": "v504j",
-    "uptimeSecs": 12345,
-    "linksIn": 2,
-    "linksOut": 3,
-    "cctsIn": 1,
-    "cctsOut": 2,
-    "l3Relayed": 150
-  }'
-
-# Using PowerShell
-$body = @{
-    "@type" = "NodeUpEvent"
-    "nodeCall" = "M0LTE-1"
-    "nodeAlias" = "MYLTE1"
-    "locator" = "IO91EC"
-    "latitude" = 51.5074
-    "longitude" = -0.1278
-    "software" = "xrlin"
-    "version" = "v504j"
-} | ConvertTo-Json
-
-Invoke-RestMethod -Uri "https://node-api.packet.oarc.uk/api/ingest" `
-  -Method Post `
-  -ContentType "application/json" `
-  -Body $body
-
-# Using Python with requests
-import requests
-import json
-
-datagram = {
-    "@type": "NodeUpEvent",
-    "nodeCall": "M0LTE-1",
-    "nodeAlias": "MYLTE1",
-    "locator": "IO91EC",
-    "latitude": 51.5074,
-    "longitude": -0.1278,
-    "software": "xrlin",
-    "version": "v504j"
-}
-
-response = requests.post(
-    "https://node-api.packet.oarc.uk/api/ingest",
-    headers={"Content-Type": "application/json"},
-    data=json.dumps(datagram)
-)
-
-print(response.status_code)
-print(response.json())
-```
-
-### 2. Batch Datagram Ingestion
+### Batch Ingestion
 
 **Endpoint**: `POST /api/ingest/batch`  
 **Content-Type**: `application/json`
 
-Ingest multiple network event datagrams in a single request.
-
-#### Request Body
-
-Array of `UdpNodeInfoJsonDatagram` objects (each discriminated by `@type`):
-
-```json
-[
-  {
-    "@type": "NodeUpEvent",
-    "nodeCall": "M0LTE-1",
-    "nodeAlias": "MYLTE1",
-    "locator": "IO91EC",
-    "latitude": 51.5074,
-    "longitude": -0.1278,
-    "software": "xrlin",
-    "version": "v504j"
-  },
-  {
-    "@type": "LinkUpEvent",
-    "time": 1234567890,
-    "node": "M0LTE-1",
-    "id": 123,
-    "direction": "outgoing",
-    "port": "1",
-    "local": "M0LTE-1",
-    "remote": "G0ABC-2"
-  },
-  {
-    "@type": "L2Trace",
-    "time": 1234567890,
-    "reportFrom": "M0LTE-1",
-    "port": "1",
-    "srce": "M0LTE-1",
-    "dest": "G0ABC-2",
-    "ctrl": 0,
-    "l2Type": "I",
-    "cr": "C"
-  }
-]
-```
-
-#### Response
-
-**202 Accepted** (All successful):
-```json
-{
-  "status": "queued",
-  "totalReceived": 3,
-  "successCount": 3,
-  "failureCount": 0,
-  "errors": [],
-  "sourceIp": "192.0.2.1",
-  "receivedAt": "2025-01-21T12:00:00.0000000Z",
-  "processingMode": "rabbitmq"
-}
-```
-
-**207 Multi-Status** (Partial success):
-```json
-{
-  "status": "partial",
-  "totalReceived": 3,
-  "successCount": 2,
-  "failureCount": 1,
-  "errors": [
-    "Datagram 1 (LinkUpEvent): Invalid JSON format"
-  ],
-  "sourceIp": "192.0.2.1",
-  "receivedAt": "2025-01-21T12:00:00.0000000Z",
-  "processingMode": "rabbitmq"
-}
-```
-
-#### Example Usage
+Accepts an array of datagrams. When using batch, each datagram **must** include the `@type` field.
 
 ```bash
-# Using curl
 curl -X POST https://node-api.packet.oarc.uk/api/ingest/batch \
-  -H "Content-Type": application/json" \
+  -H "Content-Type: application/json" \
   -d '[
     {
       "@type": "NodeUpEvent",
@@ -327,48 +214,33 @@ curl -X POST https://node-api.packet.oarc.uk/api/ingest/batch \
       "remote": "G0ABC-2"
     }
   ]'
-
-# Using Python
-import requests
-import json
-
-datagrams = [
-    {
-        "@type": "NodeUpEvent",
-        "nodeCall": "M0LTE-1",
-        "nodeAlias": "MYLTE1",
-        "locator": "IO91EC",
-        "software": "xrlin",
-        "version": "v504j"
-    },
-    {
-        "@type": "LinkUpEvent",
-        "node": "M0LTE-1",
-        "id": 123,
-        "direction": "outgoing",
-        "port": "1",
-        "local": "M0LTE-1",
-        "remote": "G0ABC-2"
-    }
-]
-
-response = requests.post(
-    "https://node-api.packet.oarc.uk/api/ingest/batch",
-    headers={"Content-Type": "application/json"},
-    data=json.dumps(datagrams)
-)
-
-print(response.json())
 ```
 
-### 3. Service Status
+**Response** (202 Accepted):
+```json
+{
+  "status": "queued",
+  "totalReceived": 2,
+  "successCount": 2,
+  "failureCount": 0,
+  "errors": [],
+  "sourceIp": "192.0.2.1",
+  "receivedAt": "2025-01-21T12:00:00.0000000Z",
+  "processingMode": "rabbitmq"
+}
+```
+
+### Service Status
 
 **Endpoint**: `GET /api/ingest/status`
 
-Check the status of the ingestion service.
+Returns service status and lists all available endpoints.
 
-#### Response
+```bash
+curl https://node-api.packet.oarc.uk/api/ingest/status
+```
 
+**Response**:
 ```json
 {
   "service": "datagram-ingest",
@@ -390,119 +262,208 @@ Check the status of the ingestion service.
     "L2Trace"
   ],
   "endpoints": {
-    "singleIngest": "/api/ingest",
-    "batchIngest": "/api/ingest/batch",
+    "generic": "/api/ingest",
+    "batch": "/api/ingest/batch",
+    "nodeUp": "/api/ingest/node-up",
+    "nodeStatus": "/api/ingest/node-status",
+    "nodeDown": "/api/ingest/node-down",
+    "linkUp": "/api/ingest/link-up",
+    "linkStatus": "/api/ingest/link-status",
+    "linkDown": "/api/ingest/link-down",
+    "circuitUp": "/api/ingest/circuit-up",
+    "circuitStatus": "/api/ingest/circuit-status",
+    "circuitDown": "/api/ingest/circuit-down",
+    "l2trace": "/api/ingest/l2trace",
     "status": "/api/ingest/status"
   }
 }
 ```
 
-#### Example Usage
+## Choosing Between Typed and Generic Endpoints
 
-```bash
-# Check service status
-curl https://node-api.packet.oarc.uk/api/ingest/status
+### Use Typed Endpoints When:
+
+? **Building a UI/Dashboard** - Clear, discoverable API  
+? **Generating Client Code** - Perfect schema per endpoint  
+? **Learning the API** - Scalar shows exact schema with examples  
+? **Single Event Type** - Sending one type at a time  
+? **Type Safety Matters** - Compile-time validation in clients
+
+### Use Generic Endpoint When:
+
+? **Dynamic Client** - Event type determined at runtime  
+? **Forwarding Proxy** - Forwarding UDP to HTTP without inspection  
+? **Legacy Compatibility** - Existing code using `@type` discriminator  
+? **Batch Mixed Types** - Already have the array with `@type` fields
+
+## Client Examples
+
+### Python with Typed Endpoints
+
+```python
+import requests
+
+# NodeUpEvent
+response = requests.post(
+    'https://node-api.packet.oarc.uk/api/ingest/node-up',
+    json={
+        'nodeCall': 'M0LTE-1',
+        'nodeAlias': 'MYLTE1',
+        'locator': 'IO91EC',
+        'software': 'xrlin',
+        'version': 'v504j'
+    }
+)
+
+# LinkUpEvent
+response = requests.post(
+    'https://node-api.packet.oarc.uk/api/ingest/link-up',
+    json={
+        'node': 'M0LTE-1',
+        'id': 123,
+        'direction': 'outgoing',
+        'port': '1',
+        'local': 'M0LTE-1',
+        'remote': 'G0ABC-2'
+    }
+)
+```
+
+### PowerShell with Typed Endpoints
+
+```powershell
+# NodeUpEvent
+$body = @{
+    nodeCall = "M0LTE-1"
+    nodeAlias = "MYLTE1"
+    locator = "IO91EC"
+    software = "xrlin"
+    version = "v504j"
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "https://node-api.packet.oarc.uk/api/ingest/node-up" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body $body
+```
+
+### JavaScript/TypeScript with Typed Endpoints
+
+```typescript
+// NodeUpEvent
+const response = await fetch('https://node-api.packet.oarc.uk/api/ingest/node-up', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    nodeCall: 'M0LTE-1',
+    nodeAlias: 'MYLTE1',
+    locator: 'IO91EC',
+    software: 'xrlin',
+    version: 'v504j'
+  })
+});
+
+// LinkUpEvent
+const response = await fetch('https://node-api.packet.oarc.uk/api/ingest/link-up', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    node: 'M0LTE-1',
+    id: 123,
+    direction: 'outgoing',
+    port: '1',
+    local: 'M0LTE-1',
+    remote: 'G0ABC-2'
+  })
+});
+```
+
+### Generic Endpoint (with @type)
+
+```python
+import requests
+
+# Using generic endpoint with @type discriminator
+response = requests.post(
+    'https://node-api.packet.oarc.uk/api/ingest',
+    json={
+        '@type': 'NodeUpEvent',  # Required for generic endpoint
+        'nodeCall': 'M0LTE-1',
+        'nodeAlias': 'MYLTE1',
+        'locator': 'IO91EC',
+        'software': 'xrlin',
+        'version': 'v504j'
+    }
+)
 ```
 
 ## Event Type Schemas
 
-### NodeUpEvent Schema
+All event type schemas are fully documented in the OpenAPI specification at `/scalar/v1`. Here are the key fields for each type:
 
+### NodeUpEvent
 ```json
 {
-  "@type": "NodeUpEvent",
   "time": 1234567890,          // Unix timestamp (optional)
   "nodeCall": "M0LTE-1",       // Required
   "nodeAlias": "MYLTE1",       // Required
-  "locator": "IO91EC",         // Required (Maidenhead locator)
-  "latitude": 51.5074,         // Optional (decimal degrees)
-  "longitude": -0.1278,        // Optional (decimal degrees)
+  "locator": "IO91EC",         // Required (Maidenhead)
+  "latitude": 51.5074,         // Optional
+  "longitude": -0.1278,        // Optional
   "software": "xrlin",         // Required
   "version": "v504j"           // Required
 }
 ```
 
-### LinkUpEvent Schema
-
+### LinkUpEvent
 ```json
 {
-  "@type": "LinkUpEvent",
   "time": 1234567890,          // Unix timestamp (optional)
   "node": "M0LTE-1",           // Required
-  "id": 123,                   // Required (link ID > 0)
-  "direction": "outgoing",     // Required ("incoming" or "outgoing")
+  "id": 123,                   // Required (>0)
+  "direction": "outgoing",     // Required ("incoming"/"outgoing")
   "port": "1",                 // Required
   "local": "M0LTE-1",          // Required
   "remote": "G0ABC-2"          // Required
 }
 ```
 
-### L2Trace Schema
-
+### L2Trace
 ```json
 {
-  "@type": "L2Trace",
   "reportFrom": "M0LTE-1",     // Required
   "time": 1234567890,          // Unix timestamp (optional)
   "port": "1",                 // Required
-  "dirn": "sent",              // Optional ("sent" or "rcvd")
-  "isRF": true,                // Optional (boolean)
   "srce": "M0LTE-1",           // Required
   "dest": "G0ABC",             // Required
-  "ctrl": 3,                   // Required (>= 0)
-  "l2Type": "UI",              // Required (SABME, C, D, DM, UA, UI, I, FRMR, RR, RNR, REJ, TEST, XID, SREJ, ?)
-  "cr": "C",                   // Required (C, R, or V1)
-  "modulo": 8,                 // Optional (8 or 128)
-  "ilen": 64,                  // Optional (>= 0, for I and UI frames)
+  "ctrl": 3,                   // Required (>=0)
+  "l2Type": "UI",              // Required
+  "cr": "C",                   // Required
+  "ilen": 64,                  // Optional (for I/UI frames)
   "pid": 240,                  // Optional
-  "ptcl": "DATA",              // Optional (SEG, DATA, NET/ROM, IP, ARP, FLEXNET, ?)
-  "digis": [                   // Optional
-    {
-      "call": "DIGI1",
-      "rptd": true
-    }
-  ]
-  // ... many more optional fields for NET/ROM, routing, etc.
+  "ptcl": "DATA"               // Optional
+  // ...many more optional fields
 }
 ```
 
-For complete schemas, refer to the OpenAPI documentation at `/scalar/v1`.
+See `/scalar/v1` for complete schemas with all fields and validation rules.
 
-## Benefits of Strong Typing
+## Benefits of This Design
 
-### 1. **Better Developer Experience**
+### For API Consumers
 
-- **IntelliSense**: IDEs can autocomplete fields based on the `@type`
-- **Type safety**: Client libraries can generate strongly-typed classes
-- **Validation**: Errors caught at serialization time, not processing time
+? **Perfect Scalar Documentation** - Each typed endpoint shows exact schema  
+? **Clear API Surface** - Browse endpoints, see what each accepts  
+? **Type-Specific Examples** - Every endpoint has relevant examples  
+? **Better Validation Errors** - Know immediately what's wrong  
+? **Client Generation** - Generate type-safe clients from OpenAPI
 
-### 2. **Automatic Documentation**
+### For the Service
 
-- **OpenAPI/Swagger**: Full schema documentation generated automatically
-- **Examples**: Each event type has example payloads
-- **Field descriptions**: Every field documented with types and constraints
-
-### 3. **Client Generation**
-
-Generate strongly-typed clients in any language:
-
-```bash
-# Generate TypeScript client
-npx @openapitools/openapi-generator-cli generate \
-  -i https://node-api.packet.oarc.uk/swagger/v1/swagger.json \
-  -g typescript-fetch \
-  -o ./src/api
-
-# Generate C# client
-dotnet swagger tofile --output swagger.json node-api.dll v1
-NSwag openapi2csclient /input:swagger.json /classname:NodeApiClient /namespace:NodeApi.Client
-```
-
-### 4. **Validation at Multiple Layers**
-
-1. **JSON Schema Validation**: ASP.NET Core validates against OpenAPI schema
-2. **FluentValidation**: Business rule validation (callsign format, ranges, etc.)
-3. **Type Safety**: Compiler ensures correct field types
+? **No Code Duplication** - All endpoints share same implementation  
+? **Consistent Processing** - Same validation, same pipeline  
+? **Backward Compatible** - Generic endpoint still works  
+? **Flexible** - Use typed or generic based on your needs
 
 ## Processing Pipeline
 
@@ -510,7 +471,7 @@ NSwag openapi2csclient /input:swagger.json /classname:NodeApiClient /namespace:N
 
 ```
 HTTP POST ? DatagramIngestController
-              ? (deserialize to strongly-typed model)
+              ? (typed or generic endpoint)
           RabbitMQ Publisher
               ? (serialize to JSON, queue: udp-datagram-queue)
           RabbitMQ Queue
@@ -528,29 +489,96 @@ HTTP POST ? DatagramIngestController
           Network State Updated
 ```
 
-## Comparison: HTTP vs UDP
+## Comparison: Typed vs Generic vs UDP
 
-| Feature | UDP Ingestion | HTTP Ingestion |
-|---------|--------------|----------------|
-| **Protocol** | UDP datagrams (port 13579) | HTTP POST (port 443/80) |
-| **Reliability** | Fire-and-forget | Acknowledged (202 response) |
-| **Firewall** | May be blocked | Usually allowed |
-| **Schema Documentation** | None | Full OpenAPI/Swagger |
-| **Type Safety** | Runtime only | Compile-time + Runtime |
-| **Batch Support** | No | Yes (`/api/ingest/batch`) |
-| **Processing** | Identical (via DatagramProcessor) | Identical (via DatagramProcessor) |
-| **Rate Limiting** | Yes | Yes (same limits) |
-| **Client Generation** | Manual | Automatic (from OpenAPI) |
+| Feature | UDP Ingestion | Generic HTTP | Typed HTTP |
+|---------|--------------|--------------|-----------|
+| **Protocol** | UDP (port 13579) | HTTP POST | HTTP POST |
+| **Endpoint** | N/A | `/api/ingest` | `/api/ingest/node-up`, etc. |
+| **@type Required** | Yes | Yes | No (implied by URL) |
+| **Firewall** | May be blocked | Usually allowed | Usually allowed |
+| **Schema Docs** | None | Generic `object` | Perfect per-type schema |
+| **Discoverability** | None | Low | High |
+| **Client Gen** | Manual | Generic | Type-safe per endpoint |
+| **Processing** | Identical | Identical | Identical |
+
+## Migration Guide
+
+### From UDP to HTTP
+
+**Before (UDP)**:
+```python
+import socket
+import json
+
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.sendto(json.dumps({
+    '@type': 'NodeUpEvent',
+    'nodeCall': 'M0LTE-1',
+    # ...
+}).encode(), ('node-api.packet.oarc.uk', 13579))
+```
+
+**After (HTTP - Typed Endpoint)**:
+```python
+import requests
+
+requests.post(
+    'https://node-api.packet.oarc.uk/api/ingest/node-up',
+    json={
+        'nodeCall': 'M0LTE-1',  # No @type needed!
+        # ...
+    }
+)
+```
+
+**After (HTTP - Generic Endpoint)**:
+```python
+import requests
+
+requests.post(
+    'https://node-api.packet.oarc.uk/api/ingest',
+    json={
+        '@type': 'NodeUpEvent',  # @type still required
+        'nodeCall': 'M0LTE-1',
+        # ...
+    }
+)
+```
+
+### Updating Existing HTTP Clients
+
+If you're already using the generic `/api/ingest` endpoint, **no changes required**. The generic endpoint continues to work exactly as before.
+
+To benefit from better documentation and type safety, consider migrating to typed endpoints:
+
+**Before**:
+```javascript
+fetch('/api/ingest', {
+  method: 'POST',
+  body: JSON.stringify({ '@type': 'NodeUpEvent', nodeCall: 'M0LTE-1', ... })
+})
+```
+
+**After**:
+```javascript
+fetch('/api/ingest/node-up', {  // Specific endpoint
+  method: 'POST',
+  body: JSON.stringify({ nodeCall: 'M0LTE-1', ... })  // No @type
+})
+```
 
 ## Related Documentation
 
-- [RabbitMQ Integration](RABBITMQ_REFACTORING.md)
+- [RabbitMQ Integration](RABBITMQ_INTEGRATION.md)
 - [Packet Network Monitoring Spec](../Tests/Packet_Network_Monitoring_Project_v0.8.txt)
 - [OpenAPI Specification](https://node-api.packet.oarc.uk/swagger/v1/swagger.json)
+- [Scalar Interactive Docs](https://node-api.packet.oarc.uk/scalar/v1)
 
 ---
 
-**Status**: ? **Production Ready with Full OpenAPI Schema Support**  
-**Version**: 2.0  
-**Breaking Change**: None (backward compatible)
-**New Feature**: Strongly-typed schemas with OpenAPI polymorphism
+**Status**: ? **Production Ready with Typed Endpoints**  
+**Version**: 3.0  
+**Breaking Change**: None (backward compatible)  
+**New Feature**: Individual typed endpoints with perfect OpenAPI documentation  
+**Recommendation**: Use typed endpoints (`/api/ingest/node-up`, etc.) for best Scalar experience
