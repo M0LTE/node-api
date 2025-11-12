@@ -12,13 +12,13 @@ namespace node_api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/ingest")]
-public class DatagramIngestController : ControllerBase
+public class IngestController : ControllerBase
 {
-    private readonly ILogger<DatagramIngestController> _logger;
+    private readonly ILogger<IngestController> _logger;
     private readonly IRabbitMqPublisher _rabbitMqPublisher;
 
-    public DatagramIngestController(
-        ILogger<DatagramIngestController> logger,
+    public IngestController(
+        ILogger<IngestController> logger,
         IRabbitMqPublisher rabbitMqPublisher)
     {
         _logger = logger;
