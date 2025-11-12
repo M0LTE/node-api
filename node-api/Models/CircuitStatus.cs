@@ -87,4 +87,10 @@ public record CircuitStatus : NetworkEventDatagram
     /// </summary>
     [JsonPropertyName("bytesRcvd")]
     public int? BytesReceived { get; init; }
+
+    /// <summary>
+    /// Link uptime in seconds (Optional)
+    /// </summary>
+    [JsonPropertyName("upForSecs")]
+    public int? UpForSecs { get; init; }
 }

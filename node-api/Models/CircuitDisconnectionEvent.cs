@@ -91,4 +91,10 @@ public record CircuitDisconnectionEvent : NetworkEventDatagram
     /// </summary>
     [JsonPropertyName("reason")]
     public string? Reason { get; init; }
+
+    /// <summary>
+    /// Link uptime in seconds (Optional)
+    /// </summary>
+    [JsonPropertyName("upForSecs")]
+    public int? UpForSecs { get; init; }
 }
