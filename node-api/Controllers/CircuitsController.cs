@@ -4,15 +4,15 @@ using node_api.Services;
 namespace node_api.Controllers;
 
 [ApiController]
-[Route("api/network")]
-public class NetworkController : ControllerBase
+[Route("api/network/circuits")]
+public class CircuitsController : ControllerBase
 {
     private readonly INetworkStateService _networkState;
-    private readonly ILogger<NetworkController> _logger;
+    private readonly ILogger<CircuitsController> _logger;
 
-    public NetworkController(
+    public CircuitsController(
         INetworkStateService networkState,
-        ILogger<NetworkController> logger)
+        ILogger<CircuitsController> logger)
     {
         _networkState = networkState;
         _logger = logger;
@@ -21,7 +21,7 @@ public class NetworkController : ControllerBase
     /// <summary>
     /// Get all circuits currently known to the system (excluding TEST callsigns)
     /// </summary>
-    [HttpGet("circuits")]
+    [HttpGet]
     public IActionResult GetAllCircuits()
     {
         var circuits = _networkState.GetAllCircuits()
@@ -36,7 +36,7 @@ public class NetworkController : ControllerBase
     /// <summary>
     /// Get all circuits involving a specific callsign (excludes TEST unless explicitly requesting TEST)
     /// </summary>
-    [HttpGet("circuits/node/{callsign}")]
+    [HttpGet("node/{callsign}")]
     public IActionResult GetCircuitsForNode(string callsign)
     {
         var circuits = _networkState.GetCircuitsForNode(callsign);
@@ -54,7 +54,7 @@ public class NetworkController : ControllerBase
     /// <summary>
     /// Get all circuits involving any SSID of a base callsign (excludes TEST unless explicitly requesting TEST)
     /// </summary>
-    [HttpGet("circuits/base/{baseCallsign}")]
+    [HttpGet("base/{baseCallsign}")]
     public IActionResult GetCircuitsForBaseCallsign(string baseCallsign)
     {
         var nodes = _networkState.GetNodesByBaseCallsign(baseCallsign);
