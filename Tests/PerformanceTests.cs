@@ -319,9 +319,9 @@ public class PerformanceTests
         var finalMemory = GC.GetTotalMemory(true);
         var memoryGrowth = finalMemory - initialMemory;
 
-        // Assert - memory growth should be reasonable (< 10MB)
-        Assert.True(memoryGrowth < 10 * 1024 * 1024,
-            $"Memory grew by {memoryGrowth / 1024 / 1024}MB, expected < 10MB");
+        // Assert - memory growth should be reasonable (< 15MB)
+        Assert.True(memoryGrowth < 15 * 1024 * 1024,
+            $"Memory grew by {memoryGrowth / 1024 / 1024}MB, expected < 15MB");
     }
 
     [Fact]

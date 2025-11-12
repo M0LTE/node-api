@@ -111,6 +111,7 @@ public class CircuitEndpointState
     public int? BytesSent { get; set; }
     public int? BytesReceived { get; set; }
     public string? Reason { get; set; }
+    public int? UpForSecs { get; set; }
 }
 
 public enum CircuitStatus

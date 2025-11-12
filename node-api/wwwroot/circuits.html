@@ -292,7 +292,8 @@
                     segmentsResent: data.segsResent,
                     segmentsQueued: data.segsQueued,
                     bytesSent: data.bytesSent,
-                    bytesReceived: data.bytesRcvd
+                    bytesReceived: data.bytesRcvd,
+                    upForSecs: data.upForSecs
                 };
                 
                 if (!circuit.initiator) {
@@ -320,6 +321,7 @@
                         circuit.endpoints[data.node].bytesSent = data.bytesSent;
                         circuit.endpoints[data.node].bytesReceived = data.bytesRcvd;
                         circuit.endpoints[data.node].reason = data.reason;
+                        circuit.endpoints[data.node].upForSecs = data.upForSecs;
                         circuit.endpoints[data.node].lastUpdate = new Date();
                     }
                 }
@@ -465,6 +467,7 @@
                             <th>Endpoint 2</th>
                             <th>Initiator</th>
                             <th>Service</th>
+                            <th>Uptime</th>
                             <th>E1&rarr;E2<br><span style="font-weight: normal; font-size: 11px;">(segments)</span></th>
                             <th>E2&rarr;E1<br><span style="font-weight: normal; font-size: 11px;">(segments)</span></th>
                             <th>E1&rarr;E2<br><span style="font-weight: normal; font-size: 11px;">(bytes)</span></th>
@@ -494,10 +497,26 @@
                             // Service number (optional)
                             const service = ep1Stats?.service ?? ep2Stats?.service ?? '-';
                             
-                            // E1?E2 segments: what E1 sent = what E2 received
+                            // Format uptime
+                            const upForSecs = ep1Stats?.upForSecs ?? ep2Stats?.upForSecs;
+                            let uptimeDisplay = '-';
+                            if (upForSecs !== undefined && upForSecs !== null) {
+                                const hours = Math.floor(upForSecs / 3600);
+                                const minutes = Math.floor((upForSecs % 3600) / 60);
+                                const seconds = upForSecs % 60;
+                                if (hours > 0) {
+                                    uptimeDisplay = `${hours}h ${minutes}m`;
+                                } else if (minutes > 0) {
+                                    uptimeDisplay = `${minutes}m ${seconds}s`;
+                                } else {
+                                    uptimeDisplay = `${seconds}s`;
+                                }
+                            }
+                            
+                            // E1→E2 segments: what E1 sent = what E2 received
                             const e1ToE2Segs = ep2Stats?.segmentsReceived ?? ep1Stats?.segmentsSent ?? '-';
                             
-                            // E2?E1 segments: what E2 sent = what E1 received
+                            // E2→E1 segments: what E2 sent = what E1 received
                             const e2ToE1Segs = ep1Stats?.segmentsReceived ?? ep2Stats?.segmentsSent ?? '-';
                             
                             // Bytes
@@ -511,6 +530,7 @@
                                     <td><div class="address">${circuit.endpoint2}</div></td>
                                     <td><span class="${initiatorClass}">${initiator.length > 20 ? initiator.substring(0, 17) + '...' : initiator}</span></td>
                                     <td class="metric">${service}</td>
+                                    <td class="metric">${uptimeDisplay}</td>
                                     <td class="metric">${typeof e1ToE2Segs === 'number' ? e1ToE2Segs.toLocaleString() : e1ToE2Segs}</td>
                                     <td class="metric">${typeof e2ToE1Segs === 'number' ? e2ToE1Segs.toLocaleString() : e2ToE1Segs}</td>
                                     <td class="metric">${typeof e1ToE2Bytes === 'number' ? e1ToE2Bytes.toLocaleString() : e1ToE2Bytes}</td>

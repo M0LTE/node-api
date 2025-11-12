@@ -272,6 +272,12 @@ public partial class NetworkStateUpdater : IHostedService
         circuit.Status = Models.NetworkState.CircuitStatus.Active;
         circuit.LastUpdate = DateTime.UtcNow;
 
+        if (evt.TimeUnixSeconds.HasValue && evt.UpForSecs.HasValue)
+        {
+            circuit.ConnectedAt = DateTimeOffset.FromUnixTimeSeconds(
+                evt.TimeUnixSeconds.Value - evt.UpForSecs.Value).UtcDateTime;
+        }
+
         var endpoint = new CircuitEndpointState
         {
             Node = evt.Node,
@@ -286,7 +292,8 @@ public partial class NetworkStateUpdater : IHostedService
             SegmentsResent = evt.SegmentsResent,
             SegmentsQueued = evt.SegmentsQueued,
             BytesSent = evt.BytesSent,
-            BytesReceived = evt.BytesReceived
+            BytesReceived = evt.BytesReceived,
+            UpForSecs = evt.UpForSecs
         };
         
         circuit.Endpoints[evt.Node] = endpoint;
@@ -322,6 +329,7 @@ public partial class NetworkStateUpdater : IHostedService
                 endpoint.BytesSent = evt.BytesSent;
                 endpoint.BytesReceived = evt.BytesReceived;
                 endpoint.Reason = evt.Reason;
+                endpoint.UpForSecs = evt.UpForSecs ?? endpoint.UpForSecs;
                 endpoint.LastUpdate = DateTime.UtcNow;
                 circuit.MarkDirty(); // Explicitly mark dirty when modifying endpoint
             }

@@ -71,5 +71,10 @@ public class CircuitDisconnectionEventValidator : AbstractValidator<CircuitDisco
             .GreaterThanOrEqualTo(0)
             .When(x => x.BytesReceived.HasValue)
             .WithMessage("BytesReceived cannot be negative");
+
+        RuleFor(x => x.UpForSecs)
+            .GreaterThanOrEqualTo(0)
+            .When(x => x.UpForSecs.HasValue)
+            .WithMessage("UpForSecs cannot be negative");
     }
 }
