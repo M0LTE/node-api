@@ -34,23 +34,6 @@ public class CircuitsController : ControllerBase
     }
 
     /// <summary>
-    /// Get a specific circuit by canonical key (e.g., "M0LTE-4:0001<->G8PZT@G8PZT:14c0")
-    /// </summary>
-    [HttpGet("{canonicalKey}")]
-    public IActionResult GetCircuit(string canonicalKey)
-    {
-        var circuit = _networkState.GetCircuit(canonicalKey);
-        
-        if (circuit == null)
-        {
-            return NotFound(new { message = $"Circuit {canonicalKey} not found" });
-        }
-
-        // Don't filter TEST when explicitly requested by canonical key
-        return Ok(circuit);
-    }
-
-    /// <summary>
     /// Get all circuits involving a specific callsign (excludes TEST unless explicitly requesting TEST)
     /// </summary>
     [HttpGet("node/{callsign}")]
