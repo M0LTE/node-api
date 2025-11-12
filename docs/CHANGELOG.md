@@ -16,7 +16,7 @@ Each entry includes:
 ## 2025-01-21 - AX.25 Link Inference Heuristic
 
 **Type**: Feature  
-**Status**: ? Complete and validated
+**Status**: ✅ Complete and validated
 
 ### Summary
 Implemented intelligent link inference to prevent false link detection when AX.25 intermediate nodes forward traffic using impersonated callsigns.
@@ -34,10 +34,6 @@ Implemented intelligent link inference to prevent false link detection when AX.2
 
 ### Documentation
 - [AX25_LINK_INFERENCE.md](AX25_LINK_INFERENCE.md)
-- [AX25_ROUTING_SCENARIOS.md](AX25_ROUTING_SCENARIOS.md)
-- [QUICK_REFERENCE.md](QUICK_REFERENCE.md)
-- [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)
-- [FINAL_VALIDATION.md](FINAL_VALIDATION.md)
 
 ### Test Results
 - New tests: 15/15 passed
@@ -54,9 +50,6 @@ Implemented intelligent link inference to prevent false link detection when AX.2
 ### Summary
 Corrected the total requests display to show accurate request counts.
 
-### Documentation
-- [FIX_TOTAL_REQUESTS_DISPLAY.md](FIX_TOTAL_REQUESTS_DISPLAY.md)
-
 ---
 
 ## 2025-01-XX - Traffic Loop Resolution
@@ -69,9 +62,6 @@ Fixed excessive traffic loop (1.59 MB/s) caused by duplicate state updates in IP
 
 ### Root Cause
 Duplicate state updates in data flow causing continuous frontend-database traffic.
-
-### Documentation
-- [TRAFFIC_LOOP_FIX.md](TRAFFIC_LOOP_FIX.md)
 
 ---
 
@@ -110,7 +100,6 @@ Added IP address tracking with privacy-preserving obfuscation and GeoIP location
 
 ### Documentation
 - [IP_AND_GEOIP_FEATURE.md](IP_AND_GEOIP_FEATURE.md)
-- [TRAFFIC_LOOP_FIX.md](TRAFFIC_LOOP_FIX.md)
 
 ---
 
@@ -130,7 +119,6 @@ Implemented full datagram processing from RabbitMQ, creating a dual-path ingesti
 
 ### Documentation
 - [RABBITMQ_INTEGRATION.md](RABBITMQ_INTEGRATION.md)
-- [PHASE2_SUMMARY.md](PHASE2_SUMMARY.md)
 
 ---
 
@@ -170,44 +158,6 @@ Implemented IP-based rate limiting for UDP datagrams to protect against excessiv
 
 ### Documentation
 - [RATE_LIMITING.md](RATE_LIMITING.md)
-
----
-
-## 2024-XX-XX - Timestamp Tracking
-
-**Type**: Feature  
-**Component**: Data Collection
-
-### Summary
-Added exact arrival time tracking for UDP datagrams, persisted to database.
-
-### Features
-- Server-side timestamp capture
-- Stored in `traces` and `events` tables
-- Microsecond precision
-- Separate from event-reported timestamps
-
-### Documentation
-- [TIMESTAMP_TRACKING.md](TIMESTAMP_TRACKING.md)
-
----
-
-## 2024-XX-XX - Query Frequency Diagnostics
-
-**Type**: Feature  
-**Component**: Diagnostics
-
-### Summary
-Added diagnostics endpoint to track database query frequency.
-
-### Features
-- Real-time query statistics
-- Helps diagnose traffic issues
-- Identifies natural growth vs bugs
-- REST API endpoint
-
-### Documentation
-- [QUERY_FREQUENCY_DIAGNOSTICS.md](QUERY_FREQUENCY_DIAGNOSTICS.md)
 
 ---
 

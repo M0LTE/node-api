@@ -1,179 +1,78 @@
-# Documentation Index
+# node-api Documentation
 
-Welcome to the node-api documentation. This index provides quick navigation to all available documentation.
+This directory contains documentation for the node-api packet network monitoring service.
 
-## 📑 Table of Contents
+## Table of Contents
 
 ### Getting Started
+- [Deployment Guide](DEPLOYMENT.md) - How to deploy and run the service
+- [Database Configuration](DATABASE_CONFIGURATION.md) - MySQL setup and configuration
+- [Docker Publishing](DOCKER_PUBLISH.md) - Building and publishing Docker images
 
-- **[Main README](../README.md)** - Project overview, quick start, architecture
-- **[Deployment Guide](DEPLOYMENT.md)** - Production deployment instructions
-- **[Docker Publishing](DOCKER_PUBLISH.md)** - Building and publishing Docker images
+### Configuration
+- [MQTT Configuration](MQTT_CONFIGURATION.md) - MQTT broker setup and message publishing
+- [RabbitMQ Integration](RABBITMQ_INTEGRATION.md) - RabbitMQ setup and usage
+- [Database Configuration](DATABASE_CONFIGURATION.md) - Database connection and schema
 
 ### Core Features
 
-#### Rate Limiting & Protection
-- **[Rate Limiting Lifecycle](RATE_LIMITING.md)** - Comprehensive guide to IP-based rate limiting
-- **[Rolling Average Rate Limiting](RATE_LIMITING_ROLLING_AVERAGE.md)** - Dual-threshold approach with burst support
+#### Data Ingestion
+- [HTTP Datagram Ingestion](HTTP_DATAGRAM_INGESTION.md) - HTTP POST endpoint for receiving network events
+- [Typed Ingest Endpoints](TYPED_INGEST_ENDPOINTS.md) - Type-specific ingestion endpoints
 
-#### Network Intelligence
-- **[AX.25 Link Inference](AX25_LINK_INFERENCE.md)** - Complete guide to smart link detection with routing heuristics
-  - Includes quick reference, scenarios, implementation details, testing, and troubleshooting
+#### Network State Management
+- [Reporting Nodes Feature](REPORTING_NODES_FEATURE.md) - Nodes that actively send UDP telemetry vs discovered nodes
+- [AX.25 Link Inference](AX25_LINK_INFERENCE.md) - Automatic link detection from L2 trace data
+- [Link Flapping Detection](LINK_FLAPPING.md) - Detection and tracking of unstable links
+- [IP and GeoIP Feature](IP_AND_GEOIP_FEATURE.md) - IP address tracking and geolocation
+- [Test Nodes Exclusion](TEST_NODES_EXCLUSION.md) - Filtering test/development nodes from production data
 
-#### Data Collection & Privacy
-- **[IP & GeoIP Feature](IP_AND_GEOIP_FEATURE.md)** - Location tracking with privacy-preserving obfuscation
-- **[Timestamp Tracking](TIMESTAMP_TRACKING.md)** - UDP datagram arrival time tracking
-- **[Link Flapping Detection](LINK_FLAPPING.md)** - Tracking unstable connections
+#### API Features
+- [API Restructure](API_RESTRUCTURE.md) - API endpoint organization and structure
+- [Rate Limiting](RATE_LIMITING.md) - Request rate limiting implementation
+- [Rate Limiting Rolling Average](RATE_LIMITING_ROLLING_AVERAGE.md) - Rolling average calculations for rate metrics
+- [Sort Order Parameter](SORT_ORDER_PARAMETER.md) - Sorting options for API endpoints
+- [OpenAPI Schema Enhancement](OPENAPI_SCHEMA_ENHANCEMENT.md) - API documentation and schema improvements
 
-### Architecture & Integration
+#### Analysis Features
+- [L2 Connection Analysis (Technical)](L2-Connection-Analysis-Technical.md) - Technical implementation of Layer 2 connection analysis
+- [L2 Connection Analysis (UI)](L2-Connection-Analysis-UI.md) - User interface for connection analysis
+- [Multiple ReportFrom Feature](MULTIPLE_REPORTFROM_FEATURE.md) - Support for events reported by multiple nodes
 
-- **[RabbitMQ Integration](RABBITMQ_INTEGRATION.md)** - Message queue support for dual-path ingestion
-- **[Phase 2 Summary](PHASE2_SUMMARY.md)** - Full datagram processing from RabbitMQ
+### Reference
+- [Changelog](CHANGELOG.md) - Version history and changes
 
-### Diagnostics & Monitoring
+## Project Overview
 
-- **[Query Frequency Diagnostics](QUERY_FREQUENCY_DIAGNOSTICS.md)** - Database query statistics endpoint
-- **[Implementation Notes](IMPLEMENTATION_NOTES.md)** - Various implementation details
+node-api is a .NET 9.0 ASP.NET Core Web API service that provides packet network monitoring capabilities:
 
-### Change History
+- **Listens for UDP datagrams** on port 13579 containing network event data
+- **Validates and processes** various event types (nodes, links, circuits, traces)
+- **Publishes events** to MQTT/RabbitMQ topics
+- **Persists network state** to MySQL database
+- **Exposes REST API** for querying network state
+- **Provides OpenAPI documentation** at `/scalar`
 
-- **[Changelog](CHANGELOG.md)** - Project history, features, and bug fixes
+## Technology Stack
 
-### Troubleshooting & Bug Fixes
+- .NET 9.0
+- ASP.NET Core (Minimal API)
+- FluentValidation
+- Dapper (MySQL ORM)
+- MQTTnet
+- xUnit (Testing)
+- Docker
 
-- **[Traffic Loop Fix](TRAFFIC_LOOP_FIX.md)** - Resolving duplicate state updates issue
-- **[Total Requests Display Fix](FIX_TOTAL_REQUESTS_DISPLAY.md)** - UI display correction
+## Quick Links
 
-### Testing
+- **API Documentation**: Available at `/scalar` when service is running
+- **Source Repository**: https://github.com/M0LTE/node-api
+- **Docker Image**: Published via GitHub Actions (see [DOCKER_PUBLISH.md](DOCKER_PUBLISH.md))
 
-- **[Smoke Tests](../SmokeTests/README.md)** - End-to-end testing guide
-  - [Quick Start](../SmokeTests/QUICKSTART.md) - Step-by-step testing guide
-  - [TEST Callsign Filtering](../SmokeTests/TEST_CALLSIGN_FILTERING.md) - Understanding test data filtering
-- **[Unit Tests](../Tests/)** - 1,000+ comprehensive tests
+## Contributing
 
-### Developer Resources
-
-- **[Contributing Guide](../CONTRIBUTING.md)** - How to contribute to the project
-  - Development workflow
-  - Pull request process
-  - Code review checklist
-  - Testing requirements
-- **[Copilot Instructions](../.github/copilot-instructions.md)** - AI coding assistant guidelines
-  - Code style standards
-  - Testing practices
-  - Database conventions
-  - MQTT patterns
-
-## 📚 Documentation by Category
-
-### For New Developers
-
-Start here if you're new to the project:
-
-1. [Main README](../README.md) - Understand what node-api does
-2. [Contributing Guide](../CONTRIBUTING.md) - Learn how to contribute
-3. [Copilot Instructions](../.github/copilot-instructions.md) - Learn coding standards
-4. [Deployment Guide](DEPLOYMENT.md) - Get it running
-5. [Smoke Tests](../SmokeTests/README.md) - Verify it works
-
-### For Feature Understanding
-
-Deep dives into specific features:
-
-| Feature | Description | Documentation |
-|---------|-------------|---------------|
-| Rate Limiting | IP-based throttling with bursts | [RATE_LIMITING.md](RATE_LIMITING.md) |
-| Link Inference | AX.25 routing intelligence | [AX25_LINK_INFERENCE.md](AX25_LINK_INFERENCE.md) |
-| Flapping Detection | Unstable link tracking | [LINK_FLAPPING.md](LINK_FLAPPING.md) |
-| GeoIP | Location with privacy | [IP_AND_GEOIP_FEATURE.md](IP_AND_GEOIP_FEATURE.md) |
-| RabbitMQ | Dual-path ingestion | [RABBITMQ_INTEGRATION.md](RABBITMQ_INTEGRATION.md) |
-
-### For Operations
-
-Running and maintaining the service:
-
-| Task | Documentation |
-|------|---------------|
-| Deploy to production | [DEPLOYMENT.md](DEPLOYMENT.md) |
-| Build Docker images | [DOCKER_PUBLISH.md](DOCKER_PUBLISH.md) |
-| Monitor query load | [QUERY_FREQUENCY_DIAGNOSTICS.md](QUERY_FREQUENCY_DIAGNOSTICS.md) |
-| Troubleshoot loops | [TRAFFIC_LOOP_FIX.md](TRAFFIC_LOOP_FIX.md) |
-| Run smoke tests | [Smoke Tests](../SmokeTests/README.md) |
-| Configure database tests | [CI_CD_DATABASE_TESTS.md](CI_CD_DATABASE_TESTS.md) |
-| View change history | [CHANGELOG.md](CHANGELOG.md) |
-
-### For Troubleshooting
-
-| Issue | Solution |
-|-------|----------|
-| Excessive traffic | [TRAFFIC_LOOP_FIX.md](TRAFFIC_LOOP_FIX.md) |
-| Rate limiting problems | [RATE_LIMITING.md](RATE_LIMITING.md) |
-| Link inference issues | [AX25_LINK_INFERENCE.md](AX25_LINK_INFERENCE.md) |
-| Test data appearing | [TEST_CALLSIGN_FILTERING.md](../SmokeTests/TEST_CALLSIGN_FILTERING.md) |
-
-## 🔍 Quick Searches
-
-### By Technology
-
-- **MySQL/Database**: [RATE_LIMITING.md](RATE_LIMITING.md), [QUERY_FREQUENCY_DIAGNOSTICS.md](QUERY_FREQUENCY_DIAGNOSTICS.md)
-- **MQTT**: [RabbitMQ Integration](RABBITMQ_INTEGRATION.md), [Main README](../README.md)
-- **RabbitMQ**: [RABBITMQ_INTEGRATION.md](RABBITMQ_INTEGRATION.md), [PHASE2_SUMMARY.md](PHASE2_SUMMARY.md)
-- **Docker**: [DOCKER_PUBLISH.md](DOCKER_PUBLISH.md), [DEPLOYMENT.md](DEPLOYMENT.md)
-- **Testing**: [Smoke Tests](../SmokeTests/README.md), [Copilot Instructions](../.github/copilot-instructions.md)
-
-### By Event Type
-
-- **NodeUpEvent/NodeDownEvent**: [Main README](../README.md), [Copilot Instructions](../.github/copilot-instructions.md)
-- **LinkUpEvent/LinkStatus**: [LINK_FLAPPING.md](LINK_FLAPPING.md), [AX25_LINK_INFERENCE.md](AX25_LINK_INFERENCE.md)
-- **L2Trace**: [AX25_LINK_INFERENCE.md](AX25_LINK_INFERENCE.md)
-- **CircuitUpEvent/CircuitStatus**: [Main README](../README.md)
-
-## 📝 Documentation Standards
-
-When contributing documentation:
-
-1. **Use Markdown**: All docs use `.md` extension
-2. **Naming Convention**: `UPPERCASE_WITH_UNDERSCORES.md` (except for special cases like README.md)
-3. **Link to this index**: Reference `docs/README.md` from new documentation
-4. **Keep it current**: Update docs when changing features
-5. **Add diagrams**: Use ASCII art or mermaid for visuals
-6. **Code examples**: Include runnable snippets
-7. **Cross-reference**: Link to related documentation
-
-## 🗺️ Documentation Map
-
-```
-node-api/
-├── README.md ...................... Main project overview
-├── CONTRIBUTING.md ................ Contribution guidelines
-├── .github/
-│   └── copilot-instructions.md .... Coding standards
-├── docs/
-│   ├── README.md .................. This file
-│   ├── CHANGELOG.md ............... Project history
-│   ├── DEPLOYMENT.md .............. Production deployment
-│   ├── DOCKER_PUBLISH.md .......... Container publishing
-│   ├── RATE_LIMITING.md ........... Rate limiting system
-│   ├── AX25_LINK_INFERENCE.md ..... Link detection logic (consolidated)
-│   ├── LINK_FLAPPING.md ........... Flapping detection
-│   ├── IP_AND_GEOIP_FEATURE.md .... GeoIP tracking
-│   ├── RABBITMQ_INTEGRATION.md .... Message queue support
-│   ├── TIMESTAMP_TRACKING.md ...... Arrival timestamps
-│   └── ... (other feature docs)
-├── SmokeTests/
-│   ├── README.md .................. Testing guide
-│   ├── QUICKSTART.md .............. Quick test guide
-│   └── TEST_CALLSIGN_FILTERING.md . Test data handling
-└── Tests/ ......................... Unit tests
-```
-
-## ❓ Need Help?
-
-- **Can't find what you need?** Check the [main README](../README.md) or browse this index
-- **Found a documentation issue?** Open a GitHub issue or submit a PR
-- **Want to contribute?** See [Contributing Guide](../CONTRIBUTING.md) and [Copilot Instructions](../.github/copilot-instructions.md)
-
----
-
-**Last Updated**: 2025-01-21  
-**Maintained by**: node-api contributors
+When adding new features, please:
+1. Create feature documentation in this `docs/` directory
+2. Update this README with a link to your new documentation
+3. Add entries to [CHANGELOG.md](CHANGELOG.md)
+4. Update relevant configuration documentation if needed
