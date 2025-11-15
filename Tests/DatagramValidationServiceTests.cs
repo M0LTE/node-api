@@ -46,6 +46,35 @@ public class DatagramValidationServiceTests
     }
 
     [Fact]
+    public void Should_Validate_L3Trace()
+    {
+        var datagram = new L3Trace
+        {
+            Serial = 45,
+            TimeUnixSeconds = 1762355570,
+            Direction = "rcvd",
+            IsRF = false,
+            ReportFrom = "G8BPQ-2",
+            Port = 2,
+            IFieldLength = 40,
+            ProtocolId = 207,
+            ProtocolName = "NET/ROM",
+            L3Type = "NetRom",
+            L3Source = "G8BPQ-4",
+            L3Destination = "GM8BPQ-4",
+            TimeToLive = 25,
+            L4Type = "INFO",
+            ToCircuit = 95,
+            TransmitSequenceNumber = 72,
+            ReceiveSequenceNumber = 56,
+            PayloadLength = 20
+        };
+
+        var result = _service.Validate(datagram);
+        Assert.True(result.IsValid);
+    }
+
+    [Fact]
     public void Should_Validate_CircuitStatus()
     {
         var datagram = new CircuitStatus
@@ -177,6 +206,27 @@ public class DatagramValidationServiceTests
                 L2Type = "UI",
                 Modulo = 8,
                 CommandResponse = "C"
+            },
+            new L3Trace
+            {
+                Serial = 45,
+                TimeUnixSeconds = 1762355570,
+                Direction = "rcvd",
+                IsRF = false,
+                ReportFrom = "G8BPQ-2",
+                Port = 2,
+                IFieldLength = 40,
+                ProtocolId = 207,
+                ProtocolName = "NET/ROM",
+                L3Type = "NetRom",
+                L3Source = "G8BPQ-4",
+                L3Destination = "GM8BPQ-4",
+                TimeToLive = 25,
+                L4Type = "INFO",
+                ToCircuit = 95,
+                TransmitSequenceNumber = 72,
+                ReceiveSequenceNumber = 56,
+                PayloadLength = 20
             },
             new CircuitStatus
             {
