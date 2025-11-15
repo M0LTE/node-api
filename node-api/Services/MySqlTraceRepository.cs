@@ -2,24 +2,12 @@ using Dapper;
 using node_api.Controllers;
 using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 
 namespace node_api.Services;
 
 public partial class MySqlL2TraceRepository(ILogger<MySqlL2TraceRepository> logger) : IL2TraceRepository
 {
     private const int SlowQueryThresholdMs = 5000;
-
-    [GeneratedRegex(@"^TEST(-([0-9]|1[0-5]))?$", RegexOptions.IgnoreCase)]
-    private static partial Regex TestCallsignRegex();
-
-    private static bool IsTestCallsign(string? callsign)
-    {
-        if (string.IsNullOrWhiteSpace(callsign))
-            return false;
-
-        return TestCallsignRegex().IsMatch(callsign);
-    }
 
     public async Task InsertTraceAsync(string json, DateTime? timestamp = null, CancellationToken ct = default)
     {
