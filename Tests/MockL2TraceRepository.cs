@@ -5,6 +5,12 @@ namespace Tests;
 
 public class MockL2TraceRepository : IL2TraceRepository
 {
+    public Task InsertTraceAsync(string json, DateTime? timestamp = null, CancellationToken ct = default)
+    {
+        // Mock implementation - does nothing for testing
+        return Task.CompletedTask;
+    }
+
     public Task<(IReadOnlyList<TracesController.TraceDto> Data, string? NextCursor, CountResult TotalCount)> GetTracesAsync(
         string? source,
         string? dest,

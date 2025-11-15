@@ -20,8 +20,8 @@ public class MqttStateSubscriber : BackgroundService
     private readonly ILogger<MqttStateSubscriber> _logger;
     private readonly MqttSettings _mqttSettings;
     private readonly NetworkStateUpdater _networkStateUpdater;
-    private readonly MySqlTraceRepository _traceRepository;
-    private readonly MySqlL3TraceRepository _l3TraceRepository;
+    private readonly IL2TraceRepository _traceRepository;
+    private readonly IL3TraceRepository _l3TraceRepository;
     private readonly MySqlEventRepository _eventRepository;
     private readonly MySqlErroredMessageRepository _erroredMessageRepository;
     private IManagedMqttClient? _mqttClient;
@@ -30,8 +30,8 @@ public class MqttStateSubscriber : BackgroundService
         ILogger<MqttStateSubscriber> logger,
         IOptions<MqttSettings> mqttSettings,
         NetworkStateUpdater networkStateUpdater,
-        MySqlTraceRepository traceRepository,
-        MySqlL3TraceRepository l3TraceRepository,
+        IL2TraceRepository traceRepository,
+        IL3TraceRepository l3TraceRepository,
         MySqlEventRepository eventRepository,
         MySqlErroredMessageRepository erroredMessageRepository)
     {

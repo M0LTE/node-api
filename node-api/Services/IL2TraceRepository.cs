@@ -4,6 +4,14 @@ namespace node_api.Services;
 
 public interface IL2TraceRepository
 {
+    /// <summary>
+    /// Insert a L2 trace into the database
+    /// </summary>
+    /// <param name="json">The trace JSON data</param>
+    /// <param name="timestamp">Optional timestamp override (uses current time if null)</param>
+    /// <param name="ct">Cancellation token</param>
+    Task InsertTraceAsync(string json, DateTime? timestamp = null, CancellationToken ct = default);
+
     Task<(IReadOnlyList<TracesController.TraceDto> Data, string? NextCursor, CountResult TotalCount)> GetTracesAsync(
         string? source,
         string? dest,

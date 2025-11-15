@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 
 namespace node_api.Services;
 
-public partial class MySqlTraceRepository(ILogger<MySqlTraceRepository> logger) : IL2TraceRepository
+public partial class MySqlL2TraceRepository(ILogger<MySqlL2TraceRepository> logger) : IL2TraceRepository
 {
     private const int SlowQueryThresholdMs = 5000;
 
