@@ -2,7 +2,7 @@ using node_api.Controllers;
 
 namespace node_api.Services;
 
-public interface ITraceRepository
+public interface IL2TraceRepository
 {
     Task<(IReadOnlyList<TracesController.TraceDto> Data, string? NextCursor, CountResult TotalCount)> GetTracesAsync(
         string? source,

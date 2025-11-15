@@ -3,7 +3,7 @@ using node_api.Services;
 
 namespace Tests;
 
-public class MockTraceRepository : ITraceRepository
+public class MockL2TraceRepository : IL2TraceRepository
 {
     public Task<(IReadOnlyList<TracesController.TraceDto> Data, string? NextCursor, CountResult TotalCount)> GetTracesAsync(
         string? source,

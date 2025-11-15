@@ -26,12 +26,12 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
             }
 
             // Replace real repositories with mocks
-            var traceRepoDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(ITraceRepository));
+            var traceRepoDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IL2TraceRepository));
             if (traceRepoDescriptor != null)
             {
                 services.Remove(traceRepoDescriptor);
             }
-            services.AddSingleton<ITraceRepository, MockTraceRepository>();
+            services.AddSingleton<IL2TraceRepository, MockL2TraceRepository>();
 
             var eventRepoDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IEventRepository));
             if (eventRepoDescriptor != null)

@@ -9,13 +9,13 @@ namespace Tests;
 public class L2ConnectionAnalysisServiceTests
 {
     private readonly IEventRepository _eventRepository;
-    private readonly ITraceRepository _traceRepository;
+    private readonly IL2TraceRepository _traceRepository;
     private readonly L2ConnectionAnalysisService _service;
 
     public L2ConnectionAnalysisServiceTests()
     {
         _eventRepository = Substitute.For<IEventRepository>();
-        _traceRepository = Substitute.For<ITraceRepository>();
+        _traceRepository = Substitute.For<IL2TraceRepository>();
         _service = new L2ConnectionAnalysisService(_eventRepository, _traceRepository);
     }
 

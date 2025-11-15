@@ -112,7 +112,7 @@ builder.Services.AddHostedService<SystemMetricsPublisher>();
 
 // Register repositories
 builder.Services.AddSingleton<MySqlTraceRepository>();
-builder.Services.AddSingleton<ITraceRepository>(sp => sp.GetRequiredService<MySqlTraceRepository>());
+builder.Services.AddSingleton<IL2TraceRepository>(sp => sp.GetRequiredService<MySqlTraceRepository>());
 builder.Services.AddSingleton<MySqlL3TraceRepository>();
 builder.Services.AddSingleton<IL3TraceRepository>(sp => sp.GetRequiredService<MySqlL3TraceRepository>());
 builder.Services.AddSingleton<MySqlEventRepository>();
