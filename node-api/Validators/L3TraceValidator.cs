@@ -56,22 +56,23 @@ public class L3TraceValidator : AbstractValidator<L3Trace>
             .Must(t => ValidL3Types.Contains(t))
             .WithMessage($"L3Type must be one of: {string.Join(", ", ValidL3Types)}");
 
+        // Now optional - validate when present
         RuleFor(x => x.L3Source)
-            .NotEmpty()
-            .WithMessage("L3Source is required")
-            .MustBeValidCallsign();
+            .MustBeValidCallsign()
+            .When(x => !string.IsNullOrEmpty(x.L3Source));
 
         RuleFor(x => x.L3Destination)
-            .NotEmpty()
-            .WithMessage("L3Destination is required")
-            .MustBeValidCallsign();
+            .MustBeValidCallsign()
+            .When(x => !string.IsNullOrEmpty(x.L3Destination));
 
         RuleFor(x => x.TimeToLive)
             .GreaterThan(0)
+            .When(x => x.TimeToLive.HasValue)
             .WithMessage("TimeToLive must be greater than 0");
 
         RuleFor(x => x.L4Type)
             .Must(t => ValidL4Types.Contains(t))
+            .When(x => !string.IsNullOrEmpty(x.L4Type))
             .WithMessage($"L4Type must be one of: {string.Join(", ", ValidL4Types)}");
 
         // Conditional validations for specific L4 types

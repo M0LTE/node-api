@@ -69,28 +69,28 @@ public record L3Trace : NetworkEventDatagram
     public required string L3Type { get; init; }
 
     /// <summary>
-    /// Layer 3 source callsign (Required)
+    /// Layer 3 source callsign (Optional)
     /// </summary>
     [JsonPropertyName("l3src")]
-    public required string L3Source { get; init; }
+    public string? L3Source { get; init; }
 
     /// <summary>
-    /// Layer 3 destination callsign (Required)
+    /// Layer 3 destination callsign (Optional)
     /// </summary>
     [JsonPropertyName("l3dst")]
-    public required string L3Destination { get; init; }
+    public string? L3Destination { get; init; }
 
     /// <summary>
-    /// Time To Live (Required)
+    /// Time To Live (Optional)
     /// </summary>
     [JsonPropertyName("ttl")]
-    public required int TimeToLive { get; init; }
+    public int? TimeToLive { get; init; }
 
     /// <summary>
-    /// NetRom L4 Frame Type: "CONN REQ", "CONN REQX", "CONN ACK", "CONN NAK", "DISC REQ", "DISC ACK", "INFO", "INFO ACK", "RSET", "PROT EXT", "unknown" (Required)
+    /// NetRom L4 Frame Type: "CONN REQ", "CONN REQX", "CONN ACK", "CONN NAK", "DISC REQ", "DISC ACK", "INFO", "INFO ACK", "RSET", "PROT EXT", "unknown" (Optional)
     /// </summary>
     [JsonPropertyName("l4Type")]
-    public required string L4Type { get; init; }
+    public string? L4Type { get; init; }
 
     /// <summary>
     /// Destination circuit number (Optional)

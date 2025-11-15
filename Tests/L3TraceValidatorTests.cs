@@ -40,6 +40,31 @@ public class L3TraceValidatorTests
     }
 
     [Fact]
+    public void Should_Not_Have_Error_When_Optional_Fields_Are_Null()
+    {
+        var model = new L3Trace
+        {
+            Serial = 45,
+            TimeUnixSeconds = 1762355570,
+            Direction = "rcvd",
+            IsRF = false,
+            ReportFrom = "G8BPQ-2",
+            Port = 2,
+            IFieldLength = 40,
+            ProtocolId = 207,
+            ProtocolName = "NET/ROM",
+            L3Type = "Routing info",
+            L3Source = null,
+            L3Destination = null,
+            TimeToLive = null,
+            L4Type = null
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
     public void Should_Reject_Negative_Serial()
     {
         var model = new L3Trace
@@ -53,11 +78,7 @@ public class L3TraceValidatorTests
             IFieldLength = 40,
             ProtocolId = 207,
             ProtocolName = "NET/ROM",
-            L3Type = "NetRom",
-            L3Source = "G8BPQ-4",
-            L3Destination = "GM8BPQ-4",
-            TimeToLive = 25,
-            L4Type = "INFO"
+            L3Type = "NetRom"
         };
 
         var result = _validator.TestValidate(model);
@@ -80,11 +101,7 @@ public class L3TraceValidatorTests
             IFieldLength = 40,
             ProtocolId = 207,
             ProtocolName = "NET/ROM",
-            L3Type = "NetRom",
-            L3Source = "G8BPQ-4",
-            L3Destination = "GM8BPQ-4",
-            TimeToLive = 25,
-            L4Type = "INFO"
+            L3Type = "NetRom"
         };
 
         var result = _validator.TestValidate(model);
@@ -109,11 +126,7 @@ public class L3TraceValidatorTests
             IFieldLength = 40,
             ProtocolId = 207,
             ProtocolName = "NET/ROM",
-            L3Type = "NetRom",
-            L3Source = "G8BPQ-4",
-            L3Destination = "GM8BPQ-4",
-            TimeToLive = 25,
-            L4Type = "INFO"
+            L3Type = "NetRom"
         };
 
         var result = _validator.TestValidate(model);
@@ -134,11 +147,7 @@ public class L3TraceValidatorTests
             IFieldLength = 40,
             ProtocolId = 207,
             ProtocolName = "NET/ROM",
-            L3Type = "NetRom",
-            L3Source = "G8BPQ-4",
-            L3Destination = "GM8BPQ-4",
-            TimeToLive = 25,
-            L4Type = "INFO"
+            L3Type = "NetRom"
         };
 
         var result = _validator.TestValidate(model);
@@ -162,11 +171,7 @@ public class L3TraceValidatorTests
             IFieldLength = 40,
             ProtocolId = 207,
             ProtocolName = "NET/ROM",
-            L3Type = "NetRom",
-            L3Source = "G8BPQ-4",
-            L3Destination = "GM8BPQ-4",
-            TimeToLive = 25,
-            L4Type = "INFO"
+            L3Type = "NetRom"
         };
 
         var result = _validator.TestValidate(model);
@@ -193,11 +198,7 @@ public class L3TraceValidatorTests
             IFieldLength = 40,
             ProtocolId = 207,
             ProtocolName = "NET/ROM",
-            L3Type = "NetRom",
-            L3Source = "G8BPQ-4",
-            L3Destination = "GM8BPQ-4",
-            TimeToLive = 25,
-            L4Type = "INFO"
+            L3Type = "NetRom"
         };
 
         var result = _validator.TestValidate(model);
@@ -221,11 +222,7 @@ public class L3TraceValidatorTests
             IFieldLength = 40,
             ProtocolId = 207,
             ProtocolName = "NET/ROM",
-            L3Type = "NetRom",
-            L3Source = "G8BPQ-4",
-            L3Destination = "GM8BPQ-4",
-            TimeToLive = 25,
-            L4Type = "INFO"
+            L3Type = "NetRom"
         };
 
         var result = _validator.TestValidate(model);
@@ -250,11 +247,7 @@ public class L3TraceValidatorTests
             IFieldLength = 40,
             ProtocolId = 207,
             ProtocolName = "NET/ROM",
-            L3Type = "NetRom",
-            L3Source = "G8BPQ-4",
-            L3Destination = "GM8BPQ-4",
-            TimeToLive = 25,
-            L4Type = "INFO"
+            L3Type = "NetRom"
         };
 
         var result = _validator.TestValidate(model);
@@ -279,11 +272,7 @@ public class L3TraceValidatorTests
             IFieldLength = 40,
             ProtocolId = 207,
             ProtocolName = "NET/ROM",
-            L3Type = "NetRom",
-            L3Source = "G8BPQ-4",
-            L3Destination = "GM8BPQ-4",
-            TimeToLive = 25,
-            L4Type = "INFO"
+            L3Type = "NetRom"
         };
 
         var result = _validator.TestValidate(model);
@@ -307,11 +296,7 @@ public class L3TraceValidatorTests
             IFieldLength = 40,
             ProtocolId = 207,
             ProtocolName = protocol,
-            L3Type = "NetRom",
-            L3Source = "G8BPQ-4",
-            L3Destination = "GM8BPQ-4",
-            TimeToLive = 25,
-            L4Type = "INFO"
+            L3Type = "NetRom"
         };
 
         var result = _validator.TestValidate(model);
@@ -340,11 +325,7 @@ public class L3TraceValidatorTests
             IFieldLength = 40,
             ProtocolId = 207,
             ProtocolName = "NET/ROM",
-            L3Type = l3Type,
-            L3Source = "G8BPQ-4",
-            L3Destination = "GM8BPQ-4",
-            TimeToLive = 25,
-            L4Type = "INFO"
+            L3Type = l3Type
         };
 
         var result = _validator.TestValidate(model);
@@ -373,10 +354,7 @@ public class L3TraceValidatorTests
             ProtocolId = 207,
             ProtocolName = "NET/ROM",
             L3Type = "NetRom",
-            L3Source = "G8BPQ-4",
-            L3Destination = "GM8BPQ-4",
-            TimeToLive = ttl,
-            L4Type = "INFO"
+            TimeToLive = ttl
         };
 
         var result = _validator.TestValidate(model);
@@ -386,7 +364,7 @@ public class L3TraceValidatorTests
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
-    public void Should_Reject_Invalid_TimeToLive(int ttl)
+    public void Should_Reject_Invalid_TimeToLive_When_Present(int ttl)
     {
         var model = new L3Trace
         {
@@ -400,14 +378,33 @@ public class L3TraceValidatorTests
             ProtocolId = 207,
             ProtocolName = "NET/ROM",
             L3Type = "NetRom",
-            L3Source = "G8BPQ-4",
-            L3Destination = "GM8BPQ-4",
-            TimeToLive = ttl,
-            L4Type = "INFO"
+            TimeToLive = ttl
         };
 
         var result = _validator.TestValidate(model);
         result.ShouldHaveValidationErrorFor(x => x.TimeToLive);
+    }
+
+    [Fact]
+    public void Should_Accept_Null_TimeToLive()
+    {
+        var model = new L3Trace
+        {
+            Serial = 45,
+            TimeUnixSeconds = 1762355570,
+            Direction = "rcvd",
+            IsRF = false,
+            ReportFrom = "G8BPQ-2",
+            Port = 2,
+            IFieldLength = 40,
+            ProtocolId = 207,
+            ProtocolName = "NET/ROM",
+            L3Type = "Routing info",
+            TimeToLive = null
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.TimeToLive);
     }
 
     #endregion
@@ -440,10 +437,29 @@ public class L3TraceValidatorTests
             ProtocolId = 207,
             ProtocolName = "NET/ROM",
             L3Type = "NetRom",
-            L3Source = "G8BPQ-4",
-            L3Destination = "GM8BPQ-4",
-            TimeToLive = 25,
             L4Type = l4Type
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.L4Type);
+    }
+
+    [Fact]
+    public void Should_Accept_Null_L4Type()
+    {
+        var model = new L3Trace
+        {
+            Serial = 45,
+            TimeUnixSeconds = 1762355570,
+            Direction = "rcvd",
+            IsRF = false,
+            ReportFrom = "G8BPQ-2",
+            Port = 2,
+            IFieldLength = 40,
+            ProtocolId = 207,
+            ProtocolName = "NET/ROM",
+            L3Type = "Routing info",
+            L4Type = null
         };
 
         var result = _validator.TestValidate(model);
@@ -469,9 +485,6 @@ public class L3TraceValidatorTests
             ProtocolId = 207,
             ProtocolName = "NET/ROM",
             L3Type = "NetRom",
-            L3Source = "G8BPQ-4",
-            L3Destination = "GM8BPQ-4",
-            TimeToLive = 25,
             L4Type = "INFO",
             ToCircuit = null,
             TransmitSequenceNumber = 72,
@@ -497,9 +510,6 @@ public class L3TraceValidatorTests
             ProtocolId = 207,
             ProtocolName = "NET/ROM",
             L3Type = "NetRom",
-            L3Source = "G8BPQ-4",
-            L3Destination = "GM8BPQ-4",
-            TimeToLive = 25,
             L4Type = "INFO",
             ToCircuit = 95,
             TransmitSequenceNumber = null,
@@ -525,9 +535,6 @@ public class L3TraceValidatorTests
             ProtocolId = 207,
             ProtocolName = "NET/ROM",
             L3Type = "NetRom",
-            L3Source = "G8BPQ-4",
-            L3Destination = "GM8BPQ-4",
-            TimeToLive = 25,
             L4Type = "INFO",
             ToCircuit = 95,
             TransmitSequenceNumber = 72,
@@ -557,9 +564,6 @@ public class L3TraceValidatorTests
             ProtocolId = 207,
             ProtocolName = "NET/ROM",
             L3Type = "NetRom",
-            L3Source = "G8BPQ-4",
-            L3Destination = "GM8BPQ-4",
-            TimeToLive = 25,
             L4Type = "INFO ACK",
             ToCircuit = null,
             ReceiveSequenceNumber = 56
@@ -584,9 +588,6 @@ public class L3TraceValidatorTests
             ProtocolId = 207,
             ProtocolName = "NET/ROM",
             L3Type = "NetRom",
-            L3Source = "G8BPQ-4",
-            L3Destination = "GM8BPQ-4",
-            TimeToLive = 25,
             L4Type = "INFO ACK",
             ToCircuit = 95,
             ReceiveSequenceNumber = null
@@ -615,9 +616,6 @@ public class L3TraceValidatorTests
             ProtocolId = 207,
             ProtocolName = "NET/ROM",
             L3Type = "NetRom",
-            L3Source = "G8BPQ-4",
-            L3Destination = "GM8BPQ-4",
-            TimeToLive = 25,
             L4Type = "CONN ACK",
             ToCircuit = null
         };
@@ -647,9 +645,6 @@ public class L3TraceValidatorTests
             ProtocolId = 207,
             ProtocolName = "NET/ROM",
             L3Type = "NetRom",
-            L3Source = "G8BPQ-4",
-            L3Destination = "GM8BPQ-4",
-            TimeToLive = 25,
             L4Type = l4Type,
             ToCircuit = null
         };
@@ -663,9 +658,9 @@ public class L3TraceValidatorTests
     #region Callsign Validation
 
     [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Should_Reject_Empty_L3Source(string source)
+    [InlineData("INVALID!")]
+    [InlineData("TOOLONGCALLSIGN")]
+    public void Should_Reject_Invalid_L3Source_When_Present(string source)
     {
         var model = new L3Trace
         {
@@ -679,10 +674,7 @@ public class L3TraceValidatorTests
             ProtocolId = 207,
             ProtocolName = "NET/ROM",
             L3Type = "NetRom",
-            L3Source = source,
-            L3Destination = "GM8BPQ-4",
-            TimeToLive = 25,
-            L4Type = "INFO"
+            L3Source = source
         };
 
         var result = _validator.TestValidate(model);
@@ -690,9 +682,9 @@ public class L3TraceValidatorTests
     }
 
     [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Should_Reject_Empty_L3Destination(string destination)
+    [InlineData("INVALID!")]
+    [InlineData("TOOLONGCALLSIGN")]
+    public void Should_Reject_Invalid_L3Destination_When_Present(string destination)
     {
         var model = new L3Trace
         {
@@ -706,14 +698,55 @@ public class L3TraceValidatorTests
             ProtocolId = 207,
             ProtocolName = "NET/ROM",
             L3Type = "NetRom",
-            L3Source = "G8BPQ-4",
-            L3Destination = destination,
-            TimeToLive = 25,
-            L4Type = "INFO"
+            L3Destination = destination
         };
 
         var result = _validator.TestValidate(model);
         result.ShouldHaveValidationErrorFor(x => x.L3Destination);
+    }
+
+    [Fact]
+    public void Should_Accept_Null_L3Source()
+    {
+        var model = new L3Trace
+        {
+            Serial = 45,
+            TimeUnixSeconds = 1762355570,
+            Direction = "rcvd",
+            IsRF = false,
+            ReportFrom = "G8BPQ-2",
+            Port = 2,
+            IFieldLength = 40,
+            ProtocolId = 207,
+            ProtocolName = "NET/ROM",
+            L3Type = "Routing info",
+            L3Source = null
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.L3Source);
+    }
+
+    [Fact]
+    public void Should_Accept_Null_L3Destination()
+    {
+        var model = new L3Trace
+        {
+            Serial = 45,
+            TimeUnixSeconds = 1762355570,
+            Direction = "rcvd",
+            IsRF = false,
+            ReportFrom = "G8BPQ-2",
+            Port = 2,
+            IFieldLength = 40,
+            ProtocolId = 207,
+            ProtocolName = "NET/ROM",
+            L3Type = "Routing info",
+            L3Destination = null
+        };
+
+        var result = _validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(x => x.L3Destination);
     }
 
     #endregion
