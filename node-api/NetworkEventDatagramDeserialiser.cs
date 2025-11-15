@@ -36,6 +36,7 @@ public static class NetworkEventDatagramDeserialiser
             frame = typeString switch
             {
                 DatagramTypes.L2Trace => JsonSerializer.Deserialize<L2Trace>(json, options),
+                DatagramTypes.L3Trace => JsonSerializer.Deserialize<L3Trace>(json, options),
                 DatagramTypes.NodeUpEvent => JsonSerializer.Deserialize<NodeUpEvent>(json, options),
                 DatagramTypes.NodeDownEvent => JsonSerializer.Deserialize<NodeDownEvent>(json, options),
                 DatagramTypes.NodeStatus => JsonSerializer.Deserialize<NodeStatusReportEvent>(json, options),

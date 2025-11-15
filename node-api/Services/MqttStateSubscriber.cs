@@ -21,6 +21,7 @@ public class MqttStateSubscriber : BackgroundService
     private readonly MqttSettings _mqttSettings;
     private readonly NetworkStateUpdater _networkStateUpdater;
     private readonly MySqlTraceRepository _traceRepository;
+    private readonly MySqlL3TraceRepository _l3TraceRepository;
     private readonly MySqlEventRepository _eventRepository;
     private readonly MySqlErroredMessageRepository _erroredMessageRepository;
     private IManagedMqttClient? _mqttClient;
@@ -30,6 +31,7 @@ public class MqttStateSubscriber : BackgroundService
         IOptions<MqttSettings> mqttSettings,
         NetworkStateUpdater networkStateUpdater,
         MySqlTraceRepository traceRepository,
+        MySqlL3TraceRepository l3TraceRepository,
         MySqlEventRepository eventRepository,
         MySqlErroredMessageRepository erroredMessageRepository)
     {
@@ -37,6 +39,7 @@ public class MqttStateSubscriber : BackgroundService
         _mqttSettings = mqttSettings.Value;
         _networkStateUpdater = networkStateUpdater;
         _traceRepository = traceRepository;
+        _l3TraceRepository = l3TraceRepository;
         _eventRepository = eventRepository;
         _erroredMessageRepository = erroredMessageRepository;
     }
@@ -73,6 +76,7 @@ public class MqttStateSubscriber : BackgroundService
             new MqttTopicFilterBuilder().WithTopic("out/NodeStatus").Build(),
             new MqttTopicFilterBuilder().WithTopic("out/NodeDownEvent").Build(),
             new MqttTopicFilterBuilder().WithTopic("out/L2Trace").Build(),
+            new MqttTopicFilterBuilder().WithTopic("out/L3Trace").Build(),
             new MqttTopicFilterBuilder().WithTopic("out/LinkUpEvent").Build(),
             new MqttTopicFilterBuilder().WithTopic("out/LinkStatus").Build(),
             new MqttTopicFilterBuilder().WithTopic("out/LinkDownEvent").Build(),
@@ -174,6 +178,15 @@ public class MqttStateSubscriber : BackgroundService
                     {
                         // L2Trace is saved to database only, no state updates
                         await _traceRepository.InsertTraceAsync(payload, arrivalTime);
+                    }
+                    break;
+
+                case "out/L3Trace":
+                    var l3Trace = JsonSerializer.Deserialize<L3Trace>(payload);
+                    if (l3Trace != null)
+                    {
+                        // L3Trace is saved to database only, no state updates
+                        await _l3TraceRepository.InsertL3TraceAsync(payload, arrivalTime);
                     }
                     break;
 

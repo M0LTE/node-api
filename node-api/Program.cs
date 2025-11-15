@@ -113,6 +113,8 @@ builder.Services.AddHostedService<SystemMetricsPublisher>();
 // Register repositories
 builder.Services.AddSingleton<MySqlTraceRepository>();
 builder.Services.AddSingleton<ITraceRepository>(sp => sp.GetRequiredService<MySqlTraceRepository>());
+builder.Services.AddSingleton<MySqlL3TraceRepository>();
+builder.Services.AddSingleton<IL3TraceRepository>(sp => sp.GetRequiredService<MySqlL3TraceRepository>());
 builder.Services.AddSingleton<MySqlEventRepository>();
 builder.Services.AddSingleton<IEventRepository>(sp => sp.GetRequiredService<MySqlEventRepository>());
 builder.Services.AddSingleton<MySqlErroredMessageRepository>();
@@ -122,6 +124,7 @@ builder.Services.AddSingleton<IL2ConnectionAnalysisService, L2ConnectionAnalysis
 
 // Register FluentValidation validators
 builder.Services.AddSingleton<IValidator<L2Trace>, L2TraceValidator>();
+builder.Services.AddSingleton<IValidator<L3Trace>, L3TraceValidator>();
 builder.Services.AddSingleton<IValidator<NodeUpEvent>, NodeUpEventValidator>();
 builder.Services.AddSingleton<IValidator<NodeDownEvent>, NodeDownEventValidator>();
 builder.Services.AddSingleton<IValidator<NodeStatusReportEvent>, NodeStatusReportEventValidator>();

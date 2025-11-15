@@ -9,6 +9,7 @@ namespace node_api.Models;
 /// </summary>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "@type")]
 [JsonDerivedType(typeof(L2Trace), "L2Trace")]
+[JsonDerivedType(typeof(L3Trace), "L3Trace")]
 [JsonDerivedType(typeof(NodeUpEvent), "NodeUpEvent")]
 [JsonDerivedType(typeof(NodeDownEvent), "NodeDownEvent")]
 [JsonDerivedType(typeof(NodeStatusReportEvent), "NodeStatus")]
