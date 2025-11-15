@@ -33,6 +33,12 @@ public static class NetworkEventDatagramDeserialiser
 
         try
         {
+            // Preprocess L2Trace JSON to strip invalid tseq field from supervisory frames
+            if (typeString == DatagramTypes.L2Trace)
+            {
+                json = StripInvalidTseqFromSupervisoryFrames(json);
+            }
+
             frame = typeString switch
             {
                 DatagramTypes.L2Trace => JsonSerializer.Deserialize<L2Trace>(json, options),
@@ -56,5 +62,40 @@ public static class NetworkEventDatagramDeserialiser
             jsonException = ex;
             return false;
         }
+    }
+
+    /// <summary>
+    /// Strips the tseq (transmit sequence) field from supervisory frames (RR, RNR, REJ, SREJ)
+    /// which do not have transmit sequence numbers according to the AX.25 protocol specification.
+    /// </summary>
+    private static string StripInvalidTseqFromSupervisoryFrames(string json)
+    {
+        var supervisoryFrames = new[] { "RR", "RNR", "REJ", "SREJ" };
+        
+        try
+        {
+            var jsonNode = JsonNode.Parse(json);
+            if (jsonNode is JsonObject jsonObject)
+            {
+                // Check if this is a supervisory frame
+                var l2Type = jsonObject["l2Type"]?.GetValue<string>() ?? jsonObject["l2type"]?.GetValue<string>();
+                
+                if (l2Type != null && supervisoryFrames.Contains(l2Type, StringComparer.OrdinalIgnoreCase))
+                {
+                    // Remove tseq if present
+                    if (jsonObject.ContainsKey("tseq"))
+                    {
+                        jsonObject.Remove("tseq");
+                        return jsonObject.ToJsonString();
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // If preprocessing fails, return original JSON
+        }
+
+        return json;
     }
 }
