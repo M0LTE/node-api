@@ -12,6 +12,7 @@ public class DatagramValidationServiceTests
     {
         _service = new DatagramValidationService(
             new L2TraceValidator(),
+            new L3TraceValidator(),
             new NodeUpEventValidator(),
             new NodeDownEventValidator(),
             new NodeStatusReportEventValidator(),

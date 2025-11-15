@@ -10,6 +10,7 @@ namespace node_api.Validators;
 public class DatagramValidationService
 {
     private readonly IValidator<L2Trace> _l2TraceValidator;
+    private readonly IValidator<L3Trace> _l3TraceValidator;
     private readonly IValidator<NodeUpEvent> _nodeUpEventValidator;
     private readonly IValidator<NodeDownEvent> _nodeDownEventValidator;
     private readonly IValidator<NodeStatusReportEvent> _nodeStatusReportEventValidator;
@@ -22,6 +23,7 @@ public class DatagramValidationService
 
     public DatagramValidationService(
         IValidator<L2Trace> l2TraceValidator,
+        IValidator<L3Trace> l3TraceValidator,
         IValidator<NodeUpEvent> nodeUpEventValidator,
         IValidator<NodeDownEvent> nodeDownEventValidator,
         IValidator<NodeStatusReportEvent> nodeStatusReportEventValidator,
@@ -33,6 +35,7 @@ public class DatagramValidationService
         IValidator<CircuitStatus> circuitStatusValidator)
     {
         _l2TraceValidator = l2TraceValidator;
+        _l3TraceValidator = l3TraceValidator;
         _nodeUpEventValidator = nodeUpEventValidator;
         _nodeDownEventValidator = nodeDownEventValidator;
         _nodeStatusReportEventValidator = nodeStatusReportEventValidator;
@@ -52,6 +55,7 @@ public class DatagramValidationService
         return datagram switch
         {
             L2Trace l2Trace => _l2TraceValidator.Validate(l2Trace),
+            L3Trace l3Trace => _l3TraceValidator.Validate(l3Trace),
             NodeUpEvent nodeUpEvent => _nodeUpEventValidator.Validate(nodeUpEvent),
             NodeDownEvent nodeDownEvent => _nodeDownEventValidator.Validate(nodeDownEvent),
             NodeStatusReportEvent nodeStatusReportEvent => _nodeStatusReportEventValidator.Validate(nodeStatusReportEvent),

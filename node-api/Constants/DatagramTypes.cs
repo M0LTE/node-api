@@ -6,6 +6,7 @@ namespace node_api.Constants;
 public static class DatagramTypes
 {
     public const string L2Trace = "L2Trace";
+    public const string L3Trace = "L3Trace";
     public const string NodeUpEvent = "NodeUpEvent";
     public const string NodeDownEvent = "NodeDownEvent";
     public const string NodeStatus = "NodeStatus";
@@ -22,6 +23,7 @@ public static class DatagramTypes
     public static readonly string[] All =
     [
         L2Trace,
+        L3Trace,
         NodeUpEvent,
         NodeDownEvent,
         NodeStatus,
