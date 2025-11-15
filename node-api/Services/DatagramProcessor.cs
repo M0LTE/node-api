@@ -301,6 +301,7 @@ public class DatagramProcessor : IDatagramProcessor
         return frame switch
         {
             L2Trace trace => trace.ReportFrom,
+            L3Trace l3trace => l3trace.ReportFrom,
             NodeUpEvent nodeUp => nodeUp.NodeCall,
             NodeStatusReportEvent nodeStatus => nodeStatus.NodeCall,
             NodeDownEvent nodeDown => nodeDown.NodeCall,
