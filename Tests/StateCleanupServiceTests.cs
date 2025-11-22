@@ -57,6 +57,24 @@ public class StateCleanupServiceTests
             DeletedCircuits.Add(canonicalKey);
             await Task.CompletedTask;
         }
+        
+        public new async Task<int> BatchDeleteLinksAsync(IEnumerable<string> canonicalKeys, CancellationToken ct = default)
+        {
+            if (ThrowOnDelete) throw new Exception("Simulated database error");
+            
+            var keys = canonicalKeys.ToList();
+            DeletedLinks.AddRange(keys);
+            return keys.Count;
+        }
+        
+        public new async Task<int> BatchDeleteCircuitsAsync(IEnumerable<string> canonicalKeys, CancellationToken ct = default)
+        {
+            if (ThrowOnDelete) throw new Exception("Simulated database error");
+            
+            var keys = canonicalKeys.ToList();
+            DeletedCircuits.AddRange(keys);
+            return keys.Count;
+        }
     }
 
     #region Circuit State Tests (Core Logic)
@@ -340,6 +358,114 @@ public class StateCleanupServiceTests
         _repository.DeletedCircuits.Should().HaveCount(2);
         _repository.DeletedCircuits.Should().Contain(circuit1.CanonicalKey);
         _repository.DeletedCircuits.Should().Contain(circuit2.CanonicalKey);
+    }
+
+    #endregion
+
+    #region Batch Cleanup Tests
+
+    [Fact]
+    public void Should_Clean_Multiple_Stale_Circuits_At_Once()
+    {
+        // Arrange - Create 100 stale circuits
+        var cutoff = DateTime.UtcNow.AddHours(-1);
+        for (int i = 0; i < 100; i++)
+        {
+            var circuit = _networkState.GetOrCreateCircuit($"NODE{i}:1234", $"NODE{i + 100}:5678");
+            circuit.Status = CircuitStatus.Disconnected;
+            circuit.LastUpdate = DateTime.UtcNow.AddHours(-2);
+        }
+
+        // Act
+        var staleCircuits = _networkState.GetAllCircuits().Values
+            .Where(c => c.Status == CircuitStatus.Disconnected && c.LastUpdate < cutoff)
+            .ToList();
+
+        // Assert
+        staleCircuits.Should().HaveCount(100, "all 100 circuits should be identified as stale");
+    }
+
+    [Fact]
+    public void Should_Clean_Multiple_Stale_Links_At_Once()
+    {
+        // Arrange - Create 50 stale links
+        var cutoff = DateTime.UtcNow.AddHours(-1);
+        for (int i = 0; i < 50; i++)
+        {
+            var link = _networkState.GetOrCreateLink($"NODE{i}", $"NODE{i + 100}");
+            link.Status = LinkStatus.Disconnected;
+            link.LastUpdate = DateTime.UtcNow.AddHours(-2);
+        }
+
+        // Act
+        var staleLinks = _networkState.GetAllLinks().Values
+            .Where(l => l.Status == LinkStatus.Disconnected && l.LastUpdate < cutoff)
+            .ToList();
+
+        // Assert
+        staleLinks.Should().HaveCount(50, "all 50 links should be identified as stale");
+    }
+
+    [Fact]
+    public async Task Batch_Cleanup_Should_Remove_From_Repository()
+    {
+        // Arrange
+        var circuit1 = _networkState.GetOrCreateCircuit("M0LTE:1111", "G8PZT:2222");
+        var circuit2 = _networkState.GetOrCreateCircuit("M0ABC:3333", "G8XYZ:4444");
+        var circuit3 = _networkState.GetOrCreateCircuit("M0DEF:5555", "G8QRS:6666");
+        
+        circuit1.Status = CircuitStatus.Disconnected;
+        circuit2.Status = CircuitStatus.Disconnected;
+        circuit3.Status = CircuitStatus.Disconnected;
+        
+        var keys = new[] { circuit1.CanonicalKey, circuit2.CanonicalKey, circuit3.CanonicalKey };
+
+        // Act
+        await _repository.BatchDeleteCircuitsAsync(keys);
+
+        // Assert
+        _repository.DeletedCircuits.Should().HaveCount(3);
+        _repository.DeletedCircuits.Should().Contain(keys);
+    }
+
+    [Fact]
+    public void Should_Properly_Separate_Active_And_Stale_Circuits()
+    {
+        // Arrange
+        var cutoff = DateTime.UtcNow.AddHours(-1);
+        
+        // Create stale circuits
+        for (int i = 0; i < 10; i++)
+        {
+            var circuit = _networkState.GetOrCreateCircuit($"STALE{i}:1234", $"NODE{i}:5678");
+            circuit.Status = CircuitStatus.Disconnected;
+            circuit.LastUpdate = DateTime.UtcNow.AddHours(-2);
+        }
+        
+        // Create active circuits
+        for (int i = 0; i < 5; i++)
+        {
+            var circuit = _networkState.GetOrCreateCircuit($"ACTIVE{i}:1234", $"NODE{i}:5678");
+            circuit.Status = CircuitStatus.Active;
+            circuit.LastUpdate = DateTime.UtcNow;
+        }
+        
+        // Create recently disconnected (not yet stale)
+        for (int i = 0; i < 3; i++)
+        {
+            var circuit = _networkState.GetOrCreateCircuit($"RECENT{i}:1234", $"NODE{i}:5678");
+            circuit.Status = CircuitStatus.Disconnected;
+            circuit.LastUpdate = DateTime.UtcNow.AddMinutes(-30);
+        }
+
+        // Act
+        var staleCircuits = _networkState.GetAllCircuits().Values
+            .Where(c => c.Status == CircuitStatus.Disconnected && c.LastUpdate < cutoff)
+            .ToList();
+
+        // Assert
+        staleCircuits.Should().HaveCount(10, "only the truly stale circuits should be identified");
+        staleCircuits.Should().OnlyContain(c => c.Endpoint1.StartsWith("STALE") || c.Endpoint2.StartsWith("STALE"));
     }
 
     #endregion

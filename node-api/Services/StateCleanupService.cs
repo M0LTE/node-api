@@ -82,22 +82,31 @@ public class StateCleanupService : BackgroundService
             // 2. It hasn't been updated recently (no status reports)
             var disconnectedLinks = _networkState.GetAllLinks().Values
                 .Where(l => l.Status == LinkStatus.Disconnected 
-                         && l.LastUpdate < cutoff)  // Changed: Use LastUpdate instead of DisconnectedAt
+                         && l.LastUpdate < cutoff)
+                .Select(l => l.CanonicalKey)
                 .ToList();
 
-            foreach (var link in disconnectedLinks)
+            if (disconnectedLinks.Count > 0)
             {
                 try
                 {
-                    await _repository.DeleteLinkAsync(link.CanonicalKey, ct);
-                    linksRemoved++;
-                    _logger.LogDebug(
-                        "Removed stale link: {CanonicalKey} (status: {Status}, last update: {LastUpdate})", 
-                        link.CanonicalKey, link.Status, link.LastUpdate);
+                    // Batch delete from database
+                    await _repository.BatchDeleteLinksAsync(disconnectedLinks, ct);
+                    
+                    // Remove from in-memory state
+                    foreach (var key in disconnectedLinks)
+                    {
+                        if (_networkState.RemoveLink(key))
+                        {
+                            linksRemoved++;
+                        }
+                    }
+                    
+                    _logger.LogDebug("Batch removed {Count} stale links", linksRemoved);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to remove stale link: {CanonicalKey}", link.CanonicalKey);
+                    _logger.LogWarning(ex, "Failed to batch remove stale links");
                 }
             }
 
@@ -109,22 +118,31 @@ public class StateCleanupService : BackgroundService
             // so LastUpdate will be recent even if circuit was marked disconnected earlier
             var disconnectedCircuits = _networkState.GetAllCircuits().Values
                 .Where(c => c.Status == CircuitStatus.Disconnected 
-                         && c.LastUpdate < cutoff)  // Changed: Use LastUpdate instead of DisconnectedAt
+                         && c.LastUpdate < cutoff)
+                .Select(c => c.CanonicalKey)
                 .ToList();
 
-            foreach (var circuit in disconnectedCircuits)
+            if (disconnectedCircuits.Count > 0)
             {
                 try
                 {
-                    await _repository.DeleteCircuitAsync(circuit.CanonicalKey, ct);
-                    circuitsRemoved++;
-                    _logger.LogDebug(
-                        "Removed stale circuit: {CanonicalKey} (status: {Status}, last update: {LastUpdate})", 
-                        circuit.CanonicalKey, circuit.Status, circuit.LastUpdate);
+                    // Batch delete from database
+                    await _repository.BatchDeleteCircuitsAsync(disconnectedCircuits, ct);
+                    
+                    // Remove from in-memory state
+                    foreach (var key in disconnectedCircuits)
+                    {
+                        if (_networkState.RemoveCircuit(key))
+                        {
+                            circuitsRemoved++;
+                        }
+                    }
+                    
+                    _logger.LogDebug("Batch removed {Count} stale circuits", circuitsRemoved);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to remove stale circuit: {CanonicalKey}", circuit.CanonicalKey);
+                    _logger.LogWarning(ex, "Failed to batch remove stale circuits");
                 }
             }
 

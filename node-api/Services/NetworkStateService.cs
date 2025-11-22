@@ -22,12 +22,14 @@ public interface INetworkStateService
     LinkState? GetLink(string canonicalKey);
     IReadOnlyDictionary<string, LinkState> GetAllLinks();
     IEnumerable<LinkState> GetLinksForNode(string callsign);
+    bool RemoveLink(string canonicalKey);
     
     // Circuit operations
     CircuitState GetOrCreateCircuit(string local, string remote);
     CircuitState? GetCircuit(string canonicalKey);
     IReadOnlyDictionary<string, CircuitState> GetAllCircuits();
     IEnumerable<CircuitState> GetCircuitsForNode(string callsign);
+    bool RemoveCircuit(string canonicalKey);
     
     // Dirty tracking operations
     IEnumerable<NodeState> GetDirtyNodes();
@@ -218,6 +220,26 @@ public partial class NetworkStateService : INetworkStateService
         return _circuits.Values.Where(circuit =>
             circuit.Endpoint1.Equals(callsign, StringComparison.OrdinalIgnoreCase) ||
             circuit.Endpoint2.Equals(callsign, StringComparison.OrdinalIgnoreCase));
+    }
+    
+    public bool RemoveLink(string canonicalKey)
+    {
+        var removed = _links.TryRemove(canonicalKey, out var link);
+        if (removed)
+        {
+            _logger.LogDebug("Removed link from in-memory state: {CanonicalKey}", canonicalKey);
+        }
+        return removed;
+    }
+    
+    public bool RemoveCircuit(string canonicalKey)
+    {
+        var removed = _circuits.TryRemove(canonicalKey, out var circuit);
+        if (removed)
+        {
+            _logger.LogDebug("Removed circuit from in-memory state: {CanonicalKey}", canonicalKey);
+        }
+        return removed;
     }
 
     public IEnumerable<NodeState> GetDirtyNodes()

@@ -498,6 +498,77 @@ public class NetworkStateServiceTests
 
     #endregion
 
+    #region Removal Tests
+
+    [Fact]
+    public void RemoveLink_RemovesExistingLink()
+    {
+        // Arrange
+        var link = _service.GetOrCreateLink("M0LTE", "G8PZT");
+        var canonicalKey = link.CanonicalKey;
+
+        // Act
+        var removed = _service.RemoveLink(canonicalKey);
+
+        // Assert
+        Assert.True(removed);
+        Assert.Null(_service.GetLink(canonicalKey));
+    }
+
+    [Fact]
+    public void RemoveLink_ReturnsFalseForNonExistentLink()
+    {
+        // Act
+        var removed = _service.RemoveLink("NONEXISTENT<->LINK");
+
+        // Assert
+        Assert.False(removed);
+    }
+
+    [Fact]
+    public void RemoveCircuit_RemovesExistingCircuit()
+    {
+        // Arrange
+        var circuit = _service.GetOrCreateCircuit("M0LTE:1111", "G8PZT:2222");
+        var canonicalKey = circuit.CanonicalKey;
+
+        // Act
+        var removed = _service.RemoveCircuit(canonicalKey);
+
+        // Assert
+        Assert.True(removed);
+        Assert.Null(_service.GetCircuit(canonicalKey));
+    }
+
+    [Fact]
+    public void RemoveCircuit_ReturnsFalseForNonExistentCircuit()
+    {
+        // Act
+        var removed = _service.RemoveCircuit("NONEXISTENT<->CIRCUIT");
+
+        // Assert
+        Assert.False(removed);
+    }
+
+    [Fact]
+    public void RemoveCircuit_RemovesFromGetAllCircuits()
+    {
+        // Arrange
+        _service.GetOrCreateCircuit("M0LTE:1111", "G8PZT:2222");
+        var circuit2 = _service.GetOrCreateCircuit("M0LTE:3333", "M0XYZ:4444");
+        _service.GetOrCreateCircuit("G8PZT:5555", "M0ABC:6666");
+
+        // Act
+        _service.RemoveCircuit(circuit2.CanonicalKey);
+        var allCircuits = _service.GetAllCircuits();
+
+        // Assert
+        Assert.Equal(2, allCircuits.Count);
+        Assert.DoesNotContain(circuit2.CanonicalKey, allCircuits.Keys);
+    }
+
+    #endregion
+
     #region Thread Safety Tests
 
     [Fact]

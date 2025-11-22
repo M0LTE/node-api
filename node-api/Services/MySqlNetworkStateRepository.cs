@@ -501,6 +501,33 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
             throw;
         }
     }
+    
+    public async Task<int> BatchDeleteLinksAsync(IEnumerable<string> canonicalKeys, CancellationToken ct = default)
+    {
+        var keyList = canonicalKeys.ToList();
+        if (keyList.Count == 0) return 0;
+        
+        const string sql = "DELETE FROM `links` WHERE `canonical_key` IN @canonicalKeys";
+
+        try
+        {
+            using var conn = Database.GetConnection(open: false);
+            await conn.OpenAsync(ct);
+
+            var rowsAffected = await QueryLogger.ExecuteWithLoggingAsync(
+                conn,
+                new CommandDefinition(sql, new { canonicalKeys = keyList }, cancellationToken: ct),
+                logger,
+                SlowQueryThresholdMs);
+                
+            return rowsAffected;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to batch delete {Count} links", keyList.Count);
+            throw;
+        }
+    }
 
     private static LinkState MapToLinkState(LinkRow row)
     {
@@ -815,6 +842,33 @@ public class MySqlNetworkStateRepository(ILogger<MySqlNetworkStateRepository> lo
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to delete circuit {CanonicalKey}", canonicalKey);
+            throw;
+        }
+    }
+
+    public async Task<int> BatchDeleteCircuitsAsync(IEnumerable<string> canonicalKeys, CancellationToken ct = default)
+    {
+        var keyList = canonicalKeys.ToList();
+        if (keyList.Count == 0) return 0;
+        
+        const string sql = "DELETE FROM `circuits` WHERE `canonical_key` IN @canonicalKeys";
+
+        try
+        {
+            using var conn = Database.GetConnection(open: false);
+            await conn.OpenAsync(ct);
+
+            var rowsAffected = await QueryLogger.ExecuteWithLoggingAsync(
+                conn,
+                new CommandDefinition(sql, new { canonicalKeys = keyList }, cancellationToken: ct),
+                logger,
+                SlowQueryThresholdMs);
+                
+            return rowsAffected;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to batch delete {Count} circuits", keyList.Count);
             throw;
         }
     }
