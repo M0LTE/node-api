@@ -12,13 +12,22 @@ public class TracePurgeService(ILogger<TracePurgeService> logger) : IHostedServi
 
     private async Task Runner(CancellationToken cancellationToken)
     {
+        var queries = new[] 
+        { 
+            "delete low_priority FROM `traces` WHERE timestamp < NOW() - INTERVAL 7 DAY limit 10000;",
+            "delete low_priority FROM `l3traces` WHERE timestamp < NOW() - INTERVAL 7 DAY limit 10000;"
+        };
+
         while (true)
         {
             try
             {
                 using var conn = Database.GetConnection(open: false);
                 await conn.OpenAsync(cancellationToken);
-                await conn.ExecuteAsync("delete low_priority FROM `traces` WHERE timestamp < NOW() - INTERVAL 30 DAY limit 100000;");
+                foreach (var query in queries)
+                {
+                    await conn.ExecuteAsync(query);
+                }
             }
             catch (Exception ex)
             {
@@ -26,7 +35,7 @@ public class TracePurgeService(ILogger<TracePurgeService> logger) : IHostedServi
             }
             finally
             {
-                await Task.Delay(TimeSpan.FromMinutes(1), cancellationToken);
+                await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
             }
         }
     }
