@@ -135,6 +135,8 @@ builder.Services.AddSingleton<IValidator<CircuitUpEvent>, CircuitUpEventValidato
 builder.Services.AddSingleton<IValidator<CircuitDisconnectionEvent>, CircuitDisconnectionEventValidator>();
 builder.Services.AddSingleton<IValidator<CircuitStatus>, CircuitStatusValidator>();
 
+builder.Services.AddHostedService<TracePurgeService>();
+
 // Register validation service
 builder.Services.AddSingleton<DatagramValidationService>();
 
