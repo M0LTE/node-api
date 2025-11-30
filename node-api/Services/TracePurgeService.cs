@@ -14,8 +14,8 @@ public class TracePurgeService(ILogger<TracePurgeService> logger) : IHostedServi
     {
         var queries = new[] 
         { 
-            "delete low_priority FROM `traces` WHERE timestamp < NOW() - INTERVAL 7 DAY limit 10000;",
-            "delete low_priority FROM `l3traces` WHERE timestamp < NOW() - INTERVAL 7 DAY limit 10000;"
+            "delete low_priority FROM `traces` WHERE timestamp < NOW() - INTERVAL 7 DAY limit 25000;",
+            "delete low_priority FROM `l3traces` WHERE timestamp < NOW() - INTERVAL 7 DAY limit 25000;"
         };
 
         while (true)
@@ -35,7 +35,7 @@ public class TracePurgeService(ILogger<TracePurgeService> logger) : IHostedServi
             }
             finally
             {
-                await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
+                await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
             }
         }
     }
