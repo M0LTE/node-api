@@ -18,8 +18,7 @@ public class TracePurgeService(ILogger<TracePurgeService> logger) : IHostedServi
             {
                 using var conn = Database.GetConnection(open: false);
                 await conn.OpenAsync(cancellationToken);
-                var rows = await conn.ExecuteScalarAsync<int>("delete low_priority FROM `traces` WHERE timestamp < NOW() - INTERVAL 30 DAY limit 100000;");
-                logger.LogInformation("Purged {RowCount} trace rows", rows);
+                await conn.ExecuteAsync("delete low_priority FROM `traces` WHERE timestamp < NOW() - INTERVAL 30 DAY limit 100000;");
             }
             catch (Exception ex)
             {
