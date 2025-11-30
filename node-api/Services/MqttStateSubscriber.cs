@@ -276,13 +276,23 @@ public class MqttStateSubscriber : BackgroundService
                 _logger.LogDebug("Processing validation error");
                 
                 var validationError = JsonSerializer.Deserialize<ValidationError>(payload);
-                if (validationError != null)
+                if (validationError != null && 
+                    validationError.Datagram != null && 
+                    validationError.Type != null && 
+                    validationError.Errors != null)
                 {
                     await _erroredMessageRepository.InsertErroredMessageAsync(
                         reason: reason,
                         datagram: validationError.Datagram,
                         type: validationError.Type,
                         errors: string.Join("; ", validationError.Errors.Select(e => $"{e.Property}: {e.Error}")));
+                }
+                else
+                {
+                    _logger.LogWarning("Received incomplete validation error payload, falling back to generic storage");
+                    await _erroredMessageRepository.InsertErroredMessageAsync(
+                        reason: reason,
+                        json: payload);
                 }
             }
             else
@@ -328,14 +338,14 @@ public class MqttStateSubscriber : BackgroundService
 
     private class ValidationError
     {
-        public required string Datagram { get; init; }
-        public required string Type { get; init; }
-        public required List<ValidationErrorDetail> Errors { get; init; }
+        public string? Datagram { get; init; }
+        public string? Type { get; init; }
+        public List<ValidationErrorDetail>? Errors { get; init; }
 
         public record ValidationErrorDetail
         {
-            public required string Property { get; init; }
-            public required string Error { get; init; }
+            public string? Property { get; init; }
+            public string? Error { get; init; }
         }
     }
 }
