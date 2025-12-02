@@ -536,7 +536,16 @@ public class McpController : ControllerBase
         
         if (node == null)
         {
-            throw new McpException($"Node not found: {callsign}", 404);
+            // Return a successful response with explanation instead of error
+            return new
+            {
+                callsign,
+                found = false,
+                message = $"Node '{callsign}' not found in the network state. This could mean the node has not reported any activity recently, or the callsign is incorrect.",
+                node = (object?)null,
+                links = Array.Empty<object>(),
+                circuits = Array.Empty<object>()
+            };
         }
 
         var links = _networkState.GetLinksForNode(callsign)
@@ -549,6 +558,8 @@ public class McpController : ControllerBase
 
         return new
         {
+            callsign,
+            found = true,
             node = FormatNode(node),
             links,
             circuits
@@ -684,7 +695,16 @@ public class McpController : ControllerBase
         
         if (node == null)
         {
-            throw new McpException($"Node not found: {callsign}", 404);
+            // Return a successful response with explanation instead of error
+            return new
+            {
+                callsign,
+                found = false,
+                message = $"Node '{callsign}' not found in the network state. This could mean the node has not reported any activity recently, or the callsign is incorrect.",
+                node = (object?)null,
+                links = Array.Empty<object>(),
+                circuits = Array.Empty<object>()
+            };
         }
 
         var links = _networkState.GetLinksForNode(callsign)
@@ -697,6 +717,8 @@ public class McpController : ControllerBase
 
         return new
         {
+            callsign,
+            found = true,
             node = FormatNode(node),
             links,
             circuits

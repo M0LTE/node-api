@@ -878,7 +878,7 @@ public class McpControllerTests
     }
 
     [Fact]
-    public void ExecuteTool_GetNodeDetails_WithNonExistentNode_ReturnsError()
+    public void ExecuteTool_GetNodeDetails_WithNonExistentNode_ReturnsSuccessWithFoundFalse()
     {
         // Arrange
         var request = new McpController.McpToolRequest
@@ -892,11 +892,27 @@ public class McpControllerTests
         // Act
         var result = _controller.ExecuteTool("get_node_details", request);
 
-        // Assert
-        Assert.IsType<ObjectResult>(result);
-        var objectResult = result as ObjectResult;
-        Assert.NotNull(objectResult);
-        Assert.Equal(404, objectResult.StatusCode);
+        // Assert - Should return 200 OK with found=false, not 404
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(200, okResult.StatusCode);
+        
+        var value = okResult.Value;
+        Assert.NotNull(value);
+        
+        // Verify response structure
+        var foundProperty = value.GetType().GetProperty("found");
+        Assert.NotNull(foundProperty);
+        Assert.False((bool)foundProperty.GetValue(value)!);
+        
+        var messageProperty = value.GetType().GetProperty("message");
+        Assert.NotNull(messageProperty);
+        var message = messageProperty.GetValue(value) as string;
+        Assert.NotNull(message);
+        Assert.Contains("not found", message, StringComparison.OrdinalIgnoreCase);
+        
+        var callsignProperty = value.GetType().GetProperty("callsign");
+        Assert.NotNull(callsignProperty);
+        Assert.Equal("NONEXISTENT", callsignProperty.GetValue(value));
     }
 
     [Fact]
