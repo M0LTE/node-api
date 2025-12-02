@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using node_api.Models.NetworkState;
 using node_api.Services;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace node_api.Controllers;
@@ -267,19 +268,19 @@ public class McpController : ControllerBase
             throw new McpException("Tool name cannot be empty", 400);
         }
 
-        // Extract arguments
-        Dictionary<string, object>? arguments = null;
+        // Extract arguments - keep as JsonElement for proper type handling
+        JsonElement? argumentsElement = null;
         if (paramsElement.TryGetProperty("arguments", out var argsElement))
         {
-            arguments = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(argsElement.GetRawText());
+            argumentsElement = argsElement;
         }
 
         var toolResult = toolName switch
         {
-            "get_all_links" => GetAllLinks(arguments),
-            "get_links_for_callsign" => GetLinksForCallsign(arguments),
-            "get_all_nodes" => GetAllNodes(arguments),
-            "get_node_details" => GetNodeDetails(arguments),
+            "get_all_links" => GetAllLinks(argumentsElement),
+            "get_links_for_callsign" => GetLinksForCallsign(argumentsElement),
+            "get_all_nodes" => GetAllNodes(argumentsElement),
+            "get_node_details" => GetNodeDetails(argumentsElement),
             _ => throw new McpException($"Unknown tool: {toolName}", 404)
         };
 
@@ -399,10 +400,10 @@ public class McpController : ControllerBase
         {
             var result = toolName switch
             {
-                "get_all_links" => GetAllLinks(request.Arguments),
-                "get_links_for_callsign" => GetLinksForCallsign(request.Arguments),
-                "get_all_nodes" => GetAllNodes(request.Arguments),
-                "get_node_details" => GetNodeDetails(request.Arguments),
+                "get_all_links" => GetAllLinksFromDict(request.Arguments),
+                "get_links_for_callsign" => GetLinksForCallsignFromDict(request.Arguments),
+                "get_all_nodes" => GetAllNodesFromDict(request.Arguments),
+                "get_node_details" => GetNodeDetailsFromDict(request.Arguments),
                 _ => throw new McpException($"Unknown tool: {toolName}", 404)
             };
 
@@ -420,10 +421,10 @@ public class McpController : ControllerBase
         }
     }
 
-    private object GetAllLinks(Dictionary<string, object>? arguments)
+    // Wrappers for REST endpoint (using Dictionary)
+    private object GetAllLinksFromDict(Dictionary<string, object>? arguments)
     {
         var includeDisconnected = false;
-        
         if (arguments?.TryGetValue("includeDisconnected", out var value) == true && value is bool boolValue)
         {
             includeDisconnected = boolValue;
@@ -446,7 +447,7 @@ public class McpController : ControllerBase
         };
     }
 
-    private object GetLinksForCallsign(Dictionary<string, object>? arguments)
+    private object GetLinksForCallsignFromDict(Dictionary<string, object>? arguments)
     {
         if (arguments?.TryGetValue("callsign", out var callsignObj) != true || callsignObj is not string callsign)
         {
@@ -462,6 +463,147 @@ public class McpController : ControllerBase
         if (arguments.TryGetValue("includeDisconnected", out var value) && value is bool boolValue)
         {
             includeDisconnected = boolValue;
+        }
+
+        var ssids = _networkState.GetNodesByBaseCallsign(callsign)
+            .Select(n => n.Callsign)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (!ssids.Any())
+        {
+            if (_networkState.GetNode(callsign) != null)
+            {
+                ssids.Add(callsign);
+            }
+        }
+
+        var links = _networkState.GetAllLinks()
+            .Values
+            .Where(l => ssids.Contains(l.Endpoint1) || ssids.Contains(l.Endpoint2))
+            .Where(l => !_networkState.IsTestCallsign(l.Endpoint1) && 
+                       !_networkState.IsTestCallsign(l.Endpoint2) &&
+                       !_networkState.IsHiddenCallsign(l.Endpoint1) &&
+                       !_networkState.IsHiddenCallsign(l.Endpoint2))
+            .Where(l => includeDisconnected || l.Status == LinkStatus.Active)
+            .Select(FormatLink)
+            .ToList();
+
+        return new
+        {
+            callsign,
+            matchedCallsigns = ssids.ToList(),
+            totalLinks = links.Count,
+            links
+        };
+    }
+
+    private object GetAllNodesFromDict(Dictionary<string, object>? arguments)
+    {
+        var includeOffline = true;
+        if (arguments?.TryGetValue("includeOffline", out var value) == true && value is bool boolValue)
+        {
+            includeOffline = boolValue;
+        }
+
+        var nodes = _networkState.GetAllNodes()
+            .Values
+            .Where(n => !_networkState.IsTestCallsign(n.Callsign) && 
+                       !_networkState.IsHiddenCallsign(n.Callsign))
+            .Where(n => includeOffline || n.Status == NodeStatus.Online)
+            .Select(FormatNode)
+            .ToList();
+
+        return new
+        {
+            totalNodes = nodes.Count,
+            nodes
+        };
+    }
+
+    private object GetNodeDetailsFromDict(Dictionary<string, object>? arguments)
+    {
+        if (arguments?.TryGetValue("callsign", out var callsignObj) != true || callsignObj is not string callsign)
+        {
+            throw new McpException("Missing required argument: callsign", 400);
+        }
+
+        if (string.IsNullOrWhiteSpace(callsign))
+        {
+            throw new McpException("Callsign cannot be empty", 400);
+        }
+
+        var node = _networkState.GetNode(callsign);
+        
+        if (node == null)
+        {
+            throw new McpException($"Node not found: {callsign}", 404);
+        }
+
+        var links = _networkState.GetLinksForNode(callsign)
+            .Select(FormatLink)
+            .ToList();
+
+        var circuits = _networkState.GetCircuitsForNode(callsign)
+            .Select(FormatCircuit)
+            .ToList();
+
+        return new
+        {
+            node = FormatNode(node),
+            links,
+            circuits
+        };
+    }
+
+    // JsonElement-based methods for JSON-RPC endpoint
+    private object GetAllLinks(JsonElement? arguments)
+    {
+        var includeDisconnected = false;
+        
+        if (arguments.HasValue && 
+            arguments.Value.TryGetProperty("includeDisconnected", out var value) && 
+            value.ValueKind == JsonValueKind.True)
+        {
+            includeDisconnected = true;
+        }
+
+        var links = _networkState.GetAllLinks()
+            .Values
+            .Where(l => !_networkState.IsTestCallsign(l.Endpoint1) && 
+                       !_networkState.IsTestCallsign(l.Endpoint2) &&
+                       !_networkState.IsHiddenCallsign(l.Endpoint1) &&
+                       !_networkState.IsHiddenCallsign(l.Endpoint2))
+            .Where(l => includeDisconnected || l.Status == LinkStatus.Active)
+            .Select(FormatLink)
+            .ToList();
+
+        return new
+        {
+            totalLinks = links.Count,
+            links
+        };
+    }
+
+    private object GetLinksForCallsign(JsonElement? arguments)
+    {
+        string? callsign = null;
+        
+        if (arguments.HasValue && arguments.Value.TryGetProperty("callsign", out var callsignElement))
+        {
+            callsign = callsignElement.GetString();
+        }
+        
+        if (string.IsNullOrWhiteSpace(callsign))
+        {
+            throw new McpException("Missing required argument: callsign", 400);
+        }
+
+        var includeDisconnected = false;
+        if (arguments.HasValue && 
+            arguments.Value.TryGetProperty("includeDisconnected", out var value) && 
+            value.ValueKind == JsonValueKind.True)
+        {
+            includeDisconnected = true;
         }
 
         // Get all SSIDs for this base callsign
@@ -498,13 +640,15 @@ public class McpController : ControllerBase
         };
     }
 
-    private object GetAllNodes(Dictionary<string, object>? arguments)
+    private object GetAllNodes(JsonElement? arguments)
     {
         var includeOffline = true;
         
-        if (arguments?.TryGetValue("includeOffline", out var value) == true && value is bool boolValue)
+        if (arguments.HasValue && 
+            arguments.Value.TryGetProperty("includeOffline", out var value) && 
+            value.ValueKind == JsonValueKind.False)
         {
-            includeOffline = boolValue;
+            includeOffline = false;
         }
 
         var nodes = _networkState.GetAllNodes()
@@ -522,16 +666,18 @@ public class McpController : ControllerBase
         };
     }
 
-    private object GetNodeDetails(Dictionary<string, object>? arguments)
+    private object GetNodeDetails(JsonElement? arguments)
     {
-        if (arguments?.TryGetValue("callsign", out var callsignObj) != true || callsignObj is not string callsign)
+        string? callsign = null;
+        
+        if (arguments.HasValue && arguments.Value.TryGetProperty("callsign", out var callsignElement))
         {
-            throw new McpException("Missing required argument: callsign", 400);
+            callsign = callsignElement.GetString();
         }
-
+        
         if (string.IsNullOrWhiteSpace(callsign))
         {
-            throw new McpException("Callsign cannot be empty", 400);
+            throw new McpException("Missing required argument: callsign", 400);
         }
 
         var node = _networkState.GetNode(callsign);
@@ -557,6 +703,7 @@ public class McpController : ControllerBase
         };
     }
 
+    // Helper methods to format objects
     private static object FormatLink(LinkState link)
     {
         return new
