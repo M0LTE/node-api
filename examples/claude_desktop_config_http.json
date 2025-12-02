@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "packet-node-api": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@pyroprompts/mcp-stdio-to-streamable-http-adapter"
+      ],
+      "env": {
+        "URI": "https://node-api.packet.oarc.uk/mcp",
+        "MCP_NAME": "packet-node-api"
+      }
+    }
+  }
+}

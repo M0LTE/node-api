@@ -50,6 +50,225 @@ public class McpController : ControllerBase
     }
 
     /// <summary>
+    /// MCP JSON-RPC endpoint for streaming HTTP transport
+    /// POST /mcp
+    /// </summary>
+    [HttpPost]
+    public IActionResult HandleMcpJsonRpc([FromBody] System.Text.Json.JsonElement request)
+    {
+        try
+        {
+            // Extract method from JSON-RPC request
+            if (!request.TryGetProperty("method", out var methodElement))
+            {
+                return BadRequest(new
+                {
+                    jsonrpc = "2.0",
+                    error = new
+                    {
+                        code = -32600,
+                        message = "Invalid Request: missing method"
+                    },
+                    id = request.TryGetProperty("id", out var idProp) ? (object?)idProp : null
+                });
+            }
+
+            var method = methodElement.GetString();
+            var id = request.TryGetProperty("id", out var requestId) ? (object?)requestId : null;
+
+            _logger.LogInformation("Handling MCP JSON-RPC method: {Method}", method);
+
+            object? result = method switch
+            {
+                "initialize" => new
+                {
+                    protocolVersion = "2024-11-05",
+                    capabilities = new
+                    {
+                        tools = new { }
+                    },
+                    serverInfo = new
+                    {
+                        name = "node-api-mcp-server",
+                        version = "1.0.0"
+                    }
+                },
+                "tools/list" => new
+                {
+                    tools = GetToolsArray()
+                },
+                "tools/call" => HandleToolCall(request),
+                _ => throw new McpException($"Unknown method: {method}", 404)
+            };
+
+            return Ok(new
+            {
+                jsonrpc = "2.0",
+                id,
+                result
+            });
+        }
+        catch (McpException ex)
+        {
+            _logger.LogWarning("MCP JSON-RPC error: {Message}", ex.Message);
+            return StatusCode(ex.StatusCode, new
+            {
+                jsonrpc = "2.0",
+                error = new
+                {
+                    code = ex.StatusCode == 404 ? -32601 : -32603,
+                    message = ex.Message
+                },
+                id = request.TryGetProperty("id", out var idProp) ? (object?)idProp : null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error handling MCP JSON-RPC request");
+            return StatusCode(500, new
+            {
+                jsonrpc = "2.0",
+                error = new
+                {
+                    code = -32603,
+                    message = "Internal error"
+                },
+                id = request.TryGetProperty("id", out var idProp) ? (object?)idProp : null
+            });
+        }
+    }
+
+    private object[] GetToolsArray()
+    {
+        return new object[]
+        {
+            new
+            {
+                name = "get_all_links",
+                description = "Get all current packet radio network links with their status, including connection state, endpoints, and performance metrics",
+                inputSchema = new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        includeDisconnected = new
+                        {
+                            type = "boolean",
+                            description = "Include disconnected links in the results (default: false)"
+                        }
+                    }
+                }
+            },
+            new
+            {
+                name = "get_links_for_callsign",
+                description = "Get all links involving a specific callsign or base callsign (e.g., M0LTE will return M0LTE, M0LTE-1, M0LTE-2, etc.)",
+                inputSchema = new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        callsign = new
+                        {
+                            type = "string",
+                            description = "The callsign to search for (base or full with SSID)"
+                        },
+                        includeDisconnected = new
+                        {
+                            type = "boolean",
+                            description = "Include disconnected links in the results (default: false)"
+                        }
+                    },
+                    required = new[] { "callsign" }
+                }
+            },
+            new
+            {
+                name = "get_all_nodes",
+                description = "Get all known packet radio nodes with their status, location, software version, and activity information",
+                inputSchema = new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        includeOffline = new
+                        {
+                            type = "boolean",
+                            description = "Include offline nodes in the results (default: true)"
+                        }
+                    }
+                }
+            },
+            new
+            {
+                name = "get_node_details",
+                description = "Get detailed information about a specific node including all its links and circuits",
+                inputSchema = new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        callsign = new
+                        {
+                            type = "string",
+                            description = "The exact callsign to get details for"
+                        }
+                    },
+                    required = new[] { "callsign" }
+                }
+            }
+        };
+    }
+
+    private object HandleToolCall(System.Text.Json.JsonElement request)
+    {
+        if (!request.TryGetProperty("params", out var paramsElement))
+        {
+            throw new McpException("Missing params", 400);
+        }
+
+        if (!paramsElement.TryGetProperty("name", out var nameElement))
+        {
+            throw new McpException("Missing tool name in params", 400);
+        }
+
+        var toolName = nameElement.GetString();
+        if (string.IsNullOrEmpty(toolName))
+        {
+            throw new McpException("Tool name cannot be empty", 400);
+        }
+
+        // Extract arguments
+        Dictionary<string, object>? arguments = null;
+        if (paramsElement.TryGetProperty("arguments", out var argsElement))
+        {
+            arguments = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(argsElement.GetRawText());
+        }
+
+        var toolResult = toolName switch
+        {
+            "get_all_links" => GetAllLinks(arguments),
+            "get_links_for_callsign" => GetLinksForCallsign(arguments),
+            "get_all_nodes" => GetAllNodes(arguments),
+            "get_node_details" => GetNodeDetails(arguments),
+            _ => throw new McpException($"Unknown tool: {toolName}", 404)
+        };
+
+        // Return in MCP format with content array
+        return new
+        {
+            content = new[]
+            {
+                new
+                {
+                    type = "text",
+                    text = System.Text.Json.JsonSerializer.Serialize(toolResult, new System.Text.Json.JsonSerializerOptions { WriteIndented = true })
+                }
+            }
+        };
+    }
+
+    /// <summary>
     /// List available MCP tools
     /// GET /mcp/tools
     /// </summary>
