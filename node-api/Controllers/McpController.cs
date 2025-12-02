@@ -74,9 +74,21 @@ public class McpController : ControllerBase
             }
 
             var method = methodElement.GetString();
-            var id = request.TryGetProperty("id", out var requestId) ? (object?)requestId : null;
+            
+            // Check if this is a notification (no id field means notification)
+            var hasId = request.TryGetProperty("id", out var requestId);
+            
+            _logger.LogInformation("Handling MCP JSON-RPC {Type}: {Method}", hasId ? "method" : "notification", method);
 
-            _logger.LogInformation("Handling MCP JSON-RPC method: {Method}", method);
+            // Handle notifications (no response needed)
+            if (!hasId)
+            {
+                HandleNotification(method);
+                return Ok(); // Notifications don't return anything
+            }
+
+            // Handle regular methods (require response)
+            var id = (object?)requestId;
 
             object? result = method switch
             {
@@ -135,6 +147,23 @@ public class McpController : ControllerBase
                 },
                 id = request.TryGetProperty("id", out var idProp) ? (object?)idProp : null
             });
+        }
+    }
+
+    private void HandleNotification(string? method)
+    {
+        // MCP notifications - these don't require responses
+        switch (method)
+        {
+            case "notifications/initialized":
+                _logger.LogInformation("MCP client initialized");
+                break;
+            case "notifications/cancelled":
+                _logger.LogInformation("MCP client cancelled operation");
+                break;
+            default:
+                _logger.LogWarning("Unknown MCP notification: {Method}", method);
+                break;
         }
     }
 
