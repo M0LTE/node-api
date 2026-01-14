@@ -18,6 +18,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
 {
     private readonly ILogger<UdpNodeInfoListener> _logger;
     private readonly IRabbitMqPublisher _rabbitMqPublisher;
+    private readonly IDatagramProcessor _datagramProcessor;
     private UdpClient? _udpClient;
 
     public int Port { get; set; } = 13579;
@@ -25,10 +26,12 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
 
     public UdpNodeInfoListener(
         ILogger<UdpNodeInfoListener> logger,
-        IRabbitMqPublisher rabbitMqPublisher)
+        IRabbitMqPublisher rabbitMqPublisher,
+        IDatagramProcessor datagramProcessor)
     {
         _logger = logger;
         _rabbitMqPublisher = rabbitMqPublisher;
+        _datagramProcessor = datagramProcessor;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -49,15 +52,16 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
 
     private async Task StartUdpListenerAsync(CancellationToken stoppingToken)
     {
-        if (!_rabbitMqPublisher.IsAvailable)
-        {
-            _logger.LogError("RabbitMQ is not available - UDP listener cannot start without message queue");
-            throw new InvalidOperationException("RabbitMQ is required but not available");
-        }
-
         _udpClient = new UdpClient(new IPEndPoint(IPAddress.Any, Port));
         
-        _logger.LogInformation("UDP service started listening on port {Port}. Publishing to RabbitMQ queue.", Port);
+        if (_rabbitMqPublisher.IsAvailable)
+        {
+            _logger.LogInformation("UDP service started listening on port {Port}. Publishing to RabbitMQ queue.", Port);
+        }
+        else
+        {
+            _logger.LogInformation("UDP service started listening on port {Port}. Processing directly (RabbitMQ unavailable).", Port);
+        }
 
         try
         {
@@ -67,16 +71,29 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
                 
                 _logger.LogDebug("Received datagram from {ip}", result.RemoteEndPoint);
                 
-                // Publish to RabbitMQ (fire-and-forget)
+                // Fire-and-forget processing
                 _ = Task.Run(async () =>
                 {
                     try
                     {
-                        await _rabbitMqPublisher.PublishDatagramAsync(result.Buffer, result.RemoteEndPoint.Address.ToString());
+                        if (_rabbitMqPublisher.IsAvailable)
+                        {
+                            // Publish to RabbitMQ if available
+                            await _rabbitMqPublisher.PublishDatagramAsync(result.Buffer, result.RemoteEndPoint.Address.ToString());
+                        }
+                        else
+                        {
+                            // Process directly if RabbitMQ unavailable
+                            await _datagramProcessor.ProcessDatagramAsync(
+                                result.Buffer, 
+                                result.RemoteEndPoint.Address, 
+                                DateTime.UtcNow, 
+                                stoppingToken);
+                        }
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Failed to publish datagram to RabbitMQ from {Endpoint}", result.RemoteEndPoint);
+                        _logger.LogError(ex, "Failed to process datagram from {Endpoint}", result.RemoteEndPoint);
                     }
                 }, stoppingToken);
             }
