@@ -130,6 +130,8 @@ public sealed class RabbitMqConsumer : BackgroundService, IAsyncDisposable
             }
         };
 
+        _channel.QueueDeclare(QueueName, true, false, false);
+
         _channel.BasicConsume(
             queue: QueueName,
             autoAck: false,
