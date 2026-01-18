@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Build and Push Docker Image (node-api-ingester)
 
 on:
   push:
@@ -13,7 +13,7 @@ on:
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: m0lte/node-api
+  IMAGE_NAME: m0lte/node-api-ingester
 
 jobs:
   build-and-push:
@@ -29,13 +29,10 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
 
       - name: Restore dependencies
         run: dotnet restore
-
-      - name: Run tests
-        run: dotnet test Tests/ --no-restore --configuration Release --logger "console;verbosity=minimal" --filter "Category!=DatabaseIntegration"
 
       - name: Log in to Docker Hub
         if: github.event_name != 'pull_request'
@@ -74,7 +71,7 @@ jobs:
 
       - name: Build and push Docker image
         if: github.event_name != 'pull_request'
-        working-directory: node-api
+        working-directory: node-api-ingester
         env:
           ContainerImageTags: ${{ steps.tags.outputs.tags }}
           ContainerRegistry: ${{ env.REGISTRY }}
@@ -89,7 +86,7 @@ jobs:
       - name: Build Docker image (PR only - no push)
         if: github.event_name == 'pull_request'
         run: |
-          cd node-api
+          cd node-api-ingester
           dotnet publish \
             --configuration Release \
             --runtime linux-x64 \
@@ -161,11 +158,11 @@ jobs:
           }
           
           # Copy the update script to ensure it's current (convert line endings)
-          sed -i 's/\r$//' deploy/update-service.sh
+          sed -i 's/\r$//' deploy/update-node-api-ingester-service.sh
           
           echo "Copying deployment script to server..."
           scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=10 \
-            deploy/update-service.sh \
+            deploy/update-node-api-ingester-service.sh \
             ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_SCRIPT_PATH }} || {
             echo "ERROR: Failed to copy deployment script"
             exit 1

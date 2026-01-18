@@ -4,7 +4,7 @@
 
 HOST="${1:-node-api.packet.oarc.uk}"
 USER="${2:-debian}"
-SCRIPT_PATH="${3:-/opt/node-api/update-service.sh}"
+SCRIPT_PATH="${3:-/opt/node-api/update-node-api-service.sh}"
 
 echo "=== Remote Deployment to node-api ==="
 echo "Target: $USER@$HOST"

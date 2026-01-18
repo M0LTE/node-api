@@ -9,7 +9,7 @@ param(
     [string]$UserName = "debian",
     
     [Parameter(Mandatory=$false)]
-    [string]$ScriptPath = "/opt/node-api/update-service.sh"
+    [string]$ScriptPath = "/opt/node-api/update-node-api-service.sh"
 )
 
 Write-Host "=== Remote Deployment to node-api ===" -ForegroundColor Cyan
