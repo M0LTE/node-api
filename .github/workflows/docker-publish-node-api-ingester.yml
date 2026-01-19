@@ -4,11 +4,17 @@ on:
   push:
     branches:
       - master
+    paths:
+      - 'node-api-ingester/**'
+      - '.github/workflows/docker-publish-node-api-ingester.yml'
     tags:
       - 'v*.*.*'
   pull_request:
     branches:
       - master
+    paths:
+      - 'node-api-ingester/**'
+      - '.github/workflows/docker-publish-node-api-ingester.yml'
   workflow_dispatch:
 
 env:
