@@ -1,38 +1,20 @@
-using MQTTnet;
-using MQTTnet.Client;
-using MQTTnet.Extensions.ManagedClient;
-using MQTTnet.Formatter;
-using node_api.Models;
-using node_api.Validators;
-using node_api.Utilities;
+using Microsoft.Extensions.Options;
+using node_api.Configuration;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Threading.Channels;
 
 namespace node_api.Services;
 
-public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
+public sealed class UdpNodeInfoListener(
+    ILogger<UdpNodeInfoListener> logger,
+    IRabbitMqPublisher rabbitMqPublisher,
+    IDatagramProcessor datagramProcessor,
+    IOptions<UdpNodeInfoListenerSettings> settings) : BackgroundService, IAsyncDisposable
 {
-    private readonly ILogger<UdpNodeInfoListener> _logger;
-    private readonly IRabbitMqPublisher _rabbitMqPublisher;
-    private readonly IDatagramProcessor _datagramProcessor;
     private UdpClient? _udpClient;
 
-    public int Port { get; set; } = int.Parse(Environment.GetEnvironmentVariable("UDP_PORT")!);
+    public int Port { get; set; } = settings.Value.UdpPort;
     public TimeSpan ReconnectDelay { get; set; } = TimeSpan.FromSeconds(5);
-
-    public UdpNodeInfoListener(
-        ILogger<UdpNodeInfoListener> logger,
-        IRabbitMqPublisher rabbitMqPublisher,
-        IDatagramProcessor datagramProcessor)
-    {
-        _logger = logger;
-        _rabbitMqPublisher = rabbitMqPublisher;
-        _datagramProcessor = datagramProcessor;
-    }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -44,7 +26,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                _logger.LogError(ex, "UDP listener failed, restarting in {Delay}", ReconnectDelay);
+                logger.LogError(ex, "UDP listener failed, restarting in {Delay}", ReconnectDelay);
                 await Task.Delay(ReconnectDelay, stoppingToken).ConfigureAwait(false);
             }
         }
@@ -54,13 +36,13 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
     {
         _udpClient = new UdpClient(new IPEndPoint(IPAddress.Any, Port));
         
-        if (_rabbitMqPublisher.IsAvailable)
+        if (rabbitMqPublisher.IsAvailable)
         {
-            _logger.LogInformation("UDP service started listening on port {Port}. Publishing to RabbitMQ queue.", Port);
+            logger.LogInformation("UDP service started listening on port {Port}. Publishing to RabbitMQ queue.", Port);
         }
         else
         {
-            _logger.LogInformation("UDP service started listening on port {Port}. Processing directly (RabbitMQ unavailable).", Port);
+            logger.LogInformation("UDP service started listening on port {Port}. Processing directly (RabbitMQ unavailable).", Port);
         }
 
         try
@@ -69,22 +51,22 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
             {
                 var result = await _udpClient.ReceiveAsync(stoppingToken).ConfigureAwait(false);
                 
-                _logger.LogDebug("Received datagram from {ip}", result.RemoteEndPoint);
+                logger.LogDebug("Received datagram from {ip}", result.RemoteEndPoint);
                 
                 // Fire-and-forget processing
                 _ = Task.Run(async () =>
                 {
                     try
                     {
-                        if (_rabbitMqPublisher.IsAvailable)
+                        if (rabbitMqPublisher.IsAvailable)
                         {
                             // Publish to RabbitMQ if available
-                            await _rabbitMqPublisher.PublishDatagramAsync(result.Buffer, result.RemoteEndPoint.Address.ToString());
+                            await rabbitMqPublisher.PublishDatagramAsync(result.Buffer, result.RemoteEndPoint.Address.ToString());
                         }
                         else
                         {
                             // Process directly if RabbitMQ unavailable
-                            await _datagramProcessor.ProcessDatagramAsync(
+                            await datagramProcessor.ProcessDatagramAsync(
                                 result.Buffer, 
                                 result.RemoteEndPoint.Address, 
                                 DateTime.UtcNow, 
@@ -93,7 +75,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Failed to process datagram from {Endpoint}", result.RemoteEndPoint);
+                        logger.LogError(ex, "Failed to process datagram from {Endpoint}", result.RemoteEndPoint);
                     }
                 }, stoppingToken);
             }

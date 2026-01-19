@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Options;
+using node_api_ingester.Configuration;
 using System.Net;
 using System.Net.Sockets;
 
@@ -9,15 +11,17 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
     private readonly IRabbitMqPublisher _rabbitMqPublisher;
     private UdpClient? _udpClient;
 
-    public int Port { get; set; } = int.Parse(Environment.GetEnvironmentVariable("UDP_PORT")!);
+    public int Port { get; set; }
     public TimeSpan ReconnectDelay { get; set; } = TimeSpan.FromSeconds(5);
 
     public UdpNodeInfoListener(
         ILogger<UdpNodeInfoListener> logger,
-        IRabbitMqPublisher rabbitMqPublisher)
+        IRabbitMqPublisher rabbitMqPublisher,
+        IOptions<UdpNodeInfoListenerSettings> settings)
     {
         _logger = logger;
         _rabbitMqPublisher = rabbitMqPublisher;
+        Port = settings.Value.UdpPort;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

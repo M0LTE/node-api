@@ -33,6 +33,11 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
                 options.CleanSession = true;
             });
 
+            services.Configure<UdpNodeInfoListenerSettings>(options =>
+            {
+                options.UdpPort = 13579;
+            });
+
             // Remove hosted services that create their own MQTT clients
             // These would try to connect during tests and cause disposal issues
             var hostedServicesToRemove = services

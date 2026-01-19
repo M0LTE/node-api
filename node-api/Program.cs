@@ -26,6 +26,19 @@ builder.Services.Configure<MqttSettings>(options =>
     }
 });
 
+builder.Services.Configure<UdpNodeInfoListenerSettings>(options =>
+{
+    var port = Environment.GetEnvironmentVariable("UDP_PORT");
+    if (string.IsNullOrWhiteSpace(port))
+    {
+        builder.Configuration.GetSection("UdpNodeInfoListenerSettings").Bind(options);
+    }
+    else
+    {
+        options.UdpPort = int.Parse(port);
+    }
+});
+
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole(options =>
 {
