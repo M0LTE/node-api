@@ -80,12 +80,11 @@ public sealed class RabbitMqPublisher : IRabbitMqPublisher, IDisposable
         }
     }
 
-    public Task PublishDatagramAsync(byte[] datagram, string sourceIp)
+    public Task PublishDatagramAsync(byte[] datagram, string sourceIp, DateTime receivedAt)
     {
         if (_channel == null)
         {
-            // Silently skip if RabbitMQ is not available
-            return Task.CompletedTask;
+            throw new InvalidOperationException("RabbitMQ channel is not initialized. Cannot publish datagram.");
         }
 
         try
@@ -94,7 +93,7 @@ public sealed class RabbitMqPublisher : IRabbitMqPublisher, IDisposable
             {
                 datagram = Convert.ToBase64String(datagram),
                 sourceIp,
-                receivedAt = DateTime.UtcNow
+                receivedAt
             };
 
             var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
@@ -102,7 +101,7 @@ public sealed class RabbitMqPublisher : IRabbitMqPublisher, IDisposable
             var properties = _channel.CreateBasicProperties();
             properties.Persistent = true;
             properties.ContentType = "application/json";
-            properties.Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+            properties.Timestamp = new AmqpTimestamp(new DateTimeOffset(receivedAt).ToUnixTimeSeconds());
 
             _channel.BasicPublish(
                 exchange: ExchangeName,

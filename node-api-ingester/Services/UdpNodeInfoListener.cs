@@ -7,7 +7,7 @@ namespace node_api_ingester.Services;
 
 public sealed class UdpNodeInfoListener(
     ILogger<UdpNodeInfoListener> logger,
-    IRabbitMqPublisher rabbitMqPublisher,
+    IDatagramBuffer datagramBuffer,
     IOptions<UdpNodeInfoListenerSettings> settings) : BackgroundService, IAsyncDisposable
 {
     private UdpClient? _udpClient;
@@ -35,7 +35,7 @@ public sealed class UdpNodeInfoListener(
     {
         _udpClient = new UdpClient(new IPEndPoint(IPAddress.Any, Port));
         
-        logger.LogInformation("UDP service started listening on port {Port}. Publishing to RabbitMQ queue.", Port);
+        logger.LogInformation("UDP service started listening on port {Port}. Buffering datagrams for RabbitMQ.", Port);
 
         try
         {
@@ -44,14 +44,13 @@ public sealed class UdpNodeInfoListener(
                 var result = await _udpClient.ReceiveAsync(stoppingToken).ConfigureAwait(false);
 
                 logger.LogDebug("Received datagram from {ip}", result.RemoteEndPoint);
-                try
-                {
-                    await rabbitMqPublisher.PublishDatagramAsync(result.Buffer, result.RemoteEndPoint.Address.ToString());
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Failed to process datagram from {Endpoint}", result.RemoteEndPoint);
-                }
+                
+                var message = new DatagramMessage(
+                    result.Buffer,
+                    result.RemoteEndPoint.Address.ToString(),
+                    DateTime.UtcNow);
+
+                await datagramBuffer.WriteAsync(message, stoppingToken).ConfigureAwait(false);
             }
         }
         finally

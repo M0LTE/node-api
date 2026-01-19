@@ -2,7 +2,6 @@ using node_api_ingester.Configuration;
 using node_api_ingester.Services;
 
 var builder = Host.CreateApplicationBuilder(args);
-builder.Services.AddHostedService<UdpNodeInfoListener>();
 
 // Configure MQTT settings from configuration with fallback to environment variable
 builder.Services.Configure<MqttSettings>(options =>
@@ -29,11 +28,15 @@ builder.Services.Configure<UdpNodeInfoListenerSettings>(options =>
     }
 });
 
+// Register in-memory datagram buffer (survives RabbitMQ outages)
+builder.Services.AddSingleton<IDatagramBuffer, DatagramBuffer>();
+
 // Register RabbitMQ services for UDP datagram persistence
 builder.Services.AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>();
 
-// Register UDP Node Info Listener as a hosted service
+// Register hosted services
 builder.Services.AddHostedService<UdpNodeInfoListener>();
+builder.Services.AddHostedService<DatagramPublisherService>();
 
 var host = builder.Build();
 host.Run();
