@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>node_api</RootNamespace>
     <EnableSdkContainerDebugging>True</EnableSdkContainerDebugging>
-    <ContainerBaseImage>mcr.microsoft.com/dotnet/aspnet:9.0</ContainerBaseImage>
+    <ContainerBaseImage>mcr.microsoft.com/dotnet/aspnet:10.0</ContainerBaseImage>
     <ContainerRegistry>docker.io</ContainerRegistry>
     <ContainerRepository>m0lte/node-api</ContainerRepository>
     <ContainerImageTags>latest</ContainerImageTags>
