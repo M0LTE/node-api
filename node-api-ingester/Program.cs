@@ -12,7 +12,6 @@ builder.Services.Configure<MqttSettings>(options =>
     // Fallback to environment variable if password not set in config
     if (string.IsNullOrWhiteSpace(options.Password))
     {
-
         options.Password = Environment.GetEnvironmentVariable("MQTT_WRITER_PASSWORD");
     }
 });

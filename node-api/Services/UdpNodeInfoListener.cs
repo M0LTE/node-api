@@ -21,7 +21,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
     private readonly IDatagramProcessor _datagramProcessor;
     private UdpClient? _udpClient;
 
-    public int Port { get; set; } = 13579;
+    public int Port { get; set; } = int.Parse(Environment.GetEnvironmentVariable("UDP_PORT")!);
     public TimeSpan ReconnectDelay { get; set; } = TimeSpan.FromSeconds(5);
 
     public UdpNodeInfoListener(

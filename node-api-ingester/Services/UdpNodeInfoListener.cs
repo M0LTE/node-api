@@ -9,7 +9,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
     private readonly IRabbitMqPublisher _rabbitMqPublisher;
     private UdpClient? _udpClient;
 
-    public int Port { get; set; } = 13580;
+    public int Port { get; set; } = int.Parse(Environment.GetEnvironmentVariable("UDP_PORT")!);
     public TimeSpan ReconnectDelay { get; set; } = TimeSpan.FromSeconds(5);
 
     public UdpNodeInfoListener(
