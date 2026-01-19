@@ -5,24 +5,15 @@ using System.Net.Sockets;
 
 namespace node_api_ingester.Services;
 
-public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
+public sealed class UdpNodeInfoListener(
+    ILogger<UdpNodeInfoListener> logger,
+    IRabbitMqPublisher rabbitMqPublisher,
+    IOptions<UdpNodeInfoListenerSettings> settings) : BackgroundService, IAsyncDisposable
 {
-    private readonly ILogger<UdpNodeInfoListener> _logger;
-    private readonly IRabbitMqPublisher _rabbitMqPublisher;
     private UdpClient? _udpClient;
 
-    public int Port { get; set; }
+    public int Port { get; set; } = settings.Value.UdpPort;
     public TimeSpan ReconnectDelay { get; set; } = TimeSpan.FromSeconds(5);
-
-    public UdpNodeInfoListener(
-        ILogger<UdpNodeInfoListener> logger,
-        IRabbitMqPublisher rabbitMqPublisher,
-        IOptions<UdpNodeInfoListenerSettings> settings)
-    {
-        _logger = logger;
-        _rabbitMqPublisher = rabbitMqPublisher;
-        Port = settings.Value.UdpPort;
-    }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -34,7 +25,7 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                _logger.LogError(ex, "UDP listener failed, restarting in {Delay}", ReconnectDelay);
+                logger.LogError(ex, "UDP listener failed, restarting in {Delay}", ReconnectDelay);
                 await Task.Delay(ReconnectDelay, stoppingToken).ConfigureAwait(false);
             }
         }
@@ -44,29 +35,23 @@ public sealed class UdpNodeInfoListener : BackgroundService, IAsyncDisposable
     {
         _udpClient = new UdpClient(new IPEndPoint(IPAddress.Any, Port));
         
-        _logger.LogInformation("UDP service started listening on port {Port}. Publishing to RabbitMQ queue.", Port);
+        logger.LogInformation("UDP service started listening on port {Port}. Publishing to RabbitMQ queue.", Port);
 
         try
         {
             while (!stoppingToken.IsCancellationRequested)
             {
                 var result = await _udpClient.ReceiveAsync(stoppingToken).ConfigureAwait(false);
-                
-                _logger.LogDebug("Received datagram from {ip}", result.RemoteEndPoint);
-                
-                // Fire-and-forget processing
-                _ = Task.Run(async () =>
+
+                logger.LogDebug("Received datagram from {ip}", result.RemoteEndPoint);
+                try
                 {
-                    try
-                    {
-                        // Publish to RabbitMQ if available
-                        await _rabbitMqPublisher.PublishDatagramAsync(result.Buffer, result.RemoteEndPoint.Address.ToString());
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to process datagram from {Endpoint}", result.RemoteEndPoint);
-                    }
-                }, stoppingToken);
+                    await rabbitMqPublisher.PublishDatagramAsync(result.Buffer, result.RemoteEndPoint.Address.ToString());
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to process datagram from {Endpoint}", result.RemoteEndPoint);
+                }
             }
         }
         finally
