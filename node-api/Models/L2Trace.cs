@@ -17,7 +17,7 @@ public record L2Trace : NetworkEventDatagram
     public required string ReportFrom { get; init; }
 
     [JsonPropertyName("time")]
-    public long? TimeUnixSeconds { get; init; }
+    public decimal? TimeUnixSeconds { get; init; }
 
     /// <summary>
     /// Port ID, e.g. "3" or "4mlink" (Required)

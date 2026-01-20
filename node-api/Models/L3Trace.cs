@@ -18,7 +18,7 @@ public record L3Trace : NetworkEventDatagram
     /// Unix timestamp in seconds (Required)
     /// </summary>
     [JsonPropertyName("time")]
-    public required long TimeUnixSeconds { get; init; }
+    public required decimal TimeUnixSeconds { get; init; }
 
     /// <summary>
     /// Direction: "sent" or "rcvd" (Required)

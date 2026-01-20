@@ -32,6 +32,22 @@ public partial class NetworkStateUpdater : IHostedService
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Converts a decimal Unix timestamp (seconds since 1970-01-01, with optional millisecond fraction)
+    /// to a DateTime with millisecond precision.
+    /// </summary>
+    private static DateTime UnixSecondsToDateTime(decimal unixSeconds)
+    {
+        // Split into whole seconds and fractional milliseconds
+        var wholeSeconds = (long)unixSeconds;
+        var fractionalPart = unixSeconds - wholeSeconds;
+        var milliseconds = (int)(fractionalPart * 1000m);
+        
+        // Create DateTimeOffset from whole seconds, then add milliseconds
+        var dateTime = DateTimeOffset.FromUnixTimeSeconds(wholeSeconds).UtcDateTime;
+        return dateTime.AddMilliseconds(milliseconds);
+    }
+
     public void UpdateFromNodeUpEvent(NodeUpEvent evt)
     {
         var node = _networkState.GetOrCreateNode(evt.NodeCall);
@@ -121,7 +137,7 @@ public partial class NetworkStateUpdater : IHostedService
         
         if (evt.TimeUnixSeconds.HasValue)
         {
-            link.ConnectedAt = DateTimeOffset.FromUnixTimeSeconds(evt.TimeUnixSeconds.Value).UtcDateTime;
+            link.ConnectedAt = UnixSecondsToDateTime(evt.TimeUnixSeconds.Value);
         }
 
         var endpoint = new LinkEndpointState
@@ -163,8 +179,7 @@ public partial class NetworkStateUpdater : IHostedService
 
         if (evt.TimeUnixSeconds.HasValue && evt.UpForSecs.HasValue)
         {
-            link.ConnectedAt = DateTimeOffset.FromUnixTimeSeconds(
-                evt.TimeUnixSeconds.Value - evt.UpForSecs.Value).UtcDateTime;
+            link.ConnectedAt = UnixSecondsToDateTime(evt.TimeUnixSeconds.Value - evt.UpForSecs.Value);
         }
 
         var endpoint = new LinkEndpointState
@@ -238,7 +253,7 @@ public partial class NetworkStateUpdater : IHostedService
         
         if (evt.TimeUnixSeconds.HasValue)
         {
-            circuit.ConnectedAt = DateTimeOffset.FromUnixTimeSeconds(evt.TimeUnixSeconds.Value).UtcDateTime;
+            circuit.ConnectedAt = UnixSecondsToDateTime(evt.TimeUnixSeconds.Value);
         }
 
         var endpoint = new CircuitEndpointState
@@ -274,8 +289,7 @@ public partial class NetworkStateUpdater : IHostedService
 
         if (evt.TimeUnixSeconds.HasValue && evt.UpForSecs.HasValue)
         {
-            circuit.ConnectedAt = DateTimeOffset.FromUnixTimeSeconds(
-                evt.TimeUnixSeconds.Value - evt.UpForSecs.Value).UtcDateTime;
+            circuit.ConnectedAt = UnixSecondsToDateTime(evt.TimeUnixSeconds.Value - evt.UpForSecs.Value);
         }
 
         var endpoint = new CircuitEndpointState

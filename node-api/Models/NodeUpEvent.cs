@@ -12,7 +12,7 @@ public record NodeUpEvent : NetworkEventDatagram
     /// Timestamp (secs since 1/1/70) (Optional)
     /// </summary>
     [JsonPropertyName("time")]
-    public long? TimeUnixSeconds { get; init; }
+    public decimal? TimeUnixSeconds { get; init; }
 
     /// <summary>
     /// Node Callsign (Required)
