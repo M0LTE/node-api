@@ -19,21 +19,40 @@ public partial class MySqlL3TraceRepository(ILogger<MySqlL3TraceRepository> logg
             using var conn = Database.GetConnection(open: false);
             await conn.OpenAsync(ct);
 
+            // Extract reported_time from JSON
+            DateTime? reportedTime = null;
+            try
+            {
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("time", out var timeElement))
+                {
+                    if (timeElement.ValueKind == JsonValueKind.Number)
+                    {
+                        var unixTime = timeElement.GetDouble();
+                        reportedTime = DateTimeOffset.FromUnixTimeMilliseconds((long)(unixTime * 1000)).UtcDateTime;
+                    }
+                }
+            }
+            catch
+            {
+                // If we can't parse the time, just continue without it
+            }
+
             if (timestamp.HasValue)
             {
-                const string sql = "INSERT INTO l3traces (json, timestamp) VALUES (@json, @timestamp)";
+                const string sql = "INSERT INTO l3traces (json, timestamp, reported_time) VALUES (@json, @timestamp, @reportedTime)";
                 await QueryLogger.ExecuteWithLoggingAsync(
                     conn,
-                    new CommandDefinition(sql, new { json, timestamp = timestamp.Value }, cancellationToken: ct),
+                    new CommandDefinition(sql, new { json, timestamp = timestamp.Value, reportedTime }, cancellationToken: ct),
                     logger,
                     SlowQueryThresholdMs);
             }
             else
             {
-                const string sql = "INSERT INTO l3traces (json) VALUES (@json)";
+                const string sql = "INSERT INTO l3traces (json, reported_time) VALUES (@json, @reportedTime)";
                 await QueryLogger.ExecuteWithLoggingAsync(
                     conn,
-                    new CommandDefinition(sql, new { json }, cancellationToken: ct),
+                    new CommandDefinition(sql, new { json, reportedTime }, cancellationToken: ct),
                     logger,
                     SlowQueryThresholdMs);
             }
