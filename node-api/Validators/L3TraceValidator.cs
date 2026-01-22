@@ -57,11 +57,11 @@ public class L3TraceValidator : AbstractValidator<L3Trace>
             .WithMessage($"L3Type must be one of: {string.Join(", ", ValidL3Types)}");
 
         // Now optional - validate when present
-        RuleFor(x => x.L3Source)
+        RuleFor(x => x.L3Source!)
             .MustBeValidCallsign()
             .When(x => !string.IsNullOrEmpty(x.L3Source));
 
-        RuleFor(x => x.L3Destination)
+        RuleFor(x => x.L3Destination!)
             .MustBeValidCallsign()
             .When(x => !string.IsNullOrEmpty(x.L3Destination));
 

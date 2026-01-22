@@ -163,7 +163,7 @@ var options = new ForwardedHeadersOptions
                       | ForwardedHeaders.XForwardedProto
                       | ForwardedHeaders.XForwardedHost
 };
-options.KnownNetworks.Add(new IPNetwork(IPAddress.Parse("172.17.0.0"), 16));
+options.KnownIPNetworks.Add(new System.Net.IPNetwork(IPAddress.Parse("172.17.0.0"), 16));
 
 app.UseForwardedHeaders(options);
 

@@ -46,8 +46,7 @@ public class HttpDatagramIngestionTests : IClassFixture<TestWebApplicationFactor
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         
         var result = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.NotNull(result);
-        
+
         var status = result.GetProperty("status").GetString();
         Assert.True(status == "queued" || status == "processed");
         
@@ -170,8 +169,7 @@ public class HttpDatagramIngestionTests : IClassFixture<TestWebApplicationFactor
                    response.StatusCode == HttpStatusCode.MultiStatus);
         
         var result = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.NotNull(result);
-        
+
         var successCount = result.GetProperty("successCount").GetInt32();
         var failureCount = result.GetProperty("failureCount").GetInt32();
         
@@ -215,8 +213,7 @@ public class HttpDatagramIngestionTests : IClassFixture<TestWebApplicationFactor
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         
         var result = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.NotNull(result);
-        
+
         var service = result.GetProperty("service").GetString();
         var status = result.GetProperty("status").GetString();
         
@@ -248,8 +245,7 @@ public class HttpDatagramIngestionTests : IClassFixture<TestWebApplicationFactor
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         
         var result = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.NotNull(result);
-        
+
         var sourceIp = result.GetProperty("sourceIp").GetString();
         Assert.NotNull(sourceIp);
         Assert.NotEmpty(sourceIp);
@@ -279,8 +275,7 @@ public class HttpDatagramIngestionTests : IClassFixture<TestWebApplicationFactor
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         
         var result = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.NotNull(result);
-        
+
         var receivedAt = result.GetProperty("receivedAt").GetString();
         Assert.NotNull(receivedAt);
         
@@ -316,8 +311,7 @@ public class HttpDatagramIngestionTests : IClassFixture<TestWebApplicationFactor
                    response.StatusCode == HttpStatusCode.MultiStatus);
         
         var result = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.NotNull(result);
-        
+
         var totalReceived = result.GetProperty("totalReceived").GetInt32();
         Assert.Equal(100, totalReceived);
         

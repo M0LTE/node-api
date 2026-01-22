@@ -579,11 +579,11 @@ public class NetworkStateServiceTests
             .Select(_ => Task.Run(() => _service.GetOrCreateNode("M0LTE")))
             .ToArray();
 
-        await Task.WhenAll(tasks);
+        var results = await Task.WhenAll(tasks);
 
         // Assert - All tasks should return the same instance
-        var firstNode = tasks[0].Result;
-        Assert.All(tasks, task => Assert.Same(firstNode, task.Result));
+        var firstNode = results[0];
+        Assert.All(results, result => Assert.Same(firstNode, result));
     }
 
     [Fact]
@@ -594,11 +594,11 @@ public class NetworkStateServiceTests
             .Select(_ => Task.Run(() => _service.GetOrCreateLink("M0LTE", "G8PZT")))
             .ToArray();
 
-        await Task.WhenAll(tasks);
+        var results = await Task.WhenAll(tasks);
 
         // Assert - All tasks should return the same instance
-        var firstLink = tasks[0].Result;
-        Assert.All(tasks, task => Assert.Same(firstLink, task.Result));
+        var firstLink = results[0];
+        Assert.All(results, result => Assert.Same(firstLink, result));
     }
 
     [Fact]
@@ -609,11 +609,11 @@ public class NetworkStateServiceTests
             .Select(_ => Task.Run(() => _service.GetOrCreateCircuit("M0LTE:1111", "G8PZT:2222")))
             .ToArray();
 
-        await Task.WhenAll(tasks);
+        var results = await Task.WhenAll(tasks);
 
         // Assert - All tasks should return the same instance
-        var firstCircuit = tasks[0].Result;
-        Assert.All(tasks, task => Assert.Same(firstCircuit, task.Result));
+        var firstCircuit = results[0];
+        Assert.All(results, result => Assert.Same(firstCircuit, result));
     }
 
     #endregion
