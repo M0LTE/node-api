@@ -87,7 +87,7 @@ Rate limiting is configured via `appsettings.json`:
 
 ### 1. Request Arrives
 
-When a UDP datagram arrives at the service (port 13579), the `UdpNodeInfoListener` extracts:
+When a UDP datagram arrives at `node-api-ingester` on port 13579, the ingester listener extracts:
 - The source IP address from the UDP packet
 - The optional `reportFrom` callsign from the datagram payload
 
@@ -345,9 +345,9 @@ This prevents memory leaks from one-time senders.
 Complete flow from UDP packet to rate limit decision:
 
 ```
-1. UDP Datagram arrives at port 13579
+1. UDP datagram arrives at `node-api-ingester` on port 13579
    ↓
-2. UdpNodeInfoListener receives packet
+2. `node-api-ingester` receives the packet and forwards source metadata
    ↓
 3. Extract IP address from endpoint
    ↓
@@ -375,7 +375,8 @@ Complete flow from UDP packet to rate limit decision:
 
 - **Service**: `/node-api/Services/UdpRateLimitService.cs`
 - **Settings**: `/node-api/Models/UdpRateLimitSettings.cs`
-- **Integration**: `/node-api/Services/UdpNodeInfoListener.cs` (lines ~140-148)
+- **Ingress integration**: `/node-api-ingester/Services/UdpNodeInfoListener.cs`
+- **Processing integration**: `/node-api/Services/DatagramProcessor.cs`
 - **API**: `/node-api/Controllers/DiagnosticsController.cs` (lines 264-270)
 - **Tests**: `/Tests/UdpRateLimitServiceTests.cs` and `/Tests/UdpRateLimitIntegrationTests.cs`
 

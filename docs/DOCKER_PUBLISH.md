@@ -100,7 +100,7 @@ dotnet publish --configuration Release --runtime linux-x64 /t:PublishContainer
 ```
 
 This uses the container settings from `node-api.csproj`:
-- Base Image: `mcr.microsoft.com/dotnet/aspnet:9.0`
+- Base Image: `mcr.microsoft.com/dotnet/aspnet:10.0`
 - Repository: `m0lte/node-api`
 - Registry: `docker.io`
 - Tags: `latest`
@@ -141,7 +141,7 @@ docker login docker.io
 
 - **Registry**: Docker Hub (`docker.io`)
 - **Repository**: `m0lte/node-api`
-- **Base Image**: `mcr.microsoft.com/dotnet/aspnet:9.0`
+- **Base Image**: `mcr.microsoft.com/dotnet/aspnet:10.0`
 - **Runtime**: `linux-x64`
 - **Default Tags**: `latest`
 

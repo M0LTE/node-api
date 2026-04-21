@@ -1,3 +1,6 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using node_api.Services;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -13,11 +16,13 @@ namespace Tests.Integration;
 /// </summary>
 public class HttpDatagramIngestionTests : IClassFixture<TestWebApplicationFactory>
 {
+    private readonly TestWebApplicationFactory _factory;
     private readonly HttpClient _client;
     private readonly ITestOutputHelper _output;
 
     public HttpDatagramIngestionTests(TestWebApplicationFactory factory, ITestOutputHelper output)
     {
+        _factory = factory;
         _client = factory.CreateClient();
         _output = output;
     }
@@ -204,6 +209,39 @@ public class HttpDatagramIngestionTests : IClassFixture<TestWebApplicationFactor
     }
 
     [Fact]
+    public async Task IngestSingleDatagram_RabbitMqUnavailable_ReturnsServiceUnavailable()
+    {
+        using var unavailableFactory = _factory.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureServices(services =>
+            {
+                services.RemoveAll<IRabbitMqPublisher>();
+                services.AddSingleton<IRabbitMqPublisher, UnavailableRabbitMqPublisher>();
+            });
+        });
+        using var client = unavailableFactory.CreateClient();
+
+        var datagram = new
+        {
+            @type = "NodeUpEvent",
+            time = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+            nodeCall = "QFAIL-1",
+            nodeAlias = "QFAIL1",
+            locator = "IO91EC",
+            software = "test",
+            version = "v1"
+        };
+
+        var response = await client.PostAsJsonAsync("/api/ingest", datagram);
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+
+        var result = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Service unavailable", result.GetProperty("error").GetString());
+        Assert.Equal("Message queue is not available", result.GetProperty("message").GetString());
+    }
+
+    [Fact]
     public async Task GetIngestStatus_ReturnsOk()
     {
         // Act
@@ -316,5 +354,13 @@ public class HttpDatagramIngestionTests : IClassFixture<TestWebApplicationFactor
         Assert.Equal(100, totalReceived);
         
         _output.WriteLine($"Large batch processed: {totalReceived} datagrams");
+    }
+
+    private sealed class UnavailableRabbitMqPublisher : IRabbitMqPublisher
+    {
+        public bool IsAvailable => false;
+
+        public Task PublishDatagramAsync(byte[] datagram, string sourceIp)
+            => throw new InvalidOperationException("RabbitMQ publisher is not available.");
     }
 }

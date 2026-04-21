@@ -3,18 +3,6 @@ using node_api_ingester.Services;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-// Configure MQTT settings from configuration with fallback to environment variable
-builder.Services.Configure<MqttSettings>(options =>
-{
-    builder.Configuration.GetSection("MqttSettings").Bind(options);
-
-    // Fallback to environment variable if password not set in config
-    if (string.IsNullOrWhiteSpace(options.Password))
-    {
-        options.Password = Environment.GetEnvironmentVariable("MQTT_WRITER_PASSWORD");
-    }
-});
-
 builder.Services.Configure<UdpNodeInfoListenerSettings>(options =>
 {
     var port = Environment.GetEnvironmentVariable("UDP_PORT");

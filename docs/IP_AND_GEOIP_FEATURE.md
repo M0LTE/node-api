@@ -192,7 +192,7 @@ ORDER BY last_seen DESC;
 ### IP Address Not Showing
 - Ensure the node is actively sending UDP datagrams
 - Check `last_ip_update` field in database
-- Verify the UDP listener is running
+- Verify `node-api-ingester` is running and listening for UDP
 - Check that callsign in datagram matches the node being viewed
 
 ### Old IP Address Data

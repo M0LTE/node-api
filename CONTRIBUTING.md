@@ -15,7 +15,7 @@ Thank you for your interest in contributing to **node-api**! This document provi
 
 ### Prerequisites
 
-- **.NET 9.0 SDK** or later
+- **.NET 10 SDK** or later
 - **MySQL 8.0+** or MariaDB (for integration tests)
 - **MQTT broker** (e.g., Mosquitto) - optional for local development
 - **Git** for version control
@@ -320,7 +320,7 @@ Instead, please contact the maintainers privately. Include:
 
 ### Technology References
 
-- [.NET 9.0 Documentation](https://learn.microsoft.com/en-us/dotnet/)
+- [.NET Documentation](https://learn.microsoft.com/en-us/dotnet/)
 - [ASP.NET Core](https://learn.microsoft.com/en-us/aspnet/core/)
 - [FluentValidation](https://docs.fluentvalidation.net/)
 - [Dapper](https://github.com/DapperLib/Dapper)

@@ -12,7 +12,7 @@ using System.Threading.Channels;
 namespace node_api.Services;
 
 /// <summary>
-/// Shared service for processing UDP datagrams from either UDP directly or RabbitMQ
+/// Shared service for processing datagrams consumed from RabbitMQ
 /// </summary>
 public class DatagramProcessor : IDatagramProcessor
 {

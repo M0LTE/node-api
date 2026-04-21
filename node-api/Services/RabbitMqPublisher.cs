@@ -5,7 +5,7 @@ using System.Text.Json;
 namespace node_api.Services;
 
 /// <summary>
-/// Publishes raw UDP datagrams to RabbitMQ for durability and future service separation
+/// Publishes HTTP-ingested datagrams to RabbitMQ for queue-based processing
 /// </summary>
 public sealed class RabbitMqPublisher : IRabbitMqPublisher, IDisposable
 {
@@ -27,12 +27,11 @@ public sealed class RabbitMqPublisher : IRabbitMqPublisher, IDisposable
         var rabbitUser = Environment.GetEnvironmentVariable("RABBIT_USER");
         var rabbitPass = Environment.GetEnvironmentVariable("RABBIT_PASS");
 
-        // RabbitMQ is optional - if not configured, we'll just continue without it
         if (string.IsNullOrWhiteSpace(rabbitHost) || 
             string.IsNullOrWhiteSpace(rabbitUser) || 
             string.IsNullOrWhiteSpace(rabbitPass))
         {
-            _logger.LogWarning("RabbitMQ not configured (missing RABBIT_HOST, RABBIT_USER, or RABBIT_PASS environment variables). UDP datagrams will be processed directly without RabbitMQ persistence.");
+            _logger.LogWarning("RabbitMQ not configured (missing RABBIT_HOST, RABBIT_USER, or RABBIT_PASS environment variables). HTTP ingestion queueing is unavailable.");
             _isAvailable = false;
             return;
         }
@@ -79,7 +78,7 @@ public sealed class RabbitMqPublisher : IRabbitMqPublisher, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to initialize RabbitMQ connection to {Host}. UDP datagrams will be processed directly without RabbitMQ persistence.", rabbitHost);
+            _logger.LogError(ex, "Failed to initialize RabbitMQ connection to {Host}. HTTP ingestion queueing is unavailable.", rabbitHost);
             _isAvailable = false;
             
             // Clean up partial initialization
@@ -92,8 +91,7 @@ public sealed class RabbitMqPublisher : IRabbitMqPublisher, IDisposable
     {
         if (!_isAvailable || _channel == null)
         {
-            // Silently skip if RabbitMQ is not available
-            return Task.CompletedTask;
+            throw new InvalidOperationException("RabbitMQ publisher is not available.");
         }
 
         try
@@ -122,10 +120,10 @@ public sealed class RabbitMqPublisher : IRabbitMqPublisher, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error publishing datagram to RabbitMQ from {SourceIp}. Message will be lost from RabbitMQ but will still be processed.", sourceIp);
-            // Don't throw - we don't want to stop UDP processing if RabbitMQ fails
+            _logger.LogError(ex, "Error publishing datagram to RabbitMQ from {SourceIp}", sourceIp);
+            throw new InvalidOperationException("RabbitMQ publish failed.", ex);
         }
-
+        
         return Task.CompletedTask;
     }
 

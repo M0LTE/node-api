@@ -20,7 +20,7 @@ HTTP POST ? RabbitMQ Queue ? Consumer ? DatagramProcessor ? MQTT ? Network State
 - ? **Typed Endpoints**: Individual endpoints per event type for perfect OpenAPI documentation
 - ? **Generic Endpoint**: Polymorphic endpoint that accepts any event type
 - ? **Batch Support**: Can ingest multiple datagrams in a single request
-- ? **Fallback**: Automatically processes directly if RabbitMQ unavailable
+- ? **Queue Required**: Returns `503 Service Unavailable` if RabbitMQ is unavailable
 - ? **Rate Limiting**: Uses the same rate limiting as UDP (via DatagramProcessor)
 - ? **IP Tracking**: Preserves source IP for GeoIP and security
 - ? **Full OpenAPI Schema**: Comprehensive documentation with examples in Scalar

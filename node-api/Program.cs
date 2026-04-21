@@ -26,19 +26,6 @@ builder.Services.Configure<MqttSettings>(options =>
     }
 });
 
-builder.Services.Configure<UdpNodeInfoListenerSettings>(options =>
-{
-    var port = Environment.GetEnvironmentVariable("UDP_PORT");
-    if (string.IsNullOrWhiteSpace(port))
-    {
-        builder.Configuration.GetSection("UdpNodeInfoListenerSettings").Bind(options);
-    }
-    else
-    {
-        options.UdpPort = int.Parse(port);
-    }
-});
-
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole(options =>
 {
@@ -79,11 +66,10 @@ builder.Services.AddSingleton<IGeoIpService, GeoIpService>();
 // Register MQTT client provider (must be initialized before DatagramProcessor)
 builder.Services.AddSingleton<IMqttClientProvider, MqttClientProvider>();
 
-// Register RabbitMQ services for UDP datagram persistence
+// Register RabbitMQ services for HTTP datagram persistence
 builder.Services.AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>();
 
-// Register DatagramProcessor for RabbitMQ consumer only
-// (UDP and HTTP ingestion go directly to RabbitMQ queue)
+// Register DatagramProcessor for RabbitMQ consumer processing
 builder.Services.AddSingleton<IDatagramProcessor>(serviceProvider =>
 {
     var logger = serviceProvider.GetRequiredService<ILogger<DatagramProcessor>>();
@@ -152,8 +138,6 @@ builder.Services.AddHostedService<TracePurgeService>();
 
 // Register validation service
 builder.Services.AddSingleton<DatagramValidationService>();
-
-builder.Services.AddHostedService<UdpNodeInfoListener>();
 
 var app = builder.Build();
 

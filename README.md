@@ -1,275 +1,136 @@
 # node-api
 
-A .NET 9.0 ASP.NET Core Web API service for real-time packet radio network monitoring and analysis.
+A .NET 10 packet-network monitoring system split into two services:
 
-## 📚 Overview
+| Service | Responsibility |
+|---|---|
+| `node-api-ingester` | Owns UDP ingress on port `13579` and publishes raw datagrams to RabbitMQ |
+| `node-api` | Owns HTTP APIs, RabbitMQ consumption, validation/processing, MQTT publishing, in-memory state, and MySQL persistence |
 
-**node-api** is a comprehensive monitoring solution for AX.25 packet radio networks. It ingests network event data via UDP datagrams, validates and processes various event types, maintains network state, and provides both REST API and MQTT interfaces for real-time monitoring.
+## Overview
 
-### Key Features
+The split is now clean at the service boundary:
 
-- 📡 **UDP Datagram Ingestion** - Listens on port 13579 for network events
-- 🌐 **HTTP Ingestion API** - RESTful endpoints for event submission
-- ✅ **Comprehensive Validation** - FluentValidation for all event types
-- 📤 **Real-time MQTT Publishing** - Events published to MQTT topics
-- 💾 **Persistent State** - MySQL database for network state and history
-- 🌐 **REST API** - Query nodes, links, circuits, traces, and diagnostics
-- ⚡ **Rate Limiting** - Rolling average with burst support
-- 🌍 **GeoIP Integration** - Location tracking with privacy-preserving obfuscation
-- 🧠 **Link Intelligence** - Flapping detection and AX.25 routing heuristics
-- 🐰 **RabbitMQ Support** - Dual-path ingestion for resilience
-- 📖 **OpenAPI/Scalar** - Interactive API documentation at `/scalar`
+- UDP traffic enters through **`node-api-ingester`** only
+- RabbitMQ is the handoff between ingress and processing
+- **`node-api`** provides query APIs plus HTTP ingestion endpoints
+- MQTT, GeoIP, rate limiting, network-state updates, and persistence all run in **`node-api`**
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
-- .NET 9.0 SDK
+- .NET 10 SDK
 - MySQL 8.0+ (or MariaDB)
-- MQTT broker (e.g., Mosquitto)
-- Optional: RabbitMQ for dual-path ingestion
+- MQTT broker
+- RabbitMQ
 
-### Running Locally
+### Run locally
 
 ```bash
-# Clone the repository
-git clone https://github.com/M0LTE/node-api.git
+# Terminal 1 - processing/API service
 cd node-api
-
-# Configure connection strings (edit appsettings.json)
-cd node-api
-# Edit ConnectionStrings:DefaultConnection and MqttSettings
-
-# Run the service
 dotnet run
 
-# Service will be available at:
-# - http://localhost:5000
-# - OpenAPI docs: http://localhost:5000/scalar
+# Terminal 2 - UDP ingress service
+cd node-api-ingester
+dotnet run
 ```
 
-### Running with Docker
+By default:
+
+- `node-api` serves HTTP on `http://localhost:5000`
+- `node-api-ingester` listens for UDP on port `13579`
+
+For local UDP end-to-end testing, RabbitMQ must be configured because the ingester publishes to the queue and the API service consumes from it.
+
+## Architecture
+
+```text
+UDP:13579
+XRouter nodes
+    |
+    v
+node-api-ingester
+    |
+    |  AMQP
+    v
+ RabbitMQ queue
+    |
+    v
+  node-api
+    |
+    +--> MQTT topics
+    +--> MySQL persistence
+    +--> REST API /api/*
+    +--> OpenAPI/Scalar /scalar
+```
+
+## Key Features
+
+- UDP ingress microservice on port `13579`
+- HTTP ingestion API (`/api/ingest*`)
+- RabbitMQ-backed decoupling between ingress and processing
+- MQTT publishing for raw input, validation errors, and processed events
+- MySQL-backed traces, events, errored-message storage, and network state
+- REST endpoints for nodes, links, circuits, traces, events, and diagnostics
+- Rate limiting, blacklist support, GeoIP enrichment, and link-analysis features
+
+## Main HTTP API surfaces
+
+- `POST /api/ingest`
+- `POST /api/ingest/batch`
+- `GET /api/ingest/status`
+- `GET /api/nodes`
+- `GET /api/links`
+- `GET /api/circuits`
+- `GET /api/traces`
+- `GET /api/events`
+- `GET /scalar`
+
+## Testing
 
 ```bash
-docker build -t node-api .
-docker run -p 5000:8080 -p 13579:13579/udp node-api
+# Build everything
+dotnet build node-api.sln
+
+# Run repository tests that do not require DB credentials
+dotnet test Tests/ --filter "Category!=DatabaseIntegration"
+
+# Run smoke tests against deployed or local services
+dotnet test SmokeTests/
 ```
 
-See [Deployment Guide](docs/DEPLOYMENT.md) for production deployment instructions.
+Smoke tests can target HTTP and UDP separately through `BaseUrl` and `UdpHost`, which is important now that the two responsibilities live in different services.
 
-## 📚 Documentation
+## Documentation
 
-### Getting Started
-- 📖 [Documentation Index](docs/README.md) - Complete documentation navigation
-- 🚀 [Deployment Guide](docs/DEPLOYMENT.md) - Production deployment
-- 🐳 [Docker Publishing](docs/DOCKER_PUBLISH.md) - Container build and publish
+- [Documentation index](docs/README.md)
+- [RabbitMQ integration](docs/RABBITMQ_INTEGRATION.md)
+- [HTTP datagram ingestion](docs/HTTP_DATAGRAM_INGESTION.md)
+- [Rate limiting](docs/RATE_LIMITING.md)
+- [Smoke tests](SmokeTests/README.md)
+- [Contributing](CONTRIBUTING.md)
 
-### Core Features
-- ⚡ [Rate Limiting](docs/RATE_LIMITING.md) - UDP rate limiting lifecycle
-- 🌍 [IP & GeoIP Tracking](docs/IP_AND_GEOIP_FEATURE.md) - Location with privacy
-- 📊 [Link Flapping Detection](docs/LINK_FLAPPING.md) - Unstable connection tracking
-- 🧠 [AX.25 Link Inference](docs/AX25_LINK_INFERENCE.md) - Routing heuristics
-- ⏰ [Timestamp Tracking](docs/TIMESTAMP_TRACKING.md) - Datagram arrival times
-- 🌐 [HTTP Ingestion API](docs/HTTP_DATAGRAM_INGESTION.md) - REST endpoints for event submission
+## Troubleshooting
 
-### Architecture
-- 🐰 [RabbitMQ Integration](docs/RABBITMQ_INTEGRATION.md) - Message queue support
-- 📋 [Phase 2 Summary](docs/PHASE2_SUMMARY.md) - Dual-path ingestion
+### UDP port not accessible
 
-### Testing
-- 🧪 [Smoke Tests](SmokeTests/README.md) - End-to-end testing guide
-- ✅ [Unit Tests](Tests/) - 1,000+ comprehensive tests
-
-### Developer Resources
-- 📝 [Contributing Guide](CONTRIBUTING.md) - How to contribute to the project
-- 💻 [Copilot Instructions](.github/copilot-instructions.md) - Coding standards and guidelines
-
-## 🏗️ Architecture
-
-```
-┌─────────┐     UDP:13579      ┌──────────────┐
-│   XRouter   │ ────────────────>│ UDP Listener │
-│   Nodes     │                    │              │
-└─────────┘                    └──────────────┘
-                                          │
-┌─────────┐     AMQP          ┌─────────────────┐
-│  RabbitMQ   │ ────────────────>│  Validation   │
-│   Queue     │                    │   Service     │
-└─────────┘                    └─────────────────┘
-                                          │
-                                   ┌───────────────────┐
-                                   │ Network State   │
-                                   │    Updater      │
-                                   └───────────────────┘
-                                          │
-                    ┌─────────────────────┼─────────────────────┐
-                    │                     │                     │
-             ┌──────────┐        ┌──────────┐       ┌──────────┐
-             │   MySQL    │        │    MQTT    │       │  REST API  │
-             │  Database  │        │  Publisher │       │   /api/*   │
-             └──────────┘        └──────────┘       └──────────┘
-```
-
-### Technology Stack
-
-- **Runtime**: .NET 9.0
-- **Framework**: ASP.NET Core with minimal API
-- **Validation**: FluentValidation
-- **Database**: MySQL 8.0+ with Dapper ORM
-- **Messaging**: MQTTnet client, RabbitMQ.Client
-- **Testing**: xUnit (1,000+ tests)
-- **Containerization**: Docker
-
-## 📋 Event Types
-
-The service processes the following AX.25 network events:
-
-| Event Type | Description |
-|------------|-------------|
-| `NodeUpEvent` | Node comes online |
-| `NodeStatusReportEvent` | Periodic node status |
-| `NodeDownEvent` | Node goes offline |
-| `LinkUpEvent` | Layer 2 link established |
-| `LinkStatus` | Periodic link status |
-| `LinkDisconnectionEvent` | Link disconnected |
-| `CircuitUpEvent` | NetROM Layer 4 circuit established |
-| `CircuitStatus` | Periodic circuit status |
-| `CircuitDisconnectionEvent` | Circuit disconnected |
-| `L2Trace` | Layer 2 frame trace |
-
-## 🌐 API Endpoints
-
-### Ingestion
-- `POST /api/ingest` - Ingest single datagram via HTTP
-- `POST /api/ingest/batch` - Ingest multiple datagrams
-- `GET /api/ingest/status` - Check ingestion service status
-
-### Nodes
-- `GET /api/nodes` - List all nodes
-- `GET /api/nodes/{callsign}` - Get specific node
-- `GET /api/nodes/base/{baseCallsign}` - Get nodes by base callsign
-- `GET /api/nodes/reporting` - Get only reporting nodes
-
-### Links
-- `GET /api/links` - List all links
-- `GET /api/links/{key}` - Get specific link
-- `GET /api/links/node/{callsign}` - Get links for a node
-
-### Circuits
-- `GET /api/circuits` - List all circuits
-- `GET /api/circuits/{key}` - Get specific circuit
-- `GET /api/circuits/node/{callsign}` - Get circuits for a node
-
-### Traces & Events
-- `GET /api/traces` - Query L2 traces
-- `GET /api/events` - Query network events
-
-### Diagnostics
-- `GET /api/diagnostics/db/query-frequency` - Database query statistics
-- `GET /api/diagnostics/udp/rate-limit-status` - Rate limiting status
-
-### API Documentation
-- `GET /scalar` - Interactive API documentation
-- `GET /openapi/v1.json` - OpenAPI specification
-
-## 🧪 Testing
+Check the **ingester**, not `node-api`:
 
 ```bash
-# Run all tests
-dotnet test
-
-# Run unit tests only
-dotnet test Tests/
-
-# Run smoke tests (requires running service)
-cd SmokeTests
-dotnet test
-
-# Run specific test class
-dotnet test --filter "FullyQualifiedName~NetworkStateUpdaterL2TraceTests"
-```
-
-**Test Coverage**: 1,000+ tests covering:
-- Validators (all event types)
-- Network state updates
-- API endpoints
-- Rate limiting
-- AX.25 routing logic
-- End-to-end flows
-
-See [Smoke Tests Documentation](SmokeTests/README.md) for detailed testing guide.
-
-## 🔒 Security & Privacy
-
-- **IP Obfuscation**: Only last 2 octets of IPv4 addresses stored
-- **Rate Limiting**: Prevents abuse with rolling average + burst detection
-- **CIDR Blacklisting**: Permanent blocks for malicious sources
-- **Input Validation**: FluentValidation on all incoming data
-- **SQL Injection Protection**: Parameterized queries throughout
-
-## 🔧 Troubleshooting
-
-### UDP Port Not Accessible
-```bash
-# Check if port is listening
 netstat -an | grep 13579
-
-# Check firewall rules (Linux)
-sudo ufw status
-sudo ufw allow 13579/udp
-
-# Check firewall rules (Windows)
-netsh advfirewall firewall show rule name="Node API UDP"
+sudo systemctl status node-api-ingester --no-pager
 ```
 
-### Database Connection Issues
-- Verify connection string in `appsettings.json`
-- Ensure MySQL is running: `systemctl status mysql`
-- Check database exists and schema is up to date
+### Database integration tests fail locally
 
-### MQTT Connection Issues
-- Verify broker address and port
-- Check broker allows connections: `mosquitto_sub -h <broker> -t "#" -v`
-- Review MQTT logs in application output
+Those tests require DB secrets or environment variables:
 
-See individual feature documentation for specific troubleshooting guides.
+- `DB_HOST`
+- `DB_PORT`
+- `DB_USER`
+- `DB_PASSWORD`
+- `DB_NAME`
 
-## ⚡ Performance
-
-- **UDP Throughput**: Handles 100+ datagrams/second
-- **Rate Limiting**: Configurable per-IP limits with burst support
-- **Database**: Optimized queries with indexing
-- **Memory**: Efficient in-memory network state tracking
-- **Latency**: Sub-millisecond event processing
-
-## 🤝 Contributing
-
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
-
-Quick checklist:
-
-1. Review [Copilot Instructions](.github/copilot-instructions.md) for coding standards
-2. Write tests for new features (xUnit)
-3. Ensure all tests pass: `dotnet test`
-4. Follow existing code patterns and naming conventions
-5. Update documentation for new features
-
-For comprehensive contributor guidelines, workflow, and best practices, see [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## 📄 License
-
-[Add license information here]
-
-## 🙏 Acknowledgments
-
-This project monitors AX.25 packet radio networks and processes data from XRouter nodes. Thanks to the amateur radio community for the protocols and specifications.
-
-## 💬 Support
-
-- **Issues**: [GitHub Issues](https://github.com/M0LTE/node-api/issues)
-- **Documentation**: [docs/](docs/)
-- **API Docs**: `/scalar` endpoint when service is running
-
----
-
-**Built with ❤️ for the packet radio community**
+## License

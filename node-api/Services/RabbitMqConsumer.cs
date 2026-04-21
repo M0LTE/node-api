@@ -9,8 +9,7 @@ using System.Threading.Channels;
 namespace node_api.Services;
 
 /// <summary>
-/// Consumes UDP datagrams from RabbitMQ and processes them
-/// This allows for future separation of the ingestion and processing services
+/// Consumes datagrams from RabbitMQ and processes them in the API/storage service
 /// </summary>
 public sealed class RabbitMqConsumer : BackgroundService, IAsyncDisposable
 {

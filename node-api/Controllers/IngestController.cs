@@ -1,14 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using node_api.Services;
 using node_api.Models;
-using System.Net;
 using System.Text.Json;
 
 namespace node_api.Controllers;
 
 /// <summary>
 /// HTTP API for ingesting network event datagrams
-/// Data submitted here is published to RabbitMQ if available, otherwise processed directly
+/// Data submitted here is queued through RabbitMQ for the same downstream processing pipeline as UDP ingress
 /// </summary>
 [ApiController]
 [Route("api/ingest")]
@@ -16,16 +15,13 @@ public class IngestController : ControllerBase
 {
     private readonly ILogger<IngestController> _logger;
     private readonly IRabbitMqPublisher _rabbitMqPublisher;
-    private readonly IDatagramProcessor _datagramProcessor;
 
     public IngestController(
         ILogger<IngestController> logger,
-        IRabbitMqPublisher rabbitMqPublisher,
-        IDatagramProcessor datagramProcessor)
+        IRabbitMqPublisher rabbitMqPublisher)
     {
         _logger = logger;
         _rabbitMqPublisher = rabbitMqPublisher;
-        _datagramProcessor = datagramProcessor;
     }
 
     /// <summary>
@@ -391,7 +387,7 @@ public class IngestController : ControllerBase
     /// <returns>202 Accepted with count of queued datagrams</returns>
     /// <remarks>
     /// Accepts an array of datagrams in the same format as single ingestion.
-    /// All datagrams are published to RabbitMQ for processing if available, otherwise processed directly.
+    /// All datagrams are published to RabbitMQ for downstream processing.
     /// 
     /// Example:
     /// ```json
@@ -430,6 +426,15 @@ public class IngestController : ControllerBase
 
         try
         {
+            if (!_rabbitMqPublisher.IsAvailable)
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+                {
+                    error = "Service unavailable",
+                    message = "Message queue is not available"
+                });
+            }
+
             var arrivalTime = DateTime.UtcNow;
             var sourceIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
             
@@ -446,31 +451,13 @@ public class IngestController : ControllerBase
             var successCount = 0;
             var failureCount = 0;
             var errors = new List<string>();
-            var processingMode = _rabbitMqPublisher.IsAvailable ? "rabbitmq" : "direct";
-
-            IPAddress? ipAddress = null;
-            if (!_rabbitMqPublisher.IsAvailable)
-            {
-                if (!IPAddress.TryParse(sourceIp, out ipAddress))
-                {
-                    ipAddress = IPAddress.Loopback;
-                }
-            }
 
             for (int i = 0; i < datagrams.Length; i++)
             {
                 try
                 {
                     var jsonBytes = JsonSerializer.SerializeToUtf8Bytes<object>(datagrams[i]);
-                    
-                    if (_rabbitMqPublisher.IsAvailable)
-                    {
-                        await _rabbitMqPublisher.PublishDatagramAsync(jsonBytes, sourceIp);
-                    }
-                    else
-                    {
-                        await _datagramProcessor.ProcessDatagramAsync(jsonBytes, ipAddress!, arrivalTime, HttpContext.RequestAborted);
-                    }
+                    await _rabbitMqPublisher.PublishDatagramAsync(jsonBytes, sourceIp);
                     
                     successCount++;
                 }
@@ -484,19 +471,19 @@ public class IngestController : ControllerBase
             }
 
             _logger.LogInformation(
-                "HTTP batch ingest from {SourceIp}: {SuccessCount} succeeded, {FailureCount} failed, mode: {ProcessingMode}",
-                sourceIp, successCount, failureCount, processingMode);
+                "HTTP batch ingest from {SourceIp}: {SuccessCount} succeeded, {FailureCount} failed",
+                sourceIp, successCount, failureCount);
 
             var response = new
             {
-                status = failureCount == 0 ? (processingMode == "rabbitmq" ? "queued" : "processed") : "partial",
+                status = failureCount == 0 ? "queued" : "partial",
                 totalReceived = datagrams.Length,
                 successCount = successCount,
                 failureCount = failureCount,
                 errors = errors,
                 sourceIp = sourceIp,
                 receivedAt = arrivalTime,
-                processingMode = processingMode
+                processingMode = "rabbitmq"
             };
 
             return failureCount == 0 
@@ -530,7 +517,7 @@ public class IngestController : ControllerBase
             rabbitMq = new
             {
                 available = _rabbitMqPublisher.IsAvailable,
-                mode = _rabbitMqPublisher.IsAvailable ? "queue-based" : "direct-processing"
+                mode = "queue-based"
             },
             supportedTypes = new[]
             {
@@ -572,6 +559,15 @@ public class IngestController : ControllerBase
     {
         try
         {
+            if (!_rabbitMqPublisher.IsAvailable)
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+                {
+                    error = "Service unavailable",
+                    message = "Message queue is not available"
+                });
+            }
+
             var arrivalTime = DateTime.UtcNow;
             
             // Get the source IP from the HTTP request
@@ -593,46 +589,31 @@ public class IngestController : ControllerBase
             // Serialize the datagram to JSON bytes (same format as UDP)
             var jsonBytes = JsonSerializer.SerializeToUtf8Bytes<object>(datagram);
 
-            if (_rabbitMqPublisher.IsAvailable)
-            {
-                // Publish to RabbitMQ if available
-                await _rabbitMqPublisher.PublishDatagramAsync(jsonBytes, sourceIp);
-                _logger.LogDebug("Published HTTP datagram from {SourceIp} to RabbitMQ", sourceIp);
-                
-                return Accepted(new { 
-                    status = "queued", 
-                    message = "Datagram queued for processing via RabbitMQ",
-                    type = datagram.DatagramType,
-                    sourceIp = sourceIp,
-                    receivedAt = arrivalTime,
-                    processingMode = "rabbitmq"
-                });
-            }
-            else
-            {
-                // Process directly if RabbitMQ unavailable
-                if (!IPAddress.TryParse(sourceIp, out var ipAddress))
-                {
-                    ipAddress = IPAddress.Loopback;
-                }
-                
-                await _datagramProcessor.ProcessDatagramAsync(jsonBytes, ipAddress, arrivalTime, HttpContext.RequestAborted);
-                _logger.LogDebug("Processed HTTP datagram from {SourceIp} directly (RabbitMQ unavailable)", sourceIp);
-                
-                return Accepted(new { 
-                    status = "processed", 
-                    message = "Datagram processed directly (RabbitMQ unavailable)",
-                    type = datagram.DatagramType,
-                    sourceIp = sourceIp,
-                    receivedAt = arrivalTime,
-                    processingMode = "direct"
-                });
-            }
+            await _rabbitMqPublisher.PublishDatagramAsync(jsonBytes, sourceIp);
+            _logger.LogDebug("Published HTTP datagram from {SourceIp} to RabbitMQ", sourceIp);
+            
+            return Accepted(new { 
+                status = "queued", 
+                message = "Datagram queued for processing via RabbitMQ",
+                type = datagram.DatagramType,
+                sourceIp = sourceIp,
+                receivedAt = arrivalTime,
+                processingMode = "rabbitmq"
+            });
         }
         catch (JsonException ex)
         {
             _logger.LogWarning(ex, "Invalid JSON in HTTP datagram ingestion");
             return BadRequest(new { error = "Invalid JSON", details = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "RabbitMQ unavailable for HTTP datagram ingestion");
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+            {
+                error = "Service unavailable",
+                message = "Message queue is not available"
+            });
         }
         catch (Exception ex)
         {

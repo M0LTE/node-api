@@ -5,7 +5,7 @@ using System.Text.Json;
 namespace node_api_ingester.Services;
 
 /// <summary>
-/// Publishes raw UDP datagrams to RabbitMQ for durability and future service separation
+/// Publishes raw UDP datagrams to RabbitMQ for handoff to the API/storage service
 /// </summary>
 public sealed class RabbitMqPublisher : IRabbitMqPublisher, IDisposable
 {

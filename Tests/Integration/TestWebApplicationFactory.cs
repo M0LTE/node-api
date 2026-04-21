@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using node_api.Configuration;
 using node_api.Services;
 using Tests.Mocks;
@@ -31,11 +30,6 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
                 options.ClientIdPrefix = "test";
                 options.AutoReconnectDelaySeconds = 5;
                 options.CleanSession = true;
-            });
-
-            services.Configure<UdpNodeInfoListenerSettings>(options =>
-            {
-                options.UdpPort = 13579;
             });
 
             // Remove hosted services that create their own MQTT clients

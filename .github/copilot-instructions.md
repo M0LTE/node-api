@@ -2,36 +2,35 @@
 
 ## Project Overview
 
-This is a .NET 9.0 ASP.NET Core Web API service that provides packet network monitoring capabilities. The service:
+This repository contains two .NET 10 services for packet network monitoring:
 
-- Listens for UDP datagrams on port 13579 containing network event data
-- Validates and processes various event types (nodes, links, circuits, traces)
-- Publishes processed events to MQTT topics
-- Persists network state and events to MySQL database
-- Exposes REST API endpoints for querying network state
-- Provides OpenAPI/Scalar documentation at `/scalar`
+- `node-api-ingester` listens for UDP datagrams on port 13579 and publishes them to RabbitMQ
+- `node-api` consumes queued datagrams, validates and processes event types, publishes to MQTT, persists to MySQL, and exposes REST/OpenAPI endpoints
 
 ## Technology Stack
 
-- **.NET 9.0** - Target framework
+- **.NET 10.0** - Target framework
 - **ASP.NET Core** - Web framework with minimal API
 - **FluentValidation** - Input validation framework
 - **Dapper** - Lightweight ORM for MySQL access
 - **MQTTnet** - MQTT client library
 - **xUnit** - Testing framework
-- **Docker** - Container support with `mcr.microsoft.com/dotnet/aspnet:9.0` base image
+- **Docker** - Container support with `mcr.microsoft.com/dotnet/aspnet:10.0` base image
 
 ## Project Structure
 
 - **`/node-api`** - Main application project
   - `Controllers/` - REST API controllers for nodes, links, circuits, events, traces, diagnostics
   - `Models/` - Domain models and event types
-  - `Services/` - Background services (UDP listener, MQTT subscriber, persistence, metrics)
+  - `Services/` - Background services (RabbitMQ consumer, MQTT subscriber, persistence, metrics)
   - `Validators/` - FluentValidation validators for all event types
   - `Converters/` - JSON converters
   - `Utilities/` - Helper utilities
   - `Constants/` - Application constants
   - `Program.cs` - Application startup and DI configuration
+- **`/node-api-ingester`** - UDP ingress worker service
+  - `Services/` - UDP listener, in-memory buffer, RabbitMQ publisher
+  - `Program.cs` - Worker startup and DI configuration
 - **`/Tests`** - Unit and integration tests (691 tests)
 - **`/SmokeTests`** - End-to-end smoke tests for deployed instances
 - **`/schema`** - Database schema definitions
@@ -111,26 +110,32 @@ This is a .NET 9.0 ASP.NET Core Web API service that provides packet network mon
 
 ```bash
 # Build the solution
-dotnet build
+dotnet build node-api.sln
 
-# Run all unit tests
-dotnet test Tests/
+# Run tests that do not require DB credentials
+dotnet test Tests/ --filter "Category!=DatabaseIntegration"
 
-# Run smoke tests (requires running service)
+# Run smoke tests (requires running services)
 dotnet test SmokeTests/
 
-# Run the service locally
+# Run the API/processing service locally
 cd node-api
 dotnet run
 
-# Service will be available at:
+# Run the UDP ingester locally
+cd ../node-api-ingester
+dotnet run
+
+# Services will be available at:
 # - http://localhost:5000
+# - UDP 13579 on node-api-ingester
 # - OpenAPI docs at http://localhost:5000/scalar
 ```
 
 ## Important Configuration
 
-- **UDP Port**: 13579 (configured in `UdpNodeInfoListener`)
+- **UDP Port**: 13579 (configured in `node-api-ingester`)
+- **RabbitMQ**: Required between `node-api-ingester` and `node-api` for split UDP processing
 - **MQTT**: Configured via `appsettings.json` under `MqttSettings`
 - **Database**: MySQL connection string in `ConnectionStrings:DefaultConnection`
 - **CORS**: Allows any origin (configured for development)
@@ -184,4 +189,4 @@ dotnet run
 - Check existing validators for patterns before creating new ones
 - Use `MockTraceRepository` and `MockEventRepository` for testing
 - Smoke tests require a running instance - unit tests don't
-- The service is designed to be resilient - failing to write to DB or MQTT shouldn't crash UDP listener
+- The system is designed to be resilient - queue, DB, or MQTT failures should not crash the processing pipeline

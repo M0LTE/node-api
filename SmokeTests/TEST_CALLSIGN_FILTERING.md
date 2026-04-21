@@ -18,7 +18,7 @@ TEST callsigns (matching pattern `^TEST(-[0-9]|1[0-5])?$`) are now filtered from
 ### What Didn't Change?
 
 ? **All internal processing unchanged**:
-- UDP listener accepts and validates TEST datagrams
+- UDP ingress accepts and validates TEST datagrams
 - MQTT publishing includes TEST events
 - Database persistence stores TEST data
 - Network state tracking includes TEST nodes/links/circuits
@@ -79,7 +79,7 @@ curl http://localhost:5000/api/links/node/TEST
 curl http://localhost:5000/api/circuits/node/TEST
 
 # 7. Check service logs (TEST processing logged)
-# Logs will show TEST datagrams being received, validated, and processed
+# Logs from node-api-ingester and node-api will show TEST datagrams being received, queued, and processed
 ```
 
 ### ? Methods That Won't Show TEST (By Design)
@@ -133,7 +133,7 @@ curl http://localhost:5000/api/traces?limit=10
 # 1. Send TEST datagram via UDP
 echo '{"@type":"NodeUpEvent","nodeCall":"TEST","nodeAlias":"TST","locator":"IO82VJ","software":"Test","version":"1.0"}' | nc -u localhost 13579
 
-# 2. Verify on MQTT (proves UDP listener received it)
+# 2. Verify on MQTT (proves the ingester and processing service handled it)
 mosquitto_sub -h node-api.packet.oarc.uk -t "out/NodeUpEvent" -v -C 1
 # Should see: out/NodeUpEvent {"@type":"NodeUpEvent","nodeCall":"TEST",...}
 
