@@ -139,7 +139,7 @@ public class StateCleanupServiceTests
     }
 
     [Fact]
-    public void Should_Not_Identify_Active_Circuit_As_Stale()
+    public void Should_Identify_Stale_Active_Circuit_As_Stale()
     {
         // Arrange
         var circuit = _networkState.GetOrCreateCircuit("M0LTE:1234", "G8PZT:5678");
@@ -149,10 +149,27 @@ public class StateCleanupServiceTests
         var cutoff = DateTime.UtcNow.AddHours(-1);
 
         // Act
-        var isStale = circuit.Status == CircuitStatus.Disconnected && circuit.LastUpdate < cutoff;
+        var isStale = circuit.LastUpdate < cutoff;
 
         // Assert
-        isStale.Should().BeFalse("active circuits should never be considered stale");
+        isStale.Should().BeTrue("active circuits that stop reporting should age out");
+    }
+
+    [Fact]
+    public void Should_Not_Identify_Recent_Active_Circuit_As_Stale()
+    {
+        // Arrange
+        var circuit = _networkState.GetOrCreateCircuit("M0LTE:1234", "G8PZT:5678");
+        circuit.Status = CircuitStatus.Active;
+        circuit.LastUpdate = DateTime.UtcNow.AddMinutes(-30);
+
+        var cutoff = DateTime.UtcNow.AddHours(-1);
+
+        // Act
+        var isStale = circuit.LastUpdate < cutoff;
+
+        // Assert
+        isStale.Should().BeFalse("recently updated active circuits should be retained");
     }
 
     #endregion
@@ -217,34 +234,34 @@ public class StateCleanupServiceTests
 
         // Act
         var staleCircuits = _networkState.GetAllCircuits().Values
-            .Where(c => c.Status == CircuitStatus.Disconnected && c.LastUpdate < cutoff)
+            .Where(c => c.LastUpdate < cutoff)
             .ToList();
 
         // Assert
-        staleCircuits.Should().HaveCount(1);
+        staleCircuits.Should().HaveCount(2);
         staleCircuits.Should().Contain(staleCircuit1);
+        staleCircuits.Should().Contain(activeCircuit, "active circuits with stale updates should be removed");
         staleCircuits.Should().NotContain(recentCircuit, "it was updated recently");
-        staleCircuits.Should().NotContain(activeCircuit, "it's still active");
     }
 
     [Fact]
     public void Should_Handle_Circuits_With_Unique_IDs()
     {
-        // Arrange - Test the original problem: circuits with unique IDs pile up
+        // Arrange - Test the original problem: stale active circuits with unique IDs pile up
         var cutoff = DateTime.UtcNow.AddHours(-1);
         var circuits = new List<CircuitState>();
         
         for (int i = 0; i < 10; i++)
         {
             var circuit = _networkState.GetOrCreateCircuit($"GB7NBH:{i:x4}", $"MB7NSC:{i:x4}");
-            circuit.Status = CircuitStatus.Disconnected;
+            circuit.Status = CircuitStatus.Active;
             circuit.LastUpdate = DateTime.UtcNow.AddHours(-2);
             circuits.Add(circuit);
         }
 
         // Act
         var staleCircuits = _networkState.GetAllCircuits().Values
-            .Where(c => c.Status == CircuitStatus.Disconnected && c.LastUpdate < cutoff)
+            .Where(c => c.LastUpdate < cutoff)
             .ToList();
 
         // Assert

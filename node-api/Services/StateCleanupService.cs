@@ -4,7 +4,7 @@ namespace node_api.Services;
 
 /// <summary>
 /// Background service that periodically removes stale entities (links, circuits) from the network state.
-/// Runs every configured interval to clean up disconnected entities older than a threshold.
+/// Runs every configured interval to clean up entities that have not been updated within the configured threshold.
 /// </summary>
 public class StateCleanupService : BackgroundService
 {
@@ -29,7 +29,7 @@ public class StateCleanupService : BackgroundService
             ? TimeSpan.FromMinutes(minutes) 
             : TimeSpan.FromMinutes(5);
         
-        // Default: Remove entities that have been disconnected for more than 1 hour
+        // Default: Remove entities that have not been updated for more than 1 hour
         var thresholdHours = Environment.GetEnvironmentVariable("STATE_CLEANUP_THRESHOLD_HOURS");
         _staleThreshold = int.TryParse(thresholdHours, out var hours) 
             ? TimeSpan.FromHours(hours) 
@@ -110,27 +110,25 @@ public class StateCleanupService : BackgroundService
                 }
             }
 
-            // Clean up stale disconnected circuits
+            // Clean up stale circuits
             // A circuit is stale if:
-            // 1. It's disconnected AND
-            // 2. It hasn't been updated recently (no status reports or disconnect events)
-            // Note: CircuitStatus reports arrive every 5 minutes for active circuits,
-            // so LastUpdate will be recent even if circuit was marked disconnected earlier
-            var disconnectedCircuits = _networkState.GetAllCircuits().Values
-                .Where(c => c.Status == CircuitStatus.Disconnected 
-                         && c.LastUpdate < cutoff)
+            // 1. It hasn't been updated recently, regardless of current status
+            // Note: CircuitStatus reports arrive every 5 minutes for active circuits.
+            // If a circuit stops reporting without a disconnect event, it must still age out.
+            var staleCircuits = _networkState.GetAllCircuits().Values
+                .Where(c => c.LastUpdate < cutoff)
                 .Select(c => c.CanonicalKey)
                 .ToList();
 
-            if (disconnectedCircuits.Count > 0)
+            if (staleCircuits.Count > 0)
             {
                 try
                 {
                     // Batch delete from database
-                    await _repository.BatchDeleteCircuitsAsync(disconnectedCircuits, ct);
+                    await _repository.BatchDeleteCircuitsAsync(staleCircuits, ct);
                     
                     // Remove from in-memory state
-                    foreach (var key in disconnectedCircuits)
+                    foreach (var key in staleCircuits)
                     {
                         if (_networkState.RemoveCircuit(key))
                         {
