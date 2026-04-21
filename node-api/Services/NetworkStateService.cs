@@ -134,23 +134,23 @@ public partial class NetworkStateService : INetworkStateService
 
     public string GetCanonicalLinkKey(string local, string remote)
     {
-        var sorted = new[] { local, remote }.OrderBy(x => x).ToArray();
-        return $"{sorted[0]}<->{sorted[1]}";
+        var (endpoint1, endpoint2) = OrderEndpoints(local, remote);
+        return string.Concat(endpoint1, "<->", endpoint2);
     }
 
     public LinkState GetOrCreateLink(string local, string remote)
     {
-        var canonicalKey = GetCanonicalLinkKey(local, remote);
+        var (endpoint1, endpoint2) = OrderEndpoints(local, remote);
+        var canonicalKey = string.Concat(endpoint1, "<->", endpoint2);
         
         return _links.GetOrAdd(canonicalKey, key =>
         {
             _logger.LogDebug("Creating new link state for {Key}", key);
-            var sorted = new[] { local, remote }.OrderBy(x => x).ToArray();
             var link = new LinkState
             {
                 CanonicalKey = key,
-                Endpoint1 = sorted[0],
-                Endpoint2 = sorted[1],
+                Endpoint1 = endpoint1,
+                Endpoint2 = endpoint2,
                 ConnectedAt = DateTime.UtcNow,
                 LastUpdate = DateTime.UtcNow
             };
@@ -179,29 +179,36 @@ public partial class NetworkStateService : INetworkStateService
 
     public string GetCanonicalCircuitKey(string local, string remote)
     {
-        var sorted = new[] { local, remote }.OrderBy(x => x).ToArray();
-        return $"{sorted[0]}<->{sorted[1]}";
+        var (endpoint1, endpoint2) = OrderEndpoints(local, remote);
+        return string.Concat(endpoint1, "<->", endpoint2);
     }
 
     public CircuitState GetOrCreateCircuit(string local, string remote)
     {
-        var canonicalKey = GetCanonicalCircuitKey(local, remote);
+        var (endpoint1, endpoint2) = OrderEndpoints(local, remote);
+        var canonicalKey = string.Concat(endpoint1, "<->", endpoint2);
         
         return _circuits.GetOrAdd(canonicalKey, key =>
         {
             _logger.LogDebug("Creating new circuit state for {Key}", key);
-            var sorted = new[] { local, remote }.OrderBy(x => x).ToArray();
             var circuit = new CircuitState
             {
                 CanonicalKey = key,
-                Endpoint1 = sorted[0],
-                Endpoint2 = sorted[1],
+                Endpoint1 = endpoint1,
+                Endpoint2 = endpoint2,
                 ConnectedAt = DateTime.UtcNow,
                 LastUpdate = DateTime.UtcNow
             };
             circuit.MarkDirty();
             return circuit;
         });
+    }
+
+    private static (string Endpoint1, string Endpoint2) OrderEndpoints(string left, string right)
+    {
+        return string.CompareOrdinal(left, right) <= 0
+            ? (left, right)
+            : (right, left);
     }
 
     public CircuitState? GetCircuit(string canonicalKey)

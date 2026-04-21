@@ -104,7 +104,10 @@ public class DatagramProcessor : IDatagramProcessor
         // Continue with normal processing
         try
         {
-            _logger.LogDebug("Received UDP datagram from {Endpoint}: {Json}", remoteEndPoint, Convert.ToBase64String(datagram));
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Received UDP datagram from {Endpoint}: {Json}", remoteEndPoint, Convert.ToBase64String(datagram));
+            }
 
             var message = new MqttApplicationMessageBuilder()
                 .WithTopic(udpTopic)

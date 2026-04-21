@@ -5,6 +5,7 @@ using MQTTnet.Extensions.ManagedClient;
 using MQTTnet.Formatter;
 using node_api.Configuration;
 using node_api.Models;
+using node_api.Utilities;
 using System.Text.Json;
 
 namespace node_api.Services;
@@ -148,7 +149,7 @@ public class MqttStateSubscriber : BackgroundService
                     {
                         _networkStateUpdater.UpdateFromNodeUpEvent(nodeUp);
                         UpdateNodeIpInfo(nodeUp.NodeCall, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
-                        await _eventRepository.InsertEventAsync(payload, arrivalTime);
+                        await _eventRepository.InsertEventAsync(payload, arrivalTime, ReportedTimeHelper.GetReportedTime(nodeUp));
                     }
                     break;
 
@@ -158,7 +159,7 @@ public class MqttStateSubscriber : BackgroundService
                     {
                         _networkStateUpdater.UpdateFromNodeStatus(nodeStatus);
                         UpdateNodeIpInfo(nodeStatus.NodeCall, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
-                        await _eventRepository.InsertEventAsync(payload, arrivalTime);
+                        await _eventRepository.InsertEventAsync(payload, arrivalTime, ReportedTimeHelper.GetReportedTime(nodeStatus));
                     }
                     break;
 
@@ -168,7 +169,7 @@ public class MqttStateSubscriber : BackgroundService
                     {
                         _networkStateUpdater.UpdateFromNodeDownEvent(nodeDown);
                         UpdateNodeIpInfo(nodeDown.NodeCall, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
-                        await _eventRepository.InsertEventAsync(payload, arrivalTime);
+                        await _eventRepository.InsertEventAsync(payload, arrivalTime, ReportedTimeHelper.GetReportedTime(nodeDown));
                     }
                     break;
 
@@ -177,7 +178,7 @@ public class MqttStateSubscriber : BackgroundService
                     if (l2Trace != null)
                     {
                         // L2Trace is saved to database only, no state updates
-                        await _traceRepository.InsertTraceAsync(payload, arrivalTime);
+                        await _traceRepository.InsertTraceAsync(payload, arrivalTime, ReportedTimeHelper.GetReportedTime(l2Trace));
                     }
                     break;
 
@@ -186,7 +187,7 @@ public class MqttStateSubscriber : BackgroundService
                     if (l3Trace != null)
                     {
                         // L3Trace is saved to database only, no state updates
-                        await _l3TraceRepository.InsertL3TraceAsync(payload, arrivalTime);
+                        await _l3TraceRepository.InsertL3TraceAsync(payload, arrivalTime, ReportedTimeHelper.GetReportedTime(l3Trace));
                     }
                     break;
 
@@ -196,7 +197,7 @@ public class MqttStateSubscriber : BackgroundService
                     {
                         _networkStateUpdater.UpdateFromLinkUpEvent(linkUp);
                         UpdateNodeIpInfo(linkUp.Node, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
-                        await _eventRepository.InsertEventAsync(payload, arrivalTime);
+                        await _eventRepository.InsertEventAsync(payload, arrivalTime, ReportedTimeHelper.GetReportedTime(linkUp));
                     }
                     break;
 
@@ -206,7 +207,7 @@ public class MqttStateSubscriber : BackgroundService
                     {
                         _networkStateUpdater.UpdateFromLinkStatus(linkStatus);
                         UpdateNodeIpInfo(linkStatus.Node, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
-                        await _eventRepository.InsertEventAsync(payload, arrivalTime);
+                        await _eventRepository.InsertEventAsync(payload, arrivalTime, ReportedTimeHelper.GetReportedTime(linkStatus));
                     }
                     break;
 
@@ -216,7 +217,7 @@ public class MqttStateSubscriber : BackgroundService
                     {
                         _networkStateUpdater.UpdateFromLinkDownEvent(linkDown);
                         UpdateNodeIpInfo(linkDown.Node, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
-                        await _eventRepository.InsertEventAsync(payload, arrivalTime);
+                        await _eventRepository.InsertEventAsync(payload, arrivalTime, ReportedTimeHelper.GetReportedTime(linkDown));
                     }
                     break;
 
@@ -226,7 +227,7 @@ public class MqttStateSubscriber : BackgroundService
                     {
                         _networkStateUpdater.UpdateFromCircuitUpEvent(circuitUp);
                         UpdateNodeIpInfo(circuitUp.Node, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
-                        await _eventRepository.InsertEventAsync(payload, arrivalTime);
+                        await _eventRepository.InsertEventAsync(payload, arrivalTime, ReportedTimeHelper.GetReportedTime(circuitUp));
                     }
                     break;
 
@@ -236,7 +237,7 @@ public class MqttStateSubscriber : BackgroundService
                     {
                         _networkStateUpdater.UpdateFromCircuitStatus(circuitStatus);
                         UpdateNodeIpInfo(circuitStatus.Node, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
-                        await _eventRepository.InsertEventAsync(payload, arrivalTime);
+                        await _eventRepository.InsertEventAsync(payload, arrivalTime, ReportedTimeHelper.GetReportedTime(circuitStatus));
                     }
                     break;
 
@@ -246,7 +247,7 @@ public class MqttStateSubscriber : BackgroundService
                     {
                         _networkStateUpdater.UpdateFromCircuitDownEvent(circuitDown);
                         UpdateNodeIpInfo(circuitDown.Node, ipObfuscated, geoCountryCode, geoCountryName, geoCity);
-                        await _eventRepository.InsertEventAsync(payload, arrivalTime);
+                        await _eventRepository.InsertEventAsync(payload, arrivalTime, ReportedTimeHelper.GetReportedTime(circuitDown));
                     }
                     break;
 

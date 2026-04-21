@@ -2,7 +2,7 @@ namespace node_api.Services;
 
 public interface IL3TraceRepository
 {
-    Task InsertL3TraceAsync(string json, DateTime? timestamp = null, CancellationToken ct = default);
+    Task InsertL3TraceAsync(string json, DateTime? timestamp = null, DateTime? reportedTime = null, CancellationToken ct = default);
 
     /// <summary>
     /// Get L3 (NET/ROM layer 3) traces with filtering and pagination

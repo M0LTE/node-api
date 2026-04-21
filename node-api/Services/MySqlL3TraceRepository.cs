@@ -1,4 +1,5 @@
 using Dapper;
+using node_api.Utilities;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -12,31 +13,14 @@ public partial class MySqlL3TraceRepository(ILogger<MySqlL3TraceRepository> logg
     [GeneratedRegex(@"^TEST(-([0-9]|1[0-5]))?$", RegexOptions.IgnoreCase)]
     private static partial Regex TestCallsignRegex();
 
-    public async Task InsertL3TraceAsync(string json, DateTime? timestamp = null, CancellationToken ct = default)
+    public async Task InsertL3TraceAsync(string json, DateTime? timestamp = null, DateTime? reportedTime = null, CancellationToken ct = default)
     {
         try
         {
             using var conn = Database.GetConnection(open: false);
             await conn.OpenAsync(ct);
 
-            // Extract reported_time from JSON
-            DateTime? reportedTime = null;
-            try
-            {
-                using var doc = JsonDocument.Parse(json);
-                if (doc.RootElement.TryGetProperty("time", out var timeElement))
-                {
-                    if (timeElement.ValueKind == JsonValueKind.Number)
-                    {
-                        var unixTime = timeElement.GetDouble();
-                        reportedTime = DateTimeOffset.FromUnixTimeMilliseconds((long)(unixTime * 1000)).UtcDateTime;
-                    }
-                }
-            }
-            catch
-            {
-                // If we can't parse the time, just continue without it
-            }
+            reportedTime ??= ReportedTimeHelper.ExtractFromJson(json);
 
             if (timestamp.HasValue)
             {

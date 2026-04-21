@@ -4,7 +4,7 @@ namespace Tests;
 
 public class MockL3TraceRepository : IL3TraceRepository
 {
-    public Task InsertL3TraceAsync(string json, DateTime? timestamp = null, CancellationToken ct = default)
+    public Task InsertL3TraceAsync(string json, DateTime? timestamp = null, DateTime? reportedTime = null, CancellationToken ct = default)
     {
         return Task.CompletedTask;
     }
