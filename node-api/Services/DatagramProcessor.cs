@@ -35,7 +35,6 @@ public class DatagramProcessor : IDatagramProcessor
     private static readonly JsonSerializerOptions jsonOptions = new()
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        WriteIndented = true,
     };
 
     public DatagramProcessor(

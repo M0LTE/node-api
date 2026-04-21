@@ -20,11 +20,11 @@ public class SystemMetricsPublisher : BackgroundService
 {
     private readonly ILogger<SystemMetricsPublisher> _logger;
     private readonly MqttSettings _mqttSettings;
-    private const int PublishIntervalSeconds = 10;
     private const int SlowQueryThresholdMs = 1000;
     private IManagedMqttClient? _mqttClient;
     private readonly DateTime _startTime;
     private readonly DateTime _systemStartTime;
+    private readonly TimeSpan _publishInterval;
     private const string MetricsTopic = "metrics/system";
     
     // Linux CPU tracking
@@ -39,6 +39,10 @@ public class SystemMetricsPublisher : BackgroundService
         _mqttSettings = mqttSettings.Value;
         _startTime = DateTime.UtcNow;
         _systemStartTime = DateTime.UtcNow - TimeSpan.FromMilliseconds(Environment.TickCount64);
+        var intervalSeconds = Environment.GetEnvironmentVariable("SYSTEM_METRICS_PUBLISH_INTERVAL_SECONDS");
+        _publishInterval = int.TryParse(intervalSeconds, out var seconds) && seconds > 0
+            ? TimeSpan.FromSeconds(seconds)
+            : TimeSpan.FromSeconds(30);
 
         // Initialize Linux CPU tracking
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
@@ -56,7 +60,7 @@ public class SystemMetricsPublisher : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("System metrics publisher starting. Publish interval: {Interval}s", PublishIntervalSeconds);
+        _logger.LogInformation("System metrics publisher starting. Publish interval: {Interval}s", _publishInterval.TotalSeconds);
 
         // Initialize MQTT client
         try
@@ -69,7 +73,7 @@ public class SystemMetricsPublisher : BackgroundService
             return;
         }
 
-        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(PublishIntervalSeconds));
+        using var timer = new PeriodicTimer(_publishInterval);
         
         while (!stoppingToken.IsCancellationRequested)
         {

@@ -1,5 +1,6 @@
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using RabbitMQ.Client.Exceptions;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -22,6 +23,7 @@ public sealed class RabbitMqConsumer : BackgroundService, IAsyncDisposable
     private readonly Channel<DatagramMessage> _processingChannel;
     private Task? _processingTask;
     private readonly int _maxConcurrentProcessing = 10;
+    private int _disposeState;
 
     public RabbitMqConsumer(
         ILogger<RabbitMqConsumer> logger,
@@ -200,30 +202,93 @@ public sealed class RabbitMqConsumer : BackgroundService, IAsyncDisposable
 
     public override void Dispose()
     {
-        _channel?.Close();
-        _channel?.Dispose();
-        _connection?.Close();
-        _connection?.Dispose();
+        if (Interlocked.Exchange(ref _disposeState, 1) != 0)
+        {
+            return;
+        }
+
+        DisposeRabbitMqResources();
         base.Dispose();
     }
 
     public ValueTask DisposeAsync()
     {
-        if (_channel != null)
-        {
-            _channel.Close();
-            _channel.Dispose();
-        }
-
-        if (_connection != null)
-        {
-            _connection.Close();
-            _connection.Dispose();
-        }
-
         Dispose();
         GC.SuppressFinalize(this);
         return ValueTask.CompletedTask;
+    }
+
+    private void DisposeRabbitMqResources()
+    {
+        var channel = Interlocked.Exchange(ref _channel, null);
+        if (channel != null)
+        {
+            TryCloseChannel(channel);
+            TryDisposeChannel(channel);
+        }
+
+        var connection = Interlocked.Exchange(ref _connection, null);
+        if (connection != null)
+        {
+            TryCloseConnection(connection);
+            TryDisposeConnection(connection);
+        }
+    }
+
+    private static void TryCloseChannel(IModel channel)
+    {
+        try
+        {
+            if (channel.IsOpen)
+            {
+                channel.Close();
+            }
+        }
+        catch (AlreadyClosedException)
+        {
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+    }
+
+    private static void TryDisposeChannel(IModel channel)
+    {
+        try
+        {
+            channel.Dispose();
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+    }
+
+    private static void TryCloseConnection(IConnection connection)
+    {
+        try
+        {
+            if (connection.IsOpen)
+            {
+                connection.Close();
+            }
+        }
+        catch (AlreadyClosedException)
+        {
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+    }
+
+    private static void TryDisposeConnection(IConnection connection)
+    {
+        try
+        {
+            connection.Dispose();
+        }
+        catch (ObjectDisposedException)
+        {
+        }
     }
 
     private class DatagramMessage

@@ -155,11 +155,6 @@ public class NetworkStatePersistenceService : BackgroundService
             var dirtyNodes = _networkState.GetDirtyNodes().ToList();
             foreach (var node in dirtyNodes)
             {
-                // DEBUG: Log what we're about to persist
-                _logger.LogInformation(
-                    "Persisting node {Callsign}: IsCb={IsCb}, IsTest={IsTest}", 
-                    node.Callsign, node.IsCb, node.IsTest);
-                    
                 await _repository.UpsertNodeAsync(node, ct);
                 _networkState.MarkNodeClean(node);
                 nodeCount++;

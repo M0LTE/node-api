@@ -289,7 +289,14 @@ public class MqttStateSubscriber : BackgroundService
                 }
                 else
                 {
-                    _logger.LogWarning("Received incomplete validation error payload, falling back to generic storage");
+                    var issue = validationError == null
+                        ? "payload deserialized to null"
+                        : $"missing fields: {string.Join(", ", GetMissingValidationErrorFields(validationError))}";
+                    _logger.LogWarning(
+                        "Received incomplete validation error payload on topic {Topic}: {Issue}. Payload preview: {PayloadPreview}. Falling back to generic storage.",
+                        topic,
+                        issue,
+                        CreatePayloadPreview(payload));
                     await _erroredMessageRepository.InsertErroredMessageAsync(
                         reason: reason,
                         json: payload);
@@ -334,6 +341,32 @@ public class MqttStateSubscriber : BackgroundService
         }
 
         await base.StopAsync(cancellationToken);
+    }
+
+    private static IEnumerable<string> GetMissingValidationErrorFields(ValidationError validationError)
+    {
+        if (validationError.Datagram == null)
+        {
+            yield return "datagram";
+        }
+
+        if (validationError.Type == null)
+        {
+            yield return "type";
+        }
+
+        if (validationError.Errors == null)
+        {
+            yield return "errors";
+        }
+    }
+
+    private static string CreatePayloadPreview(string payload)
+    {
+        const int maxPreviewLength = 400;
+        return payload.Length <= maxPreviewLength
+            ? payload
+            : payload[..maxPreviewLength] + "...";
     }
 
     private class ValidationError
