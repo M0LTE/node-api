@@ -15,9 +15,15 @@ dotnet user-secrets set "DB_USER" "your_username"
 dotnet user-secrets set "DB_PASSWORD" "your_password"
 dotnet user-secrets set "DB_NAME" "your_database"
 
+# Optional: shared key for the port-metadata ingest endpoint (POST /api/ingest/port-metadata).
+# Must match the poster's key (packetnodes: NodeGraph:NodeApiIngestKey). Unset => endpoint rejects all.
+dotnet user-secrets set "Ingest:PortMetadataApiKey" "your_shared_key"
+
 # Verify
 dotnet user-secrets list
 ```
+
+In deployment (Docker/systemd), set it as the `INGEST__PORTMETADATAAPIKEY` environment variable.
 
 ## ?? Shared Secrets Location
 

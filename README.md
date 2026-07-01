@@ -80,9 +80,10 @@ node-api-ingester
 
 - `POST /api/ingest`
 - `POST /api/ingest/batch`
+- `POST /api/ingest/port-metadata` (API-key authenticated; see [Port metadata ingest](docs/PORT_METADATA_INGEST.md))
 - `GET /api/ingest/status`
 - `GET /api/nodes`
-- `GET /api/links`
+- `GET /api/links` — links carry a `band` (and per-endpoint `band`/`freqHz`/`mode`) when port metadata is available
 - `GET /api/circuits`
 - `GET /api/traces`
 - `GET /api/events`
@@ -108,6 +109,7 @@ Smoke tests can target HTTP and UDP separately through `BaseUrl` and `UdpHost`, 
 - [Documentation index](docs/README.md)
 - [RabbitMQ integration](docs/RABBITMQ_INTEGRATION.md)
 - [HTTP datagram ingestion](docs/HTTP_DATAGRAM_INGESTION.md)
+- [Port metadata ingest & band-annotated links](docs/PORT_METADATA_INGEST.md)
 - [Rate limiting](docs/RATE_LIMITING.md)
 - [Smoke tests](SmokeTests/README.md)
 - [Contributing](CONTRIBUTING.md)

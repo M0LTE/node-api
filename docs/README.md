@@ -18,6 +18,7 @@ This repository now documents a split architecture:
 
 - [HTTP Datagram Ingestion](HTTP_DATAGRAM_INGESTION.md)
 - [Typed Ingest Endpoints](TYPED_INGEST_ENDPOINTS.md)
+- [Port Metadata Ingest & Band-Annotated Links](PORT_METADATA_INGEST.md)
 - [Rate Limiting](RATE_LIMITING.md)
 
 ## Network State and Analysis
