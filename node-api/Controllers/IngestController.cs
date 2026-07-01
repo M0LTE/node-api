@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using node_api.Filters;
 using node_api.Services;
 using node_api.Models;
 using System.Text.Json;
@@ -99,6 +100,26 @@ public class IngestController : ControllerBase
     [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
     public Task<IActionResult> IngestDatagramAsync([FromBody] NetworkEventDatagram datagram)
         => IngestTypedDatagramAsync(datagram);
+
+    /// <summary>
+    /// Replace the per-port metadata (band, frequency, mode, bitrate, usage, comment) used to annotate
+    /// links. Authenticated (X-Api-Key); intended for a single trusted source that derives it from
+    /// operator port config/comments. The full set is sent each time and replaces the previous set.
+    /// </summary>
+    [HttpPost("port-metadata")]
+    [IngestApiKey]
+    [Consumes("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public IActionResult IngestPortMetadata(
+        [FromBody] PortMetadata[] items, [FromServices] IPortMetadataStore store)
+    {
+        if (items is null) return BadRequest("Body required.");
+        store.Replace(items);
+        _logger.LogInformation("Ingested {Count} port-metadata records", items.Length);
+        return Ok(new { received = items.Length });
+    }
 
     // ========== Typed Endpoints for Better OpenAPI Documentation ==========
 

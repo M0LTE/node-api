@@ -93,6 +93,7 @@ builder.Services.AddSingleton<IDatagramProcessor>(serviceProvider =>
 builder.Services.AddHostedService<RabbitMqConsumer>();
 
 // Register network state services
+builder.Services.AddSingleton<IPortMetadataStore, PortMetadataStore>();
 builder.Services.AddSingleton<INetworkStateService, NetworkStateService>();
 builder.Services.AddSingleton<NetworkStateUpdater>();
 

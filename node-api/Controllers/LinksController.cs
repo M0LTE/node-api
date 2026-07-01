@@ -9,14 +9,39 @@ namespace node_api.Controllers;
 public class LinksController : ControllerBase
 {
     private readonly INetworkStateService _networkState;
+    private readonly IPortMetadataStore _portMetadata;
     private readonly ILogger<LinksController> _logger;
 
     public LinksController(
         INetworkStateService networkState,
+        IPortMetadataStore portMetadata,
         ILogger<LinksController> logger)
     {
         _networkState = networkState;
+        _portMetadata = portMetadata;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Annotate each link (and its endpoints) with band/frequency/mode from pushed port metadata.
+    /// Transient enrichment of the in-memory state — idempotent and never persisted.
+    /// </summary>
+    private IEnumerable<LinkState> WithBands(IEnumerable<LinkState> links)
+    {
+        foreach (var link in links)
+        {
+            string? linkBand = null;
+            foreach (var endpoint in link.Endpoints.Values)
+            {
+                var pm = _portMetadata.Get(endpoint.Node, endpoint.Port);
+                endpoint.FreqHz = pm?.FreqHz;
+                endpoint.Band = pm?.Band;
+                endpoint.Mode = pm?.Mode;
+                linkBand ??= pm?.Band;
+            }
+            link.Band = linkBand;
+            yield return link;
+        }
     }
 
     /// <summary>
@@ -33,7 +58,7 @@ public class LinksController : ControllerBase
                        !_networkState.IsHiddenCallsign(l.Endpoint2));
         
         _logger.LogInformation("GetAllLinks called, returning {Count} links", links.Count());
-        return Ok(links);
+        return Ok(WithBands(links));
     }
 
     /// <summary>
@@ -68,9 +93,9 @@ public class LinksController : ControllerBase
                        !_networkState.IsHiddenCallsign(l.Endpoint1) &&
                        !_networkState.IsHiddenCallsign(l.Endpoint2));
 
-        _logger.LogInformation("GetLinksByBaseCallsign called for {BaseCallsign}, returning {Count} links", 
+        _logger.LogInformation("GetLinksByBaseCallsign called for {BaseCallsign}, returning {Count} links",
             baseCallsign, links.Count());
-        
-        return Ok(links);
+
+        return Ok(WithBands(links));
     }
 }

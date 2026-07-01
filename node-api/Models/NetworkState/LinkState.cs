@@ -149,7 +149,13 @@ public class LinkState
     }
     
     public Dictionary<string, LinkEndpointState> Endpoints { get; init; } = new();
-    
+
+    /// <summary>
+    /// RF band of the link (e.g. "40m", "2m"), derived from pushed port-frequency metadata. Transient:
+    /// populated per-response, never persisted or dirty-tracked. Null when the band isn't known.
+    /// </summary>
+    public string? Band { get; set; }
+
     // Dirty tracking for persistence optimization
     public bool IsDirty { get; private set; }
     
@@ -207,6 +213,11 @@ public class LinkEndpointState
     public int? FrameQueueMax { get; set; }
     public int? L2RttMs { get; set; }
     public string? Reason { get; set; }
+
+    /// <summary>Frequency/band/mode of this endpoint's port, from pushed metadata. Transient (not persisted).</summary>
+    public long? FreqHz { get; set; }
+    public string? Band { get; set; }
+    public string? Mode { get; set; }
 }
 
 public enum LinkStatus
