@@ -26,7 +26,7 @@ public class LinksControllerTests
         var networkStateLogger = Substitute.For<ILogger<NetworkStateService>>();
         _networkState = new NetworkStateService(networkStateLogger, configuration);
         
-        _controller = new LinksController(_networkState, _logger);
+        _controller = new LinksController(_networkState, new PortMetadataStore(), _logger);
     }
 
     [Fact]
